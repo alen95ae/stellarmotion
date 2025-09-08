@@ -48,6 +48,7 @@ coverage/
 
 # TypeScript
 *.tsbuildinfo
+next-env.d.ts
 
 # Optional npm cache directory
 .npm
@@ -87,3 +88,9 @@ coverage/
 # Temporary folders
 tmp/
 temp/
+
+# Vercel
+.vercel
+
+# Prisma generated files
+/generated/prisma
