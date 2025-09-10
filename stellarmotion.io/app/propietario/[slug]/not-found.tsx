@@ -18,14 +18,14 @@ export default function NotFound() {
         </div>
         
         <div className="space-y-4">
-          <Button asChild className="w-full">
+          <Button className="w-full">
             <Link href="/">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Volver al inicio
             </Link>
           </Button>
           
-          <Button variant="outline" asChild className="w-full">
+          <Button variant="outline" className="w-full">
             <Link href="/buscar-un-espacio">
               Buscar espacios
             </Link>

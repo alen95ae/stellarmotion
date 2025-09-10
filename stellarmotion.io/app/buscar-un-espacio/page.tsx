@@ -426,7 +426,7 @@ export default function BuscarEspacioPage() {
                       
                       <div className="flex items-center justify-between">
                         <div>
-                          <span className="text-2xl font-bold text-rose-600">${product.pricePerMonth || product.priceMonth || 0}</span>
+                          <span className="text-2xl font-bold text-rose-600">${product.priceMonth || 0}</span>
                           <span className="text-gray-600 text-sm"> / mes</span>
                         </div>
                         <div className="px-4 py-2 rounded-lg text-sm bg-[#D7514C] text-white font-medium">

@@ -62,7 +62,7 @@ export default function OpenStreetMap({
 
     // Si hay marcadores, ajustar la vista para mostrarlos todos
     if (markers.length > 0) {
-      const group = new L.featureGroup(markers.map(m => L.marker(m.position)));
+      const group = L.featureGroup(markers.map(m => L.marker(m.position)));
       map.fitBounds(group.getBounds().pad(0.1));
     }
 

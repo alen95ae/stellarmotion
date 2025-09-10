@@ -113,7 +113,7 @@ export default function ProductClient({ product }: ProductClientProps) {
     }
   };
 
-  const availabilityStatus = getAvailabilityStatus(product.status, product.available);
+  const availabilityStatus = getAvailabilityStatus('available', true);
 
   // Precios de servicios adicionales
   const servicePrices = {

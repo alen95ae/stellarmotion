@@ -78,7 +78,7 @@ export default function SearchMap({ products, className = '', height = '500px' }
           </div>
           <div class="flex items-center gap-2 mb-2">
             ${product.featured ? '<span class="bg-[#D7514C] text-white text-xs px-2 py-1 rounded-full">Destacado</span>' : ''}
-            <span class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full">${product.type || 'Soporte'}</span>
+            <span class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full">Soporte</span>
           </div>
           <div class="mt-3">
             <a href="/product/${product.slug}" class="text-[#D7514C] text-sm font-medium hover:underline">Ver detalles →</a>
@@ -90,7 +90,7 @@ export default function SearchMap({ products, className = '', height = '500px' }
 
     // Ajustar la vista para mostrar todos los marcadores
     if (markers.length > 0) {
-      const group = new L.featureGroup(markers);
+      const group = L.featureGroup(markers);
       map.fitBounds(group.getBounds().pad(0.1));
     } else {
       // Si no hay productos, centrar en La Paz, Bolivia

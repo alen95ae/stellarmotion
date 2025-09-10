@@ -262,7 +262,7 @@ async function main() {
 
     for (const reservation of reservations) {
       await prisma.reservation.create({
-        data: reservation
+        data: reservation as any
       })
     }
 
@@ -303,7 +303,7 @@ async function main() {
 
     for (const invoice of invoices) {
       await prisma.invoice.create({
-        data: invoice
+        data: invoice as any
       })
     }
 
@@ -332,7 +332,7 @@ async function main() {
 
     for (const ticket of maintenanceTickets) {
       await prisma.maintenanceTicket.create({
-        data: ticket
+        data: ticket as any
       })
     }
 
@@ -368,7 +368,7 @@ async function main() {
 
     for (const message of messages) {
       await prisma.message.create({
-        data: message
+        data: message as any
       })
     }
 
