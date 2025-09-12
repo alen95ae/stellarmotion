@@ -269,8 +269,15 @@ export default function SoporteDetailPage() {
         const formData = new FormData();
         formData.append('file', file);
         const response = await fetch('/api/uploads', { method: 'POST', body: formData });
-        const { url } = await response.json();
-        
+
+        if (!response.ok) {
+          throw new Error(`Upload failed with status ${response.status}`);
+        }
+
+        const data = await response.json();
+        const url = data?.url || data?.blob?.url;
+        if (!url) throw new Error('Upload response missing url');
+
         setFormData(prev => ({
           ...prev,
           images: [...prev.images, url]

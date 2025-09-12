@@ -44,12 +44,29 @@ Panel de control para gestión de soportes publicitarios desarrollado con Next.j
 
 4. **Configurar base de datos**
    ```bash
-   # Crear y migrar la base de datos
+   # Supabase + Prisma (PostgreSQL)
+   # 1) Configura DATABASE_URL en stellarmotion.erp/.env.local
+   #    DATABASE_URL="postgresql://postgres:[password]@[host]:5432/[database]?schema=public"
+   # 2) Aplica migraciones iniciales
    npx prisma migrate dev --name init
-   
-   # Ejecutar seed con datos de prueba
+   # 3) Genera el cliente Prisma
+   npx prisma generate
+   # 4) (Opcional) Ejecuta seed con datos de prueba
    npx prisma db seed
    ```
+
+## Base de Datos (Supabase + Prisma)
+
+### Configuración Inicial
+1. Configura `DATABASE_URL` en `stellarmotion.erp/.env.local` con la URL de Supabase (PostgreSQL).
+2. Ejecuta: `npx prisma migrate dev --name init`
+3. Ejecuta: `npx prisma generate`
+
+### Comandos Útiles
+- `npm run db:reset` - Resetear base de datos (borra migraciones locales de desarrollo y recrea la estructura)
+- `npx prisma studio` - Explorar base de datos
+- `npx prisma migrate dev` - Aplicar cambios
+- `npx prisma generate` - Generar cliente
 
 5. **Ejecutar en desarrollo**
    ```bash

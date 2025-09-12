@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import Image from "next/image"
 
 interface SupportImageProps {
@@ -24,7 +24,12 @@ export default function SupportImage({
   fill = false,
   priority = false
 }: SupportImageProps) {
-  const [imgSrc, setImgSrc] = useState<string>(src || fallbackSrc)
+  const initial = useMemo(() => {
+    if (src && src.trim() !== '' && !src.includes('placeholder')) return src
+    return fallbackSrc
+  }, [src, fallbackSrc])
+
+  const [imgSrc, setImgSrc] = useState<string>(initial)
   const [hasError, setHasError] = useState(false)
 
   const handleError = () => {
@@ -34,26 +39,15 @@ export default function SupportImage({
     }
   }
 
-  // Si no hay src válido, usar fallback directamente
-  const finalSrc = src && src.trim() !== '' && !src.includes('placeholder') ? src : fallbackSrc
-
   if (fill) {
     return (
-      <Image
-        src={finalSrc}
-        alt={alt}
-        fill
-        className={className}
-        onError={handleError}
-        priority={priority}
-        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-      />
+      <Image src={imgSrc} alt={alt} fill className={className} onError={handleError} priority={priority} sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" />
     )
   }
 
   return (
     <Image
-      src={finalSrc}
+      src={imgSrc}
       alt={alt}
       width={width || 200}
       height={height || 128}
