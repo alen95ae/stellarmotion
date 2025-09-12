@@ -18,6 +18,8 @@ import { Plus, Search, Eye, Edit, Trash2, MapPin, Euro, Upload, Download, Filter
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { toast } from "sonner"
+import EditableField from "@/components/EditableField"
+import BulkActions from "@/components/BulkActions"
 
 // Constantes para colores de estado
 const STATUS_META = {
@@ -108,101 +110,55 @@ export default function SoportesPage() {
   const [statusFilter, setStatusFilter] = useState<string[]>([])
   const [selected, setSelected] = useState<Record<string, boolean>>({})
   const [openImport, setOpenImport] = useState(false)
-  const [editingField, setEditingField] = useState<{id: string, field: string} | null>(null)
-  const [editingValue, setEditingValue] = useState("")
   const router = useRouter()
 
-  // Función para convertir dígitos a número decimal
-  const numericFromDigits = (value: string): number => {
-    const cleaned = (value || '').replace(/[^\d]/g, '');
-    if (cleaned.length === 0) return 0;
-    
-    // Un dígito: tratarlo como 0.X (ej: "4" → 0.4)
-    if (cleaned.length === 1) {
-      return parseFloat(`0.${cleaned}`);
-    }
-    
-    // Múltiples dígitos: dividir por 10 para obtener el decimal
-    // "450" → 450 / 10 = 45.0
-    // "453" → 453 / 10 = 45.3
-    // "3500" → 3500 / 10 = 350.0
-    return parseFloat(cleaned) / 10;
+  // Handler para inputs numéricos normales
+  const handleNumericChange = (field: string, value: string, setter: (value: string) => void) => {
+    // Permitir solo números y un punto decimal
+    const cleaned = value.replace(/[^\d.]/g, '');
+    // Evitar múltiples puntos decimales
+    const parts = cleaned.split('.');
+    const finalValue = parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : cleaned;
+    setter(finalValue);
   };
 
-  // Función para formatear la visualización
-  const formatNumericInput = (value: string) => {
-    if (!value) return '';
-    const cleaned = value.replace(/[^\d]/g, '');
-    if (cleaned.length === 0) return '';
-    
-    const numericValue = numericFromDigits(cleaned);
-    return numericValue.toFixed(1);
-  };
 
-  // Handler para el input numérico
-  const handleNumericInputChange = (field: string, inputValue: string, setter: (value: string) => void) => {
-    const cleaned = inputValue.replace(/[^\d]/g, ''); // Solo dígitos
-    setter(cleaned);
-  };
-
-  // Funciones para edición inline
-  const startEditing = (id: string, field: string, currentValue: any) => {
-    setEditingField({ id, field });
-    // Para campos numéricos, convertir el valor a dígitos para edición
-    if (['priceMonth', 'widthM', 'heightM'].includes(field) && currentValue) {
-      // Convertir de decimal a dígitos para edición
-      const valueStr = currentValue.toString();
-      if (valueStr.includes('.')) {
-        const [integer, decimal] = valueStr.split('.');
-        setEditingValue(integer + decimal);
-      } else {
-        setEditingValue(valueStr);
-      }
-    } else {
-      setEditingValue(currentValue?.toString() || '');
-    }
-  };
-
-  const cancelEditing = () => {
-    setEditingField(null);
-    setEditingValue('');
-  };
-
-  const saveInlineEdit = async () => {
-    if (!editingField) return;
-    
-    const { id, field } = editingField;
-    let value = editingValue;
-    
-    // Convertir valores numéricos si es necesario
-    if (['priceMonth', 'widthM', 'heightM'].includes(field)) {
-      // Usar directamente el valor formateado que se muestra en pantalla
-      value = formatNumericInput(editingValue);
-    }
-    
+  // Función callback para guardar cambios desde EditableField
+  const handleFieldSave = async (id: string, field: string, value: any) => {
     try {
+      // Obtener el soporte actual para preservar todos los campos
+      const currentSupport = supports.find(s => s.id === id);
+      if (!currentSupport) {
+        toast.error("Soporte no encontrado");
+        return;
+      }
+
+      // Crear el objeto de actualización con todos los campos existentes
+      const updateData = {
+        ...currentSupport,
+        [field]: value
+      };
+
       // Actualizar directamente en el backend
       const response = await fetch(`/api/soportes/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          code: field === 'code' ? value : supports.find(s => s.id === id)?.code,
-          title: supports.find(s => s.id === id)?.title,
-          [field]: value 
-        })
+        body: JSON.stringify(updateData)
       });
       
       if (response.ok) {
         // Actualizar el soporte localmente
         setSupports(prev => prev.map(support => 
           support.id === id 
-            ? { ...support, [field]: field === 'priceMonth' || field === 'widthM' || field === 'heightM' 
-                ? parseFloat(value) 
-                : value }
+            ? { ...support, [field]: value }
             : support
         ));
         toast.success("Campo actualizado correctamente");
-        cancelEditing();
+        
+        // Refrescar los datos desde el servidor para asegurar sincronización
+        setTimeout(() => {
+          fetchSupports();
+        }, 500);
       } else {
         toast.error("Error al actualizar el campo");
       }
@@ -211,164 +167,20 @@ export default function SoportesPage() {
     }
   };
 
-  // Componente para campos editables inline
-  const EditableField = ({ 
-    support, 
-    field, 
-    value, 
-    type = 'text', 
-    options = null,
-    isNumeric = false,
-    className = '',
-    title = ''
-  }: {
-    support: Support;
-    field: string;
-    value: any;
-    type?: 'text' | 'select' | 'number';
-    options?: string[] | null;
-    isNumeric?: boolean;
-    className?: string;
-    title?: string;
-  }) => {
-    const isEditing = editingField?.id === support.id && editingField?.field === field;
-    
-    // Campos que no se pueden editar
-    const nonEditableFields = ['widthM', 'heightM', 'priceMonth'];
-    const isNonEditable = nonEditableFields.includes(field);
-    
-    if (isEditing) {
-      return (
-        <div className="flex items-center gap-1">
-          {type === 'select' && options ? (
-            <Select value={editingValue} onValueChange={setEditingValue}>
-              <SelectTrigger className="h-8 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {options.map(option => (
-                  <SelectItem key={option} value={option}>
-                    <div className="flex items-center gap-2">
-                      {field === 'status' ? (
-                        <span className={`inline-flex items-center rounded px-2 py-1 text-xs font-medium ${STATUS_META[option as keyof typeof STATUS_META]?.className || 'bg-gray-100 text-gray-800'}`}>
-                          {STATUS_META[option as keyof typeof STATUS_META]?.label || option}
-                        </span>
-                      ) : (
-                        option
-                      )}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          ) : (
-            <Input
-              type="text"
-              value={isNumeric ? formatNumericInput(editingValue) : editingValue}
-              onChange={(e) => {
-                if (isNumeric) {
-                  const cleaned = e.target.value.replace(/[^\d]/g, '');
-                  setEditingValue(cleaned);
-                } else {
-                  setEditingValue(e.target.value);
-                }
-              }}
-              className="h-10 text-sm min-w-[120px]"
-              placeholder={isNumeric ? "00.0" : ""}
-              autoFocus
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') saveInlineEdit();
-                if (e.key === 'Escape') cancelEditing();
-              }}
-            />
-          )}
-          <Button size="sm" variant="ghost" onClick={saveInlineEdit} className="h-6 w-6 p-0">
-            ✓
-          </Button>
-          <Button size="sm" variant="ghost" onClick={cancelEditing} className="h-6 w-6 p-0">
-            ✕
-          </Button>
-        </div>
-      );
-    }
-    
-    const content = (
-      <div 
-        className={`p-1 rounded min-h-[32px] flex items-center ${className} ${
-          isNonEditable 
-            ? 'cursor-not-allowed opacity-60' 
-            : 'cursor-pointer hover:bg-gray-100'
-        }`}
-        onClick={isNonEditable ? undefined : () => startEditing(support.id, field, value)}
-        title={title}
-      >
-        {field === 'status' ? (
-          <span className={`inline-flex items-center rounded px-2 py-1 text-xs font-medium ${STATUS_META[value as keyof typeof STATUS_META]?.className || 'bg-gray-100 text-gray-800'}`}>
-            {STATUS_META[value as keyof typeof STATUS_META]?.label || value}
-          </span>
-        ) : field === 'owner' ? (
-          <span className="inline-flex rounded px-2 py-1 text-xs font-medium bg-gray-600 text-white">
-            {value || '—'}
-          </span>
-        ) : field === 'code' ? (
-          <span className="inline-flex items-center rounded-md bg-neutral-100 px-2 py-1 font-mono text-xs text-gray-800 border border-neutral-200">
-            {value || '—'}
-          </span>
-        ) : type === 'select' && options ? (
-          <Badge variant="secondary">{value || '—'}</Badge>
-        ) : isNumeric ? (
-          <span>{
-            typeof value === 'number'
-              ? value.toFixed(1)
-              : (value ? formatNumericInput(String(value)) : '—')
-          }</span>
-        ) : (
-          <span>{value || '—'}</span>
-        )}
-      </div>
-    );
-
-    // Si el campo no es editable, envolver con tooltip
-    if (isNonEditable) {
-      return (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              {content}
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Este campo no se puede editar</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      );
-    }
-
-    return content;
-  };
-
-  useEffect(() => {
-    const ctrl = new AbortController()
-    const params = new URLSearchParams()
-    if (q) params.set('q', q)
-    if (statusFilter.length) params.set('status', statusFilter.join(','))
-    
-    fetch(`/api/soportes?${params.toString()}`, { signal: ctrl.signal })
-      .then(r => r.json())
-      .then(setSupports)
-      .catch(() => {})
-    
-    return () => ctrl.abort()
-  }, [q, statusFilter])
-
   useEffect(() => {
     fetchSupports()
-  }, [])
+  }, [q, statusFilter])
 
-  const fetchSupports = async (query = "") => {
+
+  const fetchSupports = async (searchQuery = q, statusFilters = statusFilter) => {
     try {
       setLoading(true)
-      const response = await fetch(`/api/soportes?q=${encodeURIComponent(query)}`)
+      const params = new URLSearchParams()
+      
+      if (searchQuery) params.set('q', searchQuery)
+      if (statusFilters.length) params.set('status', statusFilters.join(','))
+      
+      const response = await fetch(`/api/soportes?${params.toString()}`)
       if (response.ok) {
         const data = await response.json()
         setSupports(data)
@@ -420,19 +232,25 @@ export default function SoportesPage() {
     setSelected(next)
   }
 
+  // Función helper para obtener IDs seleccionados
+  const getSelectedIds = () => Object.keys(selected).filter(id => selected[id])
+
+  // Función para actualización masiva (PATCH)
   async function bulkUpdate(patch: any) {
-    const ids = Object.keys(selected).filter(id => selected[id])
+    const ids = getSelectedIds()
+    if (ids.length === 0) return
+
     try {
-      const response = await fetch('/api/soportes/bulk', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ids, action: 'update', data: patch })
-    })
+      const response = await fetch('/api/soportes', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids, data: patch })
+      })
       
       if (response.ok) {
         toast.success(`${ids.length} soportes actualizados correctamente`)
-    fetchSupports()
-    setSelected({})
+        fetchSupports()
+        setSelected({})
       } else {
         const error = await response.json()
         toast.error(error.error || "Error al actualizar los soportes")
@@ -442,32 +260,39 @@ export default function SoportesPage() {
     }
   }
 
+  // Función para eliminación masiva (DELETE)
   async function bulkDelete() {
-    const ids = Object.keys(selected).filter(id => selected[id])
+    const ids = getSelectedIds()
+    if (ids.length === 0) return
     if (!confirm(`¿Eliminar ${ids.length} soportes?`)) return
     
-    await fetch('/api/soportes/bulk', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ids, action: 'delete' })
-    })
-    fetchSupports()
-    setSelected({})
-    toast.success(`${ids.length} soportes eliminados`)
+    try {
+      const response = await fetch('/api/soportes', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids })
+      })
+      
+      if (response.ok) {
+        toast.success(`${ids.length} soportes eliminados`)
+        fetchSupports()
+        setSelected({})
+      } else {
+        const error = await response.json()
+        toast.error(error.error || "Error al eliminar los soportes")
+      }
+    } catch (error) {
+      toast.error("Error de conexión")
+    }
   }
 
+  // Función para cambio de estado masivo
   async function bulkStatusChange(newStatus: string) {
-    const ids = Object.keys(selected).filter(id => selected[id])
+    const ids = getSelectedIds()
+    if (ids.length === 0) return
     if (!confirm(`¿Cambiar estado de ${ids.length} soportes a ${STATUS_META[newStatus as keyof typeof STATUS_META]?.label}?`)) return
     
-    await fetch('/api/soportes/bulk', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ids, action: 'update', data: { status: newStatus } })
-    })
-    fetchSupports()
-    setSelected({})
-    toast.success(`${ids.length} soportes actualizados`)
+    await bulkUpdate({ status: newStatus })
   }
 
   async function exportPDF() {
@@ -660,55 +485,12 @@ export default function SoportesPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {/* Barra de acciones simplificada */}
-            {someSelected && (
-              <div className="mb-6 rounded-xl border bg-gradient-to-r from-blue-50 to-indigo-50 p-4 shadow-sm">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-sm font-semibold text-gray-800">
-                      {Object.keys(selected).filter(id => selected[id]).length} soportes seleccionados
-                    </h3>
-                    <p className="text-xs text-gray-600">Acciones disponibles para los soportes seleccionados</p>
-                      </div>
-                  
-                  <div className="flex gap-2">
-                    {/* Cambiar estado masivo */}
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="sm">
-                          <Filter className="w-4 h-4 mr-2" />
-                          Cambiar Estado
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent>
-                        {Object.entries(STATUS_META).map(([key, meta]) => (
-                          <DropdownMenuItem 
-                            key={key} 
-                            onClick={() => bulkStatusChange(key)}
-                            className="cursor-pointer"
-                          >
-                            <span className={`inline-flex items-center rounded px-2 py-1 text-xs font-medium ${meta.className}`}>
-                              {meta.label}
-                            </span>
-                          </DropdownMenuItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-
-                    {/* Eliminar */}
-                    <Button variant="destructive" size="sm" onClick={bulkDelete}>
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Eliminar
-                  </Button>
-
-                    {/* Deseleccionar todo */}
-                    <Button variant="ghost" size="sm" onClick={() => setSelected({})} className="text-gray-600">
-                      Deseleccionar
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            )}
+            {/* Barra de acciones masivas */}
+            <BulkActions
+              selectedCount={Object.keys(selected).filter(id => selected[id]).length}
+              onBulkDelete={bulkDelete}
+              onBulkStatusChange={bulkStatusChange}
+            />
 
             {loading ? (
               <div className="text-center py-8 text-gray-500">Cargando...</div>
@@ -756,9 +538,10 @@ export default function SoportesPage() {
                           field="code" 
                           value={support.code}
                           type="text"
+                          onSave={handleFieldSave}
                         />
                       </TableCell>
-                      <TableCell className="max-w-[40ch]">
+                      <TableCell className="max-w-[30ch]">
                         <EditableField 
                           support={support} 
                           field="title" 
@@ -766,6 +549,7 @@ export default function SoportesPage() {
                           type="text"
                           className="truncate"
                           title={support.title}
+                          onSave={handleFieldSave}
                         />
                       </TableCell>
                       <TableCell>
@@ -775,12 +559,16 @@ export default function SoportesPage() {
                           value={support.type}
                           type="select"
                           options={[...TYPE_OPTIONS]}
+                          onSave={handleFieldSave}
                         />
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1 text-sm">
                           <MapPin className="w-3 h-3" />
-                          <span className="text-gray-700 truncate max-w-[18ch]" title={`${support.city}, ${support.country}`}>
+                          <span 
+                            className="text-gray-700 truncate max-w-[18ch]"
+                            title={`${support.city}, ${support.country}`}
+                          >
                             {support.city}, {support.country}
                           </span>
                         </div>
@@ -794,6 +582,7 @@ export default function SoportesPage() {
                               value={support.widthM}
                               type="number"
                               isNumeric={true}
+                              onSave={handleFieldSave}
                             />
                             ×
                             <EditableField 
@@ -802,6 +591,7 @@ export default function SoportesPage() {
                               value={support.heightM}
                               type="number"
                               isNumeric={true}
+                              onSave={handleFieldSave}
                             />
                           </div>
                         </div>
@@ -815,6 +605,7 @@ export default function SoportesPage() {
                             value={support.priceMonth}
                             type="number"
                             isNumeric={true}
+                            onSave={handleFieldSave}
                           />
                         </div>
                       </TableCell>
@@ -825,6 +616,7 @@ export default function SoportesPage() {
                           value={support.status}
                           type="select"
                           options={Object.keys(STATUS_META)}
+                          onSave={handleFieldSave}
                         />
                       </TableCell>
                       <TableCell>
@@ -833,8 +625,9 @@ export default function SoportesPage() {
                           field="owner" 
                           value={support.owner}
                           type="text"
-                          className="truncate max-w-[15ch]"
+                          className="truncate max-w-[20ch]"
                           title={support.owner || ''}
+                          onSave={handleFieldSave}
                         />
                       </TableCell>
                       <TableCell>
@@ -843,17 +636,17 @@ export default function SoportesPage() {
                             variant="outline"
                             size="sm"
                             onClick={() => router.push(`/panel/soportes/${support.id}`)}
+                            title="Ver"
                           >
-                            <Eye className="w-3 h-3 mr-1" />
-                            Ver
+                            <Eye className="w-3 h-3" />
                           </Button>
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => router.push(`/panel/soportes/${support.id}`)}
+                            title="Editar"
                           >
-                            <Edit className="w-3 h-3 mr-1" />
-                            Editar
+                            <Edit className="w-3 h-3" />
                           </Button>
                           <Button
                             variant="outline"

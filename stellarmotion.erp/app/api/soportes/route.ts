@@ -228,6 +228,7 @@ export async function POST(req: Request) {
         rating: payload.rating ? parseFloat(payload.rating) : null,
         reviewsCount: payload.reviewsCount ? parseInt(payload.reviewsCount) : 0,
         printingCost: payload.printingCost ? parseFloat(payload.printingCost) : null,
+        images: payload.images || null, // Asegurar que se guarde el campo images
       }
     })
     

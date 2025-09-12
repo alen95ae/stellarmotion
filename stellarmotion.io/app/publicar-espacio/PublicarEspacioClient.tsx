@@ -11,7 +11,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
-import { useCategories } from '@/hooks/useCategories';
 import { Upload, MapPin, DollarSign, Ruler, Lightbulb, Pencil, Eye, Globe, Link, Hash } from 'lucide-react';
 
 interface FormData {
@@ -28,11 +27,10 @@ interface FormData {
   dailyImpressions: string;
   description: string;
   googleMapsLink: string;
-  categoryId: string;
 }
 
 const TYPES = [
-  'Bipolar',
+  'Parada de bus',
   'Mupi',
   'Valla',
   'Pantalla',
@@ -87,7 +85,6 @@ const CITIES_BY_COUNTRY: Record<string, string[]> = {
 export function PublicarEspacioClient() {
   const router = useRouter();
   const { toast } = useToast();
-  const { categories, loading: categoriesLoading } = useCategories();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [formData, setFormData] = useState<FormData>({
@@ -104,7 +101,6 @@ export function PublicarEspacioClient() {
     dailyImpressions: '',
     description: '',
     googleMapsLink: '',
-    categoryId: '',
   });
 
   const handleInputChange = (field: keyof FormData, value: string | boolean | File[]) => {
@@ -295,7 +291,6 @@ export function PublicarEspacioClient() {
       formDataToSend.append('dailyImpressions', formData.dailyImpressions || '0');
       formDataToSend.append('description', formData.description);
       formDataToSend.append('googleMapsLink', formData.googleMapsLink);
-      formDataToSend.append('categoryId', formData.categoryId === 'loading' ? '' : formData.categoryId);
       
       // Agregar coordenadas extraídas (si están disponibles)
       if (coordinates.lat !== null && coordinates.lng !== null) {
@@ -330,13 +325,22 @@ export function PublicarEspacioClient() {
 
       const result = await response.json();
       
+      console.log('Response from API:', result);
+      
       toast({
         title: "¡Éxito!",
         description: "Tu soporte ha sido publicado correctamente.",
       });
 
       // Redirigir a la página del producto creado
-      router.push(`/product/${result.slug}`);
+      if (result.product && result.product.slug) {
+        router.push(`/product/${result.product.slug}`);
+      } else if (result.slug) {
+        router.push(`/product/${result.slug}`);
+      } else {
+        // Si no hay slug, redirigir a la página de búsqueda
+        router.push('/buscar-un-espacio');
+      }
     } catch (error) {
       console.error('Error:', error);
       toast({
@@ -435,25 +439,6 @@ export function PublicarEspacioClient() {
                 </Select>
               </div>
 
-              <div>
-                <Label htmlFor="categoryId" className="block mb-2">Categoría</Label>
-                <Select value={formData.categoryId} onValueChange={(value) => handleInputChange('categoryId', value)}>
-                  <SelectTrigger className="bg-white">
-                    <SelectValue placeholder="Selecciona una categoría (opcional)" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white">
-                    {categoriesLoading ? (
-                      <SelectItem value="loading" disabled>Cargando categorías...</SelectItem>
-                    ) : (
-                      categories.map((category) => (
-                        <SelectItem key={category.id} value={category.slug}>
-                          {category.label}
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
               <div>
                 <Label htmlFor="code" className="block mb-2">Código</Label>
                 <div className="relative">
@@ -707,9 +692,16 @@ export function PublicarEspacioClient() {
           <Button
             type="submit"
             disabled={isSubmitting}
-            className="min-w-[120px] bg-[#D7514C] hover:bg-[#D7514C]/90 text-white"
+            className="min-w-[120px] bg-[#D7514C] hover:bg-[#D7514C]/90 text-white transition-all duration-200 transform hover:scale-105 active:scale-95"
           >
-            {isSubmitting ? 'Publicando...' : 'Publicar Espacio'}
+            {isSubmitting ? (
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                Publicando...
+              </div>
+            ) : (
+              'Publicar Espacio'
+            )}
           </Button>
         </div>
       </form>

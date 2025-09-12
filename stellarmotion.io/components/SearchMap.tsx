@@ -20,7 +20,7 @@ interface Product {
   country: string;
   latitude: number;
   longitude: number;
-  priceMonth: number;
+  pricePerMonth: number;
   featured: boolean;
 }
 
@@ -73,7 +73,7 @@ export default function SearchMap({ products, className = '', height = '500px' }
           <h3 class="font-semibold text-gray-900 text-sm mb-2">${product.title}</h3>
           <p class="text-gray-600 text-xs mb-2">${product.city}, ${product.country}</p>
           <div class="flex items-center justify-between mb-2">
-            <span class="text-lg font-bold text-rose-600">$${product.priceMonth}</span>
+            <span class="text-lg font-bold text-rose-600">$${product.pricePerMonth}</span>
             <span class="text-xs text-gray-500">/ mes</span>
           </div>
           <div class="flex items-center gap-2 mb-2">

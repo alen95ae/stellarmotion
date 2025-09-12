@@ -305,7 +305,7 @@ export default function SearchBar({ defaultKeywords = "", defaultLocation = "", 
             />
             {isLoadingSuggestions && (
               <div className="absolute right-12 top-1/2 transform -translate-y-1/2">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#D7514C]"></div>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#e94446]"></div>
               </div>
             )}
             <button

@@ -13,6 +13,10 @@ const config: Config = {
         'stellarmotion-red': '#D7514C',
         'stellarmotion-gray': '#282828',
       },
+      fontFamily: {
+        sans: ['var(--font-geist-sans)', 'system-ui', 'sans-serif'],
+        mono: ['var(--font-geist-mono)', 'monospace'],
+      },
     },
   },
   plugins: [],

@@ -139,6 +139,18 @@ export default function SoporteDetailPage() {
     }
   }, [id])
 
+  // Refrescar datos cuando se vuelve a la página (por ejemplo, desde la tabla)
+  useEffect(() => {
+    const handleFocus = () => {
+      if (id) {
+        fetchSupport()
+      }
+    }
+    
+    window.addEventListener('focus', handleFocus)
+    return () => window.removeEventListener('focus', handleFocus)
+  }, [id])
+
   const fetchSupport = async () => {
     try {
       setLoading(true)
@@ -150,7 +162,11 @@ export default function SoporteDetailPage() {
         let images: string[] = [];
         try {
           if (data.images) {
-            images = JSON.parse(data.images);
+            if (typeof data.images === 'string') {
+              images = JSON.parse(data.images);
+            } else if (Array.isArray(data.images)) {
+              images = data.images;
+            }
             if (!Array.isArray(images)) images = [];
           }
         } catch (e) {
@@ -158,13 +174,26 @@ export default function SoporteDetailPage() {
           images = [];
         }
 
-        // Si no hay imágenes en el array pero hay imageUrl, agregarlo
-        if (images.length === 0 && data.imageUrl) {
+        // Filtrar placeholders y URLs vacías
+        images = images.filter(img => 
+          img && 
+          img.trim() !== '' && 
+          !img.includes('placeholder.svg') && 
+          !img.includes('placeholder.jpg') &&
+          !img.includes('placeholder.png')
+        );
+
+        // Si no hay imágenes válidas en el array pero hay imageUrl válida, usarla
+        if (images.length === 0 && data.imageUrl && 
+            data.imageUrl.trim() !== '' && 
+            !data.imageUrl.includes('placeholder.svg') &&
+            !data.imageUrl.includes('placeholder.jpg') &&
+            !data.imageUrl.includes('placeholder.png')) {
           images = [data.imageUrl];
         }
 
         setFormData({
-          internalCode: data.code || "",
+          internalCode: String(data.code || ""),
           userCode: data.userCode || "",
           title: data.title || "",
           type: data.type || "",
@@ -206,7 +235,7 @@ export default function SoporteDetailPage() {
     const errors: string[] = [];
 
     // Verificar límite de 5 imágenes
-    const currentImageCount = formData.images.length;
+    const currentImageCount = formData.images?.length || 0;
     const remainingSlots = 5 - currentImageCount;
 
     if (files.length > remainingSlots) {
@@ -230,11 +259,7 @@ export default function SoporteDetailPage() {
     });
 
     if (errors.length > 0) {
-      toast({
-        title: "Error en archivos",
-        description: errors.join(', '),
-        variant: "destructive",
-      });
+      toast.error(errors.join(', '));
     }
 
     // Subir archivos válidos
@@ -251,11 +276,7 @@ export default function SoporteDetailPage() {
         }));
       } catch (error) {
         console.error('Error uploading image:', error);
-        toast({
-          title: "Error",
-          description: `Error al subir ${file.name}`,
-          variant: "destructive",
-        });
+        toast.error(`Error al subir ${file.name}`);
       }
     }
 
@@ -280,36 +301,14 @@ export default function SoporteDetailPage() {
   // Obtener ciudades del país seleccionado
   const availableCities = formData.country ? CITIES_BY_COUNTRY[formData.country] || [] : [];
 
-  // Función para convertir dígitos a número decimal
-  const numericFromDigits = (value: string): number => {
-    const cleaned = (value || '').replace(/[^\d]/g, '');
-    if (cleaned.length === 0) return 0;
-    
-    // Un dígito: tratarlo como 0.X (ej: "4" → 0.4)
-    if (cleaned.length === 1) {
-      return parseFloat(`0.${cleaned}`);
-    }
-    
-    // Múltiples dígitos: último dígito como decimal, resto como entero
-    const integerPart = cleaned.slice(0, -1);
-    const decimalPart = cleaned.slice(-1);
-    return parseFloat(`${integerPart}.${decimalPart}`);
-  };
-
-  // Función para formatear la visualización
-  const formatNumericInput = (value: string) => {
-    if (!value) return '';
-    const cleaned = value.replace(/[^\d]/g, '');
-    if (cleaned.length === 0) return '';
-    
-    const numericValue = numericFromDigits(cleaned);
-    return numericValue.toFixed(1);
-  };
-
-  // Handler para el input numérico
-  const handleNumericInputChange = (field: string, inputValue: string) => {
-    const cleaned = inputValue.replace(/[^\d]/g, ''); // Solo dígitos
-    handleChange(field, cleaned);
+  // Handler para inputs numéricos normales
+  const handleNumericChange = (field: string, value: string) => {
+    // Permitir solo números y un punto decimal
+    const cleaned = value.replace(/[^\d.]/g, '');
+    // Evitar múltiples puntos decimales
+    const parts = cleaned.split('.');
+    const finalValue = parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : cleaned;
+    handleChange(field, finalValue);
   };
 
   const handleSave = async () => {
@@ -321,13 +320,13 @@ export default function SoporteDetailPage() {
     setSaving(true)
     
     try {
-      // Convertir los valores numéricos del formato 00.0 a números para enviar al backend
+      // Convertir los valores numéricos a números para enviar al backend
       const dataToSend = {
         ...formData,
         code: formData.internalCode, // El API espera 'code' no 'internalCode'
-        priceMonth: formData.priceMonth ? numericFromDigits(formData.priceMonth) : null,
-        widthM: formData.widthM ? numericFromDigits(formData.widthM) : null,
-        heightM: formData.heightM ? numericFromDigits(formData.heightM) : null,
+        priceMonth: formData.priceMonth ? parseFloat(formData.priceMonth) : null,
+        widthM: formData.widthM ? parseFloat(formData.widthM) : null,
+        heightM: formData.heightM ? parseFloat(formData.heightM) : null,
         images: JSON.stringify(formData.images) // Convertir array a JSON string
       }
 
@@ -409,8 +408,6 @@ export default function SoporteDetailPage() {
     )
   }
 
-  const owner = formData.owner?.trim()
-  const ownerClass = owner ? 'bg-sky-700 text-white' : 'hidden'
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -476,7 +473,9 @@ export default function SoporteDetailPage() {
                       dailyImpressions: support.dailyImpressions?.toString() || "",
                       lighting: support.lighting || false,
                       owner: support.owner || "",
+                      featured: support.featured || false,
                       imageUrl: support.imageUrl || "",
+                      images: formData.images,
                       googleMapsLink: support.googleMapsLink || "",
                       description: support.description || "",
                       city: support.city || "",
@@ -575,7 +574,7 @@ export default function SoporteDetailPage() {
                       maxLength={500}
                     />
                     <p className="text-sm text-gray-500 mt-1">
-                      {formData.description.length}/500 caracteres
+                      {formData.description?.length || 0}/500 caracteres
                     </p>
                   </div>
 
@@ -606,11 +605,6 @@ export default function SoporteDetailPage() {
                       onChange={(e) => handleChange("owner", e.target.value)}
                       placeholder="Propietario del soporte"
                     />
-                    {owner && (
-                      <div className={`mt-2 inline-flex rounded-md px-3 py-1 text-sm pointer-events-none select-none ${ownerClass}`}>
-                        {owner}
-                      </div>
-                    )}
                   </div>
 
                   <div className="space-y-2">
@@ -715,10 +709,11 @@ export default function SoporteDetailPage() {
                       <Label htmlFor="widthM">Ancho (m)</Label>
                       <Input
                         id="widthM"
-                        type="text"
-                        value={formatNumericInput(formData.widthM)}
-                        onChange={(e) => handleNumericInputChange("widthM", e.target.value)}
-                        placeholder="00.0"
+                        type="number"
+                        step="0.1"
+                        value={formData.widthM}
+                        onChange={(e) => handleNumericChange("widthM", e.target.value)}
+                        placeholder="10.0"
                       />
                     </div>
                     
@@ -726,10 +721,11 @@ export default function SoporteDetailPage() {
                       <Label htmlFor="heightM">Alto (m)</Label>
                       <Input
                         id="heightM"
-                        type="text"
-                        value={formatNumericInput(formData.heightM)}
-                        onChange={(e) => handleNumericInputChange("heightM", e.target.value)}
-                        placeholder="00.0"
+                        type="number"
+                        step="0.1"
+                        value={formData.heightM}
+                        onChange={(e) => handleNumericChange("heightM", e.target.value)}
+                        placeholder="4.0"
                       />
                     </div>
                   </div>
@@ -762,7 +758,7 @@ export default function SoporteDetailPage() {
                     <div className="flex items-center justify-between">
                       <Label htmlFor="images">Imágenes del soporte</Label>
                       <span className="text-sm text-gray-500">
-                        {formData.images.length}/5 imágenes
+                        {formData.images?.length || 0}/5 imágenes
                       </span>
                     </div>
                     
@@ -774,7 +770,7 @@ export default function SoporteDetailPage() {
                         multiple
                         className="pl-10 w-full"
                         onChange={handleImageUpload}
-                        disabled={formData.images.length >= 5}
+                        disabled={(formData.images?.length || 0) >= 5}
                       />
                     </div>
                     
@@ -782,14 +778,18 @@ export default function SoporteDetailPage() {
                       Máximo 5 imágenes, 5MB por imagen. Formatos: JPG, PNG, GIF, WebP
                     </p>
 
-                    {formData.images.length > 0 && (
+                    {(formData.images?.length || 0) > 0 && (
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
-                        {formData.images.map((imageUrl, index) => (
+                        {(formData.images || []).map((imageUrl, index) => (
                           <div key={index} className="relative">
                             <img
                               src={imageUrl}
                               alt={`Preview ${index + 1}`}
                               className="w-full h-32 object-cover rounded-lg border"
+                              onError={(e) => {
+                                console.error('Error loading image:', imageUrl);
+                                (e.target as HTMLImageElement).style.display = 'none';
+                              }}
                             />
                             <Button
                               type="button"
@@ -838,16 +838,20 @@ export default function SoporteDetailPage() {
                     </div>
                   </div>
 
-                  {formData.images.length > 0 && (
+                  {(formData.images?.length || 0) > 0 && (
                     <div>
-                      <Label className="text-sm font-medium text-gray-700">Imágenes ({formData.images.length})</Label>
+                      <Label className="text-sm font-medium text-gray-700">Imágenes ({formData.images?.length || 0})</Label>
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-2">
-                        {formData.images.map((imageUrl, index) => (
+                        {(formData.images || []).map((imageUrl, index) => (
                           <div key={index} className="relative">
                             <img
                               src={imageUrl}
                               alt={`Imagen ${index + 1} del soporte`}
                               className="w-full h-32 object-cover rounded-md border"
+                              onError={(e) => {
+                                console.error('Error loading image:', imageUrl);
+                                (e.target as HTMLImageElement).style.display = 'none';
+                              }}
                             />
                           </div>
                         ))}
@@ -976,10 +980,11 @@ export default function SoporteDetailPage() {
                   <Label htmlFor="priceMonth">Precio por Mes (€)</Label>
                   <Input
                     id="priceMonth"
-                    type="text"
-                    value={formatNumericInput(formData.priceMonth)}
-                    onChange={(e) => handleNumericInputChange("priceMonth", e.target.value)}
-                    placeholder="00.0"
+                    type="number"
+                    step="0.01"
+                    value={formData.priceMonth}
+                    onChange={(e) => handleNumericChange("priceMonth", e.target.value)}
+                    placeholder="150.00"
                   />
                 </div>
               ) : (

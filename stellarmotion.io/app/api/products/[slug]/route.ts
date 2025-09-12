@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { API_ENDPOINTS, fetchFromERP } from "@/lib/api-config";
+import { API_ENDPOINTS, fetchFromERP, API_BASE_URL } from "@/lib/api-config";
 
 export async function GET(
   request: NextRequest,
@@ -37,12 +37,25 @@ export async function GET(
       images = [];
     }
     
-    // Si no hay imágenes en el array pero hay imageUrl, agregarlo
-    if (images.length === 0 && support.imageUrl) {
+    // Filtrar placeholders y URLs vacías
+    images = images.filter(img => 
+      img && 
+      img.trim() !== '' && 
+      !img.includes('placeholder.svg') && 
+      !img.includes('placeholder.jpg') &&
+      !img.includes('placeholder.png')
+    );
+    
+    // Si no hay imágenes válidas en el array pero hay imageUrl válida, usarla
+    if (images.length === 0 && support.imageUrl && 
+        support.imageUrl.trim() !== '' && 
+        !support.imageUrl.includes('placeholder.svg') &&
+        !support.imageUrl.includes('placeholder.jpg') &&
+        !support.imageUrl.includes('placeholder.png')) {
       // Convertir la URL relativa a una URL absoluta del backend
       const imageUrl = support.imageUrl.startsWith('http') 
         ? support.imageUrl 
-        : `http://localhost:3000${support.imageUrl}`;
+        : `${API_BASE_URL}${support.imageUrl}`;
       images = [imageUrl];
     }
 

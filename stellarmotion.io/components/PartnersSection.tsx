@@ -124,7 +124,7 @@ export default function PartnersSection() {
   return (
     <section className="py-16">
       <div className="text-center mb-10">
-        <div className="w-12 h-1 bg-[#D54644] mx-auto mb-4" />
+        <div className="w-12 h-1 bg-[#e94446] mx-auto mb-4" />
         <h2 className="text-3xl font-bold text-slate-900">Nuestros partners</h2>
         <p className="mt-2 text-slate-600">Operadores verificados de soportes publicitarios.</p>
       </div>
@@ -150,7 +150,7 @@ export default function PartnersSection() {
           {partners.map((p) => (
             <article
               key={p.id}
-              className="flex-shrink-0 snap-start lg:w-1/3 md:w-1/2 w-[85%] relative rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md transition-all hover:border-[#D54644] focus:ring-2 focus:ring-[#D54644] focus:outline-none"
+              className="flex-shrink-0 snap-start lg:w-1/3 md:w-1/2 w-[85%] relative rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md transition-all hover:border-[#e94446] focus:ring-2 focus:ring-[#e94446] focus:outline-none"
               aria-label={`Abrir partner ${p.name}`}
               tabIndex={0}
             >
@@ -223,7 +223,7 @@ export default function PartnersSection() {
       <div className="text-center mt-8">
         <a
           href="/propietarios"
-          className="inline-flex items-center text-[#D54644] hover:text-[#c23d3b] font-medium transition-colors"
+          className="inline-flex items-center text-[#e94446] hover:text-[#d63a3a] font-medium transition-colors"
         >
           Ver más propietarios
           <ChevronRight className="w-4 h-4 ml-1" />

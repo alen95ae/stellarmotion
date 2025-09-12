@@ -90,28 +90,15 @@ export default function NuevoSoportePage() {
 
   const availableCities = formData.country ? CITIES_BY_COUNTRY[formData.country] || [] : []
 
-  // Numérico con desplazamiento de dígitos y 1 decimal
-  const numericFromDigits = (value: string): number => {
-    const cleaned = (value || '').replace(/[^\d]/g, '')
-    if (cleaned.length === 0) return 0
-    if (cleaned.length === 1) return parseFloat(`0.${cleaned}`)
-    const integerPart = cleaned.slice(0, -1)
-    const decimalPart = cleaned.slice(-1)
-    return parseFloat(`${integerPart}.${decimalPart}`)
-  }
-
-  const formatNumericInput = (value: string) => {
-    if (!value) return ''
-    const cleaned = value.replace(/[^\d]/g, '')
-    if (cleaned.length === 0) return ''
-    const numericValue = numericFromDigits(cleaned)
-    return numericValue.toFixed(1)
-  }
-
-  const handleNumericInputChange = (field: string, inputValue: string) => {
-    const cleaned = inputValue.replace(/[^\d]/g, '')
-    handleChange(field, cleaned)
-  }
+  // Handler para inputs numéricos normales
+  const handleNumericChange = (field: string, value: string) => {
+    // Permitir solo números y un punto decimal
+    const cleaned = value.replace(/[^\d.]/g, '');
+    // Evitar múltiples puntos decimales
+    const parts = cleaned.split('.');
+    const finalValue = parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : cleaned;
+    handleChange(field, finalValue);
+  };
 
   // Función para manejar la subida de múltiples imágenes
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -198,8 +185,8 @@ export default function NuevoSoportePage() {
         title: formData.title,
         type: formData.type,
         status: formData.status,
-        widthM: formData.widthM ? numericFromDigits(formData.widthM).toString() : "",
-        heightM: formData.heightM ? numericFromDigits(formData.heightM).toString() : "",
+        widthM: formData.widthM ? parseFloat(formData.widthM) : null,
+        heightM: formData.heightM ? parseFloat(formData.heightM) : null,
         dailyImpressions: formData.dailyImpressions,
         lighting: formData.lighting,
         owner: formData.owner,
@@ -208,7 +195,7 @@ export default function NuevoSoportePage() {
         description: formData.description,
         city: formData.city,
         country: formData.country,
-        priceMonth: formData.priceMonth ? numericFromDigits(formData.priceMonth).toString() : ""
+        priceMonth: formData.priceMonth ? parseFloat(formData.priceMonth) : null
       }
 
       console.log("Datos a enviar para crear:", dataToSend)
@@ -239,8 +226,6 @@ export default function NuevoSoportePage() {
     }
   }
 
-  const owner = formData.owner?.trim()
-  const ownerClass = owner ? 'bg-sky-700 text-white' : 'hidden'
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -352,11 +337,6 @@ export default function NuevoSoportePage() {
                   onChange={(e) => handleChange('owner', e.target.value)}
                   placeholder="Propietario del soporte"
                 />
-                {owner && (
-                  <div className={`mt-2 inline-flex rounded-md px-3 py-1 text-sm pointer-events-none select-none ${ownerClass}`}>
-                    {owner}
-                  </div>
-                )}
               </div>
 
             </CardContent>
@@ -390,10 +370,11 @@ export default function NuevoSoportePage() {
                   <Label htmlFor="widthM">Ancho (m)</Label>
                   <Input
                     id="widthM"
-                    type="text"
-                    value={formatNumericInput(formData.widthM)}
-                    onChange={(e) => handleNumericInputChange('widthM', e.target.value)}
-                    placeholder="00.0"
+                    type="number"
+                    step="0.1"
+                    value={formData.widthM}
+                    onChange={(e) => handleNumericChange('widthM', e.target.value)}
+                    placeholder="10.0"
                   />
                 </div>
                 
@@ -401,10 +382,11 @@ export default function NuevoSoportePage() {
                   <Label htmlFor="heightM">Alto (m)</Label>
                   <Input
                     id="heightM"
-                    type="text"
-                    value={formatNumericInput(formData.heightM)}
-                    onChange={(e) => handleNumericInputChange('heightM', e.target.value)}
-                    placeholder="00.0"
+                    type="number"
+                    step="0.1"
+                    value={formData.heightM}
+                    onChange={(e) => handleNumericChange('heightM', e.target.value)}
+                    placeholder="4.0"
                   />
                 </div>
               </div>
@@ -465,6 +447,10 @@ export default function NuevoSoportePage() {
                           src={imageUrl}
                           alt={`Preview ${index + 1}`}
                           className="w-full h-32 object-cover rounded-lg border"
+                          onError={(e) => {
+                            console.error('Error loading image:', imageUrl);
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
                         />
                         <Button
                           type="button"
@@ -565,10 +551,11 @@ export default function NuevoSoportePage() {
                 <Label htmlFor="priceMonth">Precio por Mes (€)</Label>
                 <Input
                   id="priceMonth"
-                  type="text"
-                  value={formatNumericInput(formData.priceMonth)}
-                  onChange={(e) => handleNumericInputChange('priceMonth', e.target.value)}
-                  placeholder="00.0"
+                  type="number"
+                  step="0.01"
+                  value={formData.priceMonth}
+                  onChange={(e) => handleNumericChange('priceMonth', e.target.value)}
+                  placeholder="150.00"
                 />
               </div>
             </CardContent>

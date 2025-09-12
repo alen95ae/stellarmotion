@@ -120,7 +120,7 @@ export default function HomeClient() {
         <section className="mb-16">
           <div className="text-center mb-12">
             <div className="inline-block">
-              <div className="w-12 h-1 bg-[#D7514C] mx-auto mb-4"></div>
+              <div className="w-12 h-1 bg-[#e94446] mx-auto mb-4"></div>
               <h2 className="text-3xl font-bold text-gray-900 mb-2">Categorías</h2>
               <p className="text-gray-600">Explora las categorías mas populares.</p>
             </div>
@@ -184,7 +184,7 @@ export default function HomeClient() {
         <section className="mb-16">
           <div className="text-center mb-12">
             <div className="inline-block">
-              <div className="w-12 h-1 bg-[#D7514C] mx-auto mb-4"></div>
+              <div className="w-12 h-1 bg-[#e94446] mx-auto mb-4"></div>
               <h2 className="text-3xl font-bold text-gray-900 mb-2">Cómo funciona</h2>
               <p className="text-gray-600">Descubre cómo StellarMotion simplifica la publicidad exterior</p>
             </div>
@@ -258,7 +258,7 @@ export default function HomeClient() {
         <section className="mb-16">
           <div className="text-center mb-12">
             <div className="inline-block">
-              <div className="w-12 h-1 bg-[#D7514C] mx-auto mb-4"></div>
+              <div className="w-12 h-1 bg-[#e94446] mx-auto mb-4"></div>
               <h2 className="text-3xl font-bold text-gray-900 mb-2">Espacios destacados</h2>
               <p className="text-gray-600">Consulta nuestros soportes publicitarios más valorados y con mayor alcance.</p>
             </div>
@@ -316,7 +316,7 @@ export default function HomeClient() {
                     />
                     <div className="absolute top-3 left-3 flex flex-col gap-2">
                       {product.featured && (
-                        <span className="bg-[#D7514C] text-white text-xs font-medium px-2 py-1 rounded-full">
+                        <span className="bg-[#e94446] text-white text-xs font-medium px-2 py-1 rounded-full">
                           Destacado
                         </span>
                       )}
@@ -388,10 +388,10 @@ export default function HomeClient() {
                   
                     <div className="flex items-center justify-between">
                       <div>
-                        <span className="text-2xl font-bold text-rose-600">${product.pricePerMonth || product.priceMonth || 0}</span>
+                        <span className="text-2xl font-bold text-[#e94446]">${product.pricePerMonth || product.priceMonth || 0}</span>
                         <span className="text-gray-600 text-sm"> / mes</span>
                       </div>
-                      <div className="px-4 py-2 rounded-lg text-sm bg-[#D7514C] text-white font-medium">
+                      <div className="px-4 py-2 rounded-lg text-sm bg-[#e94446] text-white font-medium">
                         Ver detalles
                       </div>
                     </div>

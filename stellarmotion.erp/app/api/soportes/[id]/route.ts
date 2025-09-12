@@ -95,7 +95,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     console.log("API PUT - Payload normalizado:", payload)
     
     const allowedKeys = [
-      'code','title','type','status','owner','imageUrl','description','city','country','lighting','available','slug','categoryId','featured',
+      'code','title','type','status','owner','imageUrl','images','description','city','country','lighting','available','slug','categoryId','featured',
       // numéricas/casteadas
       'priceMonth','widthM','heightM','latitude','longitude','pricePerM2','areaM2','productionCost','dailyImpressions','printingCost','rating','reviewsCount'
     ] as const
