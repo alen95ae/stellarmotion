@@ -19,7 +19,11 @@ Plataforma completa de gestión de espacios publicitarios y reservas con panel d
    NEXT_PUBLIC_SUPABASE_ANON_KEY="tu-anon-key"
    
    # Base de Datos
-   DATABASE_URL="postgresql://usuario:password@localhost:5432/stellarmotion"
+   # Desarrollo local (SQLite)
+   DATABASE_URL="file:./dev.db"
+
+   # Producción (Supabase Postgres)
+   # DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE"
    
    # Opcional
    GOOGLE_MAPS_SERVER_KEY="tu-server-key-para-web-services"
@@ -87,6 +91,10 @@ Plataforma completa de gestión de espacios publicitarios y reservas con panel d
    - Conecta tu repositorio de GitHub
    - Configura las variables de entorno
    - Deploy automático en cada push
+
+   Nota sobre base de datos en Vercel:
+   - En Vercel, configura `DATABASE_URL` con la URL de conexión de Supabase (PostgreSQL) desde el panel de Supabase.
+   - En desarrollo local, puedes usar SQLite con `DATABASE_URL="file:./dev.db"` para no depender de servicios externos.
 
 ### Variables de Entorno
 
