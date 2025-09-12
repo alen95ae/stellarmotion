@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server'
-import { put } from '@vercel/blob'
-import { readdirSync, mkdirSync, writeFileSync } from 'fs'
-import { join } from 'path'
+import { createClient } from '@supabase/supabase-js'
 
 export async function POST(req: Request) {
   try {
@@ -9,38 +7,46 @@ export async function POST(req: Request) {
     const file = form.get('file') as File | null
     if (!file) return NextResponse.json({ error: 'Archivo requerido' }, { status: 400 })
 
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+    if (!url || !serviceKey) {
+      return NextResponse.json({ 
+        error: 'Configuración de Supabase faltante. Verifica NEXT_PUBLIC_SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY' 
+      }, { status: 500 })
+    }
+
+    // Validar tipo de archivo
+    if (!file.type.startsWith('image/')) {
+      return NextResponse.json({ error: 'Solo se permiten archivos de imagen' }, { status: 400 })
+    }
+
+    // Validar tamaño (máximo 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      return NextResponse.json({ error: 'El archivo es demasiado grande (máximo 10MB)' }, { status: 400 })
+    }
+
     const ext = (file.name.split('.').pop() || 'jpg').toLowerCase()
-    const name = `support_${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+    const objectPath = `uploads/${Date.now()}-${safeName}`
+
+    const supabase = createClient(url, serviceKey)
     const arrayBuffer = await file.arrayBuffer()
 
-    // Intentar usar Vercel Blob si está configurado
-    if (process.env.BLOB_READ_WRITE_TOKEN) {
-      try {
-        const blob = await put(name, new Uint8Array(arrayBuffer), {
-          access: 'public',
-          addRandomSuffix: false,
-          token: process.env.BLOB_READ_WRITE_TOKEN,
-        })
-        return NextResponse.json({ url: blob.url })
-      } catch (blobError) {
-        console.error('Vercel Blob error, falling back to local storage:', blobError)
-      }
+    const { error: uploadError } = await supabase.storage
+      .from('soportes')
+      .upload(objectPath, arrayBuffer, {
+        contentType: file.type,
+        upsert: false,
+      })
+
+    if (uploadError) {
+      console.error('Supabase upload error:', uploadError)
+      return NextResponse.json({ error: uploadError.message }, { status: 500 })
     }
 
-    // Fallback a sistema de archivos local
-    const bytes = Buffer.from(arrayBuffer)
-    const dir = join(process.cwd(), 'public', 'uploads')
-    
-    try { 
-      readdirSync(dir) 
-    } catch { 
-      mkdirSync(dir, { recursive: true }) 
-    }
-    
-    const rel = `/uploads/${name}`
-    writeFileSync(join(dir, name), bytes)
-    
-    return NextResponse.json({ url: rel })
+    const { data: pub } = supabase.storage.from('soportes').getPublicUrl(objectPath)
+    return NextResponse.json({ url: pub.publicUrl })
   } catch (error) {
     console.error('Error uploading file:', error)
     return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 })

@@ -1,0 +1,14 @@
+{
+  "name": "stellarmotion-root",
+  "private": true,
+  "scripts": {
+    "install:erp": "cd stellarmotion.erp && npm install",
+    "install:web": "cd stellarmotion.io && npm install",
+    "dev:erp": "cd stellarmotion.erp && npm run dev",
+    "dev:web": "cd stellarmotion.io && npm run dev",
+    "dev:all": "npm-run-all --parallel dev:erp dev:web"
+  },
+  "devDependencies": {
+    "npm-run-all": "^4.1.5"
+  }
+}

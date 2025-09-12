@@ -11,9 +11,6 @@
     "db:studio": "prisma studio",
     "db:reset": "rm -rf prisma/migrations prisma/dev.db* && npx prisma migrate dev --name init"
   },
-  "prisma": {
-    "seed": "npx ts-node prisma/seed.ts"
-  },
   "dependencies": {
     "@auth/prisma-adapter": "^2.10.0",
     "@hookform/resolvers": "^3.10.0",
@@ -50,6 +47,7 @@
     "@vercel/blob": "^1.1.1",
     "@vercel/speed-insights": "^1.2.0",
     "bcryptjs": "^3.0.2",
+    "better-sqlite3": "^12.2.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "1.0.4",
@@ -75,15 +73,17 @@
     "sonner": "^1.7.4",
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",
-    "vaul": "^0.9.9",
+    "vaul": "^0.10.0",
     "zod": "3.25.67"
+
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "dotenv": "^16.4.5",
     "autoprefixer": "^10.4.21",
+    "dotenv": "^16.4.5",
     "postcss": "^8.5.6",
     "prisma": "^6.15.0",
     "tailwindcss": "^3.4.17",
@@ -92,3 +92,4 @@
     "typescript": "^5"
   }
 }
+    "formidable": "^3.5.3",

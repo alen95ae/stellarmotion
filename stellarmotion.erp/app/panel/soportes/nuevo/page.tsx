@@ -142,9 +142,10 @@ export default function NuevoSoportePage() {
     // Subir archivos válidos
     for (const file of validFiles) {
       try {
-        const formData = new FormData();
-        formData.append('file', file);
-        const response = await fetch('/api/uploads', { method: 'POST', body: formData });
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('filename', file.name);
+        const response = await fetch('/api/uploads', { method: 'POST', body: fd });
         const { url } = await response.json();
         
         setFormData(prev => ({

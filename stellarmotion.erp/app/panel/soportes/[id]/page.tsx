@@ -244,9 +244,9 @@ export default function SoporteDetailPage() {
     }
 
     files.slice(0, remainingSlots).forEach(file => {
-      // Validar tamaño (máximo 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        errors.push(`${file.name} es demasiado grande (máximo 5MB)`);
+      // Validar tamaño (máximo 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        errors.push(`${file.name} es demasiado grande (máximo 10MB)`);
         return;
       }
 
@@ -266,21 +266,22 @@ export default function SoporteDetailPage() {
     // Subir archivos válidos
     for (const file of validFiles) {
       try {
-        const formData = new FormData();
-        formData.append('file', file);
-        const response = await fetch('/api/uploads', { method: 'POST', body: formData });
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('filename', file.name);
+        const response = await fetch('/api/upload', { method: 'POST', body: fd });
 
         if (!response.ok) {
           throw new Error(`Upload failed with status ${response.status}`);
         }
 
         const data = await response.json();
-        const url = data?.url || data?.blob?.url;
+        const url = data?.url;
         if (!url) throw new Error('Upload response missing url');
 
         setFormData(prev => ({
           ...prev,
-          images: [...prev.images, url]
+          images: [...(prev.images || []), url]
         }));
       } catch (error) {
         console.error('Error uploading image:', error);
@@ -783,7 +784,7 @@ export default function SoporteDetailPage() {
                     </div>
                     
                     <p className="text-sm text-gray-500">
-                      Máximo 5 imágenes, 5MB por imagen. Formatos: JPG, PNG, GIF, WebP
+                      Máximo 5 imágenes, 10MB por imagen. Formatos: JPG, PNG, GIF, WebP
                     </p>
 
                     {(formData.images?.length || 0) > 0 && (

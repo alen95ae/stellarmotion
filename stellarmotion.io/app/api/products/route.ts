@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { API_ENDPOINTS, fetchFromERP, API_BASE_URL } from "@/lib/api-config";
-import { writeFile } from 'fs/promises';
-import { join } from 'path';
+// Subida de imágenes: delegamos al backend ERP /api/upload (Supabase Storage)
 
 // Función para extraer coordenadas del enlace de Google Maps
 const extractCoordinatesFromGoogleMapsLink = (link: string): { lat: number | null, lng: number | null } => {
@@ -221,7 +220,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Guardar imágenes en el sistema de archivos del frontend
+    // Subir imágenes a Supabase Storage a través del backend ERP
     for (const imageFile of imageFiles) {
       if (imageFile.size > 0) {
         // Validar tamaño de archivo (máximo 5MB)
@@ -236,20 +235,21 @@ export async function POST(request: NextRequest) {
           continue;
         }
 
-        const bytes = await imageFile.arrayBuffer();
-        const buffer = Buffer.from(bytes);
-        
-        // Crear nombre único para la imagen
-        const timestamp = Date.now();
-        const sanitizedName = imageFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-        const filename = `support_${timestamp}_${sanitizedName}`;
-        const path = join(process.cwd(), 'public', 'uploads', filename);
-        
         try {
-          await writeFile(path, buffer);
-          imageUrls.push(`/uploads/${filename}`);
+          const fd = new FormData();
+          fd.append('file', imageFile, imageFile.name);
+          fd.append('filename', imageFile.name);
+          const up = await fetch(`${API_BASE_URL}/api/upload`, { method: 'POST', body: fd });
+          if (!up.ok) {
+            const msg = await up.text().catch(() => 'upload failed')
+            console.warn('Upload failed:', msg)
+            continue;
+          }
+          const data = await up.json().catch(() => ({} as any));
+          const url = data?.url as string | undefined;
+          if (url) imageUrls.push(url);
         } catch (error) {
-          console.error('Error saving image:', error);
+          console.error('Error uploading image to ERP:', error);
           // Continuar con las otras imágenes aunque una falle
         }
       }

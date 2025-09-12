@@ -4,7 +4,7 @@ import { createClient } from "@supabase/supabase-js"
 // Este cliente usa la Service Role Key y SOLO debe usarse en el backend (API routes, server actions).
 // Nunca importarlo en código que pueda ejecutarse en el cliente.
 
-const url = process.env.SUPABASE_URL
+const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
 const serviceRole = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 if (!url || !serviceRole) {
