@@ -213,9 +213,38 @@ export async function POST(req: Request) {
     
     const payload = await normalizeSupportInput(data)
     
+    // Normalizar imageUrl: si es una ruta local, asegurar que empiece con /
+    let normalizedImageUrl = payload.imageUrl
+    if (normalizedImageUrl && !normalizedImageUrl.startsWith('http') && !normalizedImageUrl.startsWith('/')) {
+      normalizedImageUrl = `/${normalizedImageUrl}`
+    }
+    
+    // Normalizar images: procesar array de imágenes
+    let normalizedImages = payload.images
+    if (normalizedImages) {
+      if (typeof normalizedImages === 'string') {
+        try {
+          normalizedImages = JSON.parse(normalizedImages)
+        } catch (e) {
+          console.warn('Error parsing images JSON:', e)
+          normalizedImages = []
+        }
+      }
+      if (Array.isArray(normalizedImages)) {
+        normalizedImages = normalizedImages.map(img => {
+          if (img && !img.startsWith('http') && !img.startsWith('/')) {
+            return `/${img}`
+          }
+          return img
+        }).filter(Boolean)
+      }
+    }
+    
     const created = await prisma.support.create({ 
       data: {
         ...payload,
+        imageUrl: normalizedImageUrl || null,
+        images: normalizedImages ? JSON.stringify(normalizedImages) : null,
         priceMonth: payload.priceMonth ? parseFloat(payload.priceMonth) : null,
         widthM: payload.widthM ? parseFloat(payload.widthM) : null,
         heightM: payload.heightM ? parseFloat(payload.heightM) : null,
@@ -228,7 +257,6 @@ export async function POST(req: Request) {
         rating: payload.rating ? parseFloat(payload.rating) : null,
         reviewsCount: payload.reviewsCount ? parseInt(payload.reviewsCount) : 0,
         printingCost: payload.printingCost ? parseFloat(payload.printingCost) : null,
-        images: payload.images || null, // Asegurar que se guarde el campo images
       }
     })
     

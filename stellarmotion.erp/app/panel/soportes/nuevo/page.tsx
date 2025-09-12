@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ArrowLeft, Save, MapPin, Hash, Link as LinkIcon, Upload } from "lucide-react"
 import { toast } from "sonner"
+import SupportImage from "@/components/SupportImage"
 
 // Constantes coherentes con la página de edición
 const TYPE_OPTIONS = [
@@ -443,14 +444,10 @@ export default function NuevoSoportePage() {
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
                     {formData.images.map((imageUrl, index) => (
                       <div key={index} className="relative">
-                        <img
+                        <SupportImage
                           src={imageUrl}
                           alt={`Preview ${index + 1}`}
                           className="w-full h-32 object-cover rounded-lg border"
-                          onError={(e) => {
-                            console.error('Error loading image:', imageUrl);
-                            (e.target as HTMLImageElement).style.display = 'none';
-                          }}
                         />
                         <Button
                           type="button"

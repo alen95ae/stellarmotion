@@ -94,8 +94,35 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     const payload = await normalizeSupportInput(data, existing)
     console.log("API PUT - Payload normalizado:", payload)
     
+    // Normalizar imageUrl: si es una ruta local, asegurar que empiece con /
+    let normalizedImageUrl = payload.imageUrl
+    if (normalizedImageUrl && !normalizedImageUrl.startsWith('http') && !normalizedImageUrl.startsWith('/')) {
+      normalizedImageUrl = `/${normalizedImageUrl}`
+    }
+    
+    // Normalizar images: procesar array de imágenes
+    let normalizedImages = payload.images
+    if (normalizedImages) {
+      if (typeof normalizedImages === 'string') {
+        try {
+          normalizedImages = JSON.parse(normalizedImages)
+        } catch (e) {
+          console.warn('Error parsing images JSON:', e)
+          normalizedImages = []
+        }
+      }
+      if (Array.isArray(normalizedImages)) {
+        normalizedImages = normalizedImages.map(img => {
+          if (img && !img.startsWith('http') && !img.startsWith('/')) {
+            return `/${img}`
+          }
+          return img
+        }).filter(Boolean)
+      }
+    }
+    
     const allowedKeys = [
-      'code','title','type','status','owner','imageUrl','images','description','city','country','lighting','available','slug','categoryId','featured',
+      'code','title','type','status','owner','description','city','country','lighting','available','slug','categoryId','featured',
       // numéricas/casteadas
       'priceMonth','widthM','heightM','latitude','longitude','pricePerM2','areaM2','productionCost','dailyImpressions','printingCost','rating','reviewsCount'
     ] as const
@@ -107,6 +134,8 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
     const updateData = {
       ...base,
+      imageUrl: normalizedImageUrl !== undefined ? normalizedImageUrl : base.imageUrl,
+      images: normalizedImages !== undefined ? JSON.stringify(normalizedImages) : base.images,
       priceMonth: base.priceMonth !== undefined ? parseFloat(base.priceMonth) : null,
       widthM: base.widthM !== undefined ? parseFloat(base.widthM) : null,
       heightM: base.heightM !== undefined ? parseFloat(base.heightM) : null,

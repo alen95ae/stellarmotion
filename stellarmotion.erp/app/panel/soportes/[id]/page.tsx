@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { ArrowLeft, Save, MapPin, Trash2, Edit, Eye, Calculator, Hash, Link as LinkIcon, Upload, Globe } from "lucide-react"
 import { toast } from "sonner"
+import SupportImage from "@/components/SupportImage"
 
 // Constantes para selects y colores
 const TYPE_OPTIONS = [
@@ -782,14 +783,10 @@ export default function SoporteDetailPage() {
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
                         {(formData.images || []).map((imageUrl, index) => (
                           <div key={index} className="relative">
-                            <img
+                            <SupportImage
                               src={imageUrl}
                               alt={`Preview ${index + 1}`}
                               className="w-full h-32 object-cover rounded-lg border"
-                              onError={(e) => {
-                                console.error('Error loading image:', imageUrl);
-                                (e.target as HTMLImageElement).style.display = 'none';
-                              }}
                             />
                             <Button
                               type="button"
@@ -844,14 +841,10 @@ export default function SoporteDetailPage() {
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-2">
                         {(formData.images || []).map((imageUrl, index) => (
                           <div key={index} className="relative">
-                            <img
+                            <SupportImage
                               src={imageUrl}
                               alt={`Imagen ${index + 1} del soporte`}
                               className="w-full h-32 object-cover rounded-md border"
-                              onError={(e) => {
-                                console.error('Error loading image:', imageUrl);
-                                (e.target as HTMLImageElement).style.display = 'none';
-                              }}
                             />
                           </div>
                         ))}
