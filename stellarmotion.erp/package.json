@@ -73,9 +73,10 @@
     "sonner": "^1.7.4",
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",
-    "vaul": "^0.10.0",
-    "zod": "3.25.67"
-
+    "vaul": "^0.9.0",
+    "zod": "3.25.67",
+    "@supabase/supabase-js": "^2.39.0",
+    "formidable": "^3.5.3"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
@@ -92,4 +93,3 @@
     "typescript": "^5"
   }
 }
-    "formidable": "^3.5.3",

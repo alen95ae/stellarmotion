@@ -269,7 +269,7 @@ export default function SoporteDetailPage() {
         const fd = new FormData();
         fd.append('file', file);
         fd.append('filename', file.name);
-        const response = await fetch('/api/upload', { method: 'POST', body: fd });
+        const response = await fetch('/api/uploads', { method: 'POST', body: fd });
 
         if (!response.ok) {
           throw new Error(`Upload failed with status ${response.status}`);
