@@ -78,15 +78,15 @@ export default function DashboardPage() {
       }
     },
     {
-      id: 'empresas',
-      name: 'Empresas',
+      id: 'partners',
+      name: 'Partners',
       icon: Building2,
       value: 45,
-      route: '/panel/empresas',
+      route: '/panel/partners',
       metrics: {
         total: 45,
         growth: 3.2,
-        description: 'Gestión de empresas y sucursales'
+        description: 'Gestión de partners asociados'
       }
     },
     {

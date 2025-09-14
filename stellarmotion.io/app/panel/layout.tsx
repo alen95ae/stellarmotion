@@ -39,8 +39,8 @@ export default function PanelLayout({
 }) {
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Sidebar */}
-      <div className="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg">
+      {/* Sidebar - se detiene justo antes del header (top-16 = 64px = altura del header) */}
+      <div className="fixed top-16 left-0 bottom-0 z-40 w-64 bg-white shadow-lg">
         <div className="flex h-16 items-center justify-center border-b border-gray-200">
           <Link href="/" className="text-xl font-bold text-gray-900">
             StellarMotion
@@ -62,8 +62,8 @@ export default function PanelLayout({
         </nav>
       </div>
 
-      {/* Main content */}
-      <div className="pl-64">
+      {/* Main content - ajustado para el header y sidebar */}
+      <div className="pl-64 pt-16">
         <main className="py-6">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             {children}

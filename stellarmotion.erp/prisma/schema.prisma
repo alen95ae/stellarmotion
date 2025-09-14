@@ -38,14 +38,17 @@ enum SupportStatus {
 }
 
 model User {
-  id        String    @id @default(cuid())
-  email     String    @unique
-  name      String?
-  password  String
-  role      Role      @default(OPERATOR)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  contacts  Contact[]
+  id         String    @id @default(cuid())
+  email      String    @unique
+  name       String?
+  password   String
+  role       Role      @default(OPERATOR)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  contacts   Contact[]
+  // Relación con Partner
+  partnerId  String?
+  partner    Partner?  @relation(fields: [partnerId], references: [id])
 }
 
 model Company {
@@ -94,6 +97,9 @@ model Support {
   owner                  String?
   imageUrl               String? // URL pública de la imagen del soporte
   companyId              String?
+  // Relación con Partner
+  partnerId              String?
+  partner                Partner?      @relation(fields: [partnerId], references: [id])
   
   // Campos adicionales para web pública (compatibilidad con Product)
   dimensions             String?       // Dimensiones como string (ej: "3x4m")
@@ -116,6 +122,20 @@ model Support {
   category               Category?     @relation(fields: [categoryId], references: [id])
 
   @@map("soportes")
+}
+
+// Nuevo módulo de Partners (reemplaza nomenclatura "empresas" a nivel de negocio)
+model Partner {
+  id          String    @id @default(cuid())
+  name        String
+  email       String    @unique
+  phone       String?
+  companyName String?
+  country     String
+  city        String?
+  supports    Support[]
+  users       User[]
+  createdAt   DateTime  @default(now())
 }
 
 model Reservation {

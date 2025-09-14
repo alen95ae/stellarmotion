@@ -7,7 +7,6 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { PartnersSection } from "@/components/PartnersSection"
 import SearchBar from "@/components/SearchBar"
-import { useCategories } from "@/hooks/useCategories"
 import { CATEGORIES } from "@/lib/categories"
 import CategoryIcon from "@/components/CategoryIcon"
 // Los productos destacados se cargarán dinámicamente desde la API
@@ -15,7 +14,8 @@ import CategoryIcon from "@/components/CategoryIcon"
 export default function HomeClient() {
   const router = useRouter()
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
-  const { categories, loading, error: categoriesError } = useCategories()
+  // Mostrar SIEMPRE las 8 categorías originales del carrusel
+  const categoryList = CATEGORIES
   const [featuredSpaces, setFeaturedSpaces] = useState<any[]>([])
   const [loadingFeatured, setLoadingFeatured] = useState(true)
   const carouselRef = useRef<HTMLDivElement>(null)
@@ -144,18 +144,10 @@ export default function HomeClient() {
               className="flex gap-6 overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory px-4"
               style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
             >
-              {loading ? (
-                // Loading skeleton
-                [...Array(8)].map((_, i) => (
-                  <div key={i} className="flex-shrink-0 snap-start w-24 text-center">
-                    <div className="w-20 h-20 mx-auto mb-3 bg-gray-200 rounded-2xl animate-pulse"></div>
-                    <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
-                  </div>
-                ))
-              ) : (
-                categories.map((category) => (
-                  <div 
-                    key={category.slug} 
+              {(
+                categoryList.map((category) => (
+                  <div
+                    key={category.slug}
                     className="flex-shrink-0 snap-start w-24 text-center group cursor-pointer"
                     onClick={() => router.push(`/buscar-un-espacio?category=${category.slug}`)}
                   >
