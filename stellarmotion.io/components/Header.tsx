@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { ChevronDown, Search, User, Calendar, Heart, Settings, LogOut, BarChart3 } from "lucide-react"
+import { ChevronDown, Search, User, Calendar, Heart, Settings, LogOut, BarChart3, Megaphone } from "lucide-react"
 
 export default function Header() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
@@ -83,11 +83,11 @@ export default function Header() {
                     Dashboard
                   </Link>
                   <Link
-                    href="/anuncios"
+                    href="/panel/anuncios"
                     className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     role="menuitem"
                   >
-                    <Search className="w-4 h-4 mr-3" />
+                    <Megaphone className="w-4 h-4 mr-3" />
                     Anuncios
                   </Link>
                   <Link

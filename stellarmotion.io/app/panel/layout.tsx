@@ -23,7 +23,6 @@ export const metadata: Metadata = {
 const navigation = [
   { name: 'Inicio', href: '/panel/inicio', icon: Home },
   { name: 'Soportes', href: '/panel/soportes', icon: Monitor },
-  { name: 'Anuncios', href: '/panel/anuncios', icon: Megaphone },
   { name: 'Reservas', href: '/panel/reservas', icon: Calendar },
   { name: 'Clientes', href: '/panel/clientes', icon: Users },
   { name: 'Facturación', href: '/panel/facturacion', icon: FileText },

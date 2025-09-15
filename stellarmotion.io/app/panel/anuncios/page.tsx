@@ -85,7 +85,7 @@ export default function AnunciosPage() {
       )
     }
 
-    if (statusFilter) {
+    if (statusFilter && statusFilter !== "all") {
       filtered = filtered.filter(campaign => campaign.status === statusFilter)
     }
 
@@ -217,7 +217,7 @@ export default function AnunciosPage() {
                 <SelectValue placeholder="Estado" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos los estados</SelectItem>
+                <SelectItem value="all">Todos los estados</SelectItem>
                 <SelectItem value="ACTIVO">Activo</SelectItem>
                 <SelectItem value="PAUSADO">Pausado</SelectItem>
                 <SelectItem value="BORRADOR">Borrador</SelectItem>
