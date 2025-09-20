@@ -1,386 +1,408 @@
-import { Metadata } from 'next';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+'use client'
+
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { 
-  Monitor, 
   Plus, 
-  Search, 
-  Filter,
-  Eye,
   Edit,
   Trash2,
+  Eye, 
   MapPin,
+  Euro, 
   Calendar,
-  DollarSign,
-  Zap,
-  Ruler,
-  Users,
-  Upload
+  Monitor,
+  Search,
+  Filter,
+  MoreHorizontal
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
-export const metadata: Metadata = {
-  title: 'Soportes - Panel de Control | StellarMotion',
-  description: 'Gestión de espacios publicitarios y soportes'
-};
-
-// Mock data - en producción vendría de la base de datos
-const soportes = [
-  {
-    id: '1',
-    codigo: 'VZS-A001',
-    titulo: 'Valla Zona Sur - A001',
-    tipo: 'Valla',
-    ciudad: 'La Paz',
-    direccion: 'Av. Arce esq. Rosendo Gutiérrez',
-    dimensiones: '10×4 m',
-    precioMensual: 8500,
-    impresionesdiarias: 44000,
-    iluminacion: true,
-    estado: 'ocupado',
-    cliente: 'Coca Cola Bolivia',
-    fechaVence: '2025-02-10',
-    categoria: 'vallas',
-    createdAt: '2024-06-15'
-  },
-  {
-    id: '2',
-    codigo: 'PLC-P005',
-    titulo: 'Pantalla LED Centro - P005',
-    tipo: 'Pantalla LED',
-    ciudad: 'La Paz',
-    direccion: 'Plaza San Francisco',
-    dimensiones: '8×6 m',
-    precioMensual: 12000,
-    impresionesdiarias: 65000,
-    iluminacion: true,
-    estado: 'ocupado',
-    cliente: 'Banco Nacional',
-    fechaVence: '2025-03-15',
-    categoria: 'pantallas',
-    createdAt: '2024-03-22'
-  },
-  {
-    id: '3',
-    codigo: 'MAA-M012',
-    titulo: 'MUPI Avenida Arce - M012',
-    tipo: 'MUPI',
-    ciudad: 'La Paz',
-    direccion: 'Av. Arce altura Plaza Isabel La Católica',
-    dimensiones: '1.2×1.8 m',
-    precioMensual: 4500,
-    impresionesdiarias: 28000,
-    iluminacion: true,
-    estado: 'ocupado',
-    cliente: 'Supermercados Ketal',
-    fechaVence: '2025-04-08',
-    categoria: 'mupis',
-    createdAt: '2024-08-10'
-  },
-  {
-    id: '4',
-    codigo: 'VCN-V008',
-    titulo: 'Valla Carretera Norte - V008',
-    tipo: 'Valla',
-    ciudad: 'La Paz',
-    direccion: 'Carretera La Paz - El Alto Km 5',
-    dimensiones: '15×5 m',
-    precioMensual: 11000,
-    impresionesdiarias: 75000,
-    iluminacion: true,
-    estado: 'disponible',
-    cliente: null,
-    fechaVence: null,
-    categoria: 'vallas',
-    createdAt: '2024-01-18'
-  },
-  {
-    id: '5',
-    codigo: 'TCC-T003',
-    titulo: 'Totem Centro Comercial - T003',
-    tipo: 'Totem',
-    ciudad: 'Santa Cruz',
-    direccion: 'Mall Ventura, Planta Baja',
-    dimensiones: '2×4 m',
-    precioMensual: 6500,
-    impresionesdiarias: 35000,
-    iluminacion: false,
-    estado: 'mantenimiento',
-    cliente: null,
-    fechaVence: null,
-    categoria: 'totems',
-    createdAt: '2024-09-05'
-  },
-  {
-    id: '6',
-    codigo: 'PAS-P006',
-    titulo: 'Pantalla Autopista Sur - P006',
-    tipo: 'Pantalla LED',
-    ciudad: 'La Paz',
-    direccion: 'Autopista Sur, altura Calacoto',
-    dimensiones: '12×8 m',
-    precioMensual: 18000,
-    impresionesdiarias: 95000,
-    iluminacion: true,
-    estado: 'reservado',
-    cliente: 'Cervecería Nacional',
-    fechaVence: '2025-01-25',
-    categoria: 'pantallas',
-    createdAt: '2024-05-12'
-  }
-];
-
-const estadoColors = {
-  disponible: 'bg-green-100 text-green-800',
-  ocupado: 'bg-blue-100 text-blue-800',
-  reservado: 'bg-yellow-100 text-yellow-800',
-  mantenimiento: 'bg-red-100 text-red-800'
-};
-
-const estadoLabels = {
-  disponible: 'Disponible',
-  ocupado: 'Ocupado',
-  reservado: 'Reservado',
-  mantenimiento: 'Mantenimiento'
-};
+interface Support {
+  id: string;
+  slug: string;
+  title: string;
+  city: string;
+  country: string;
+  dimensions: string;
+  dailyImpressions: number;
+  type: string;
+  lighting: boolean;
+  tags: string;
+  images: string;
+  shortDescription: string;
+  description: string;
+  featured: boolean;
+  lat: number;
+  lng: number;
+  pricePerMonth: number;
+  printingCost: number;
+  rating: number;
+  reviewsCount: number;
+  categoryId: string;
+  status: string;
+  available: boolean;
+  address: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export default function SoportesPage() {
-  const totalSoportes = soportes.length;
-  const soportesDisponibles = soportes.filter(s => s.estado === 'disponible').length;
-  const soportesOcupados = soportes.filter(s => s.estado === 'ocupado').length;
-  const ingresosMensuales = soportes
-    .filter(s => s.estado === 'ocupado' || s.estado === 'reservado')
-    .reduce((sum, s) => sum + s.precioMensual, 0);
+  const [supports, setSupports] = useState<Support[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; support: Support | null }>({
+    open: false,
+    support: null
+  });
+
+  // ID del partner - en producción esto vendría de la sesión autenticada
+  // Por ahora usamos el ID del partner creado en el seed
+  const partnerId = 'cmfskhuda0004sj2w46q3g7rc'; // ID del partner "Publicidad Vial Imagen SRL"
+
+  useEffect(() => {
+    fetchSupports();
+  }, []);
+
+  const fetchSupports = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`/api/soportes?partnerId=${partnerId}`);
+      const data = await response.json();
+      setSupports(data);
+    } catch (error) {
+      console.error('Error fetching supports:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (support: Support) => {
+    try {
+      const response = await fetch(`/api/soportes/${support.id}`, {
+        method: 'DELETE',
+      });
+      
+      if (response.ok) {
+        setSupports(supports.filter(s => s.id !== support.id));
+        setDeleteDialog({ open: false, support: null });
+      }
+    } catch (error) {
+      console.error('Error deleting support:', error);
+    }
+  };
+
+  const filteredSupports = supports.filter(support => {
+    const matchesSearch = support.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         support.city.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = filterStatus === 'all' || support.status === filterStatus;
+    return matchesSearch && matchesStatus;
+  });
+
+  const getStatusBadge = (status: string) => {
+    const statusConfig = {
+      'DISPONIBLE': { label: 'Disponible', variant: 'default' as const },
+      'OCUPADO': { label: 'Ocupado', variant: 'secondary' as const },
+      'MANTENIMIENTO': { label: 'Mantenimiento', variant: 'destructive' as const },
+      'INACTIVO': { label: 'Inactivo', variant: 'outline' as const }
+    };
+    
+    const config = statusConfig[status as keyof typeof statusConfig] || { label: status, variant: 'outline' as const };
+    return <Badge variant={config.variant}>{config.label}</Badge>;
+  };
+
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat("es-ES", {
+      style: "currency",
+      currency: "EUR"
+    }).format(price);
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Gestión de Soportes</h1>
+            <p className="mt-2 text-gray-600">
+              Administra todos tus espacios publicitarios
+            </p>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[...Array(6)].map((_, i) => (
+            <Card key={i} className="animate-pulse">
+              <CardHeader>
+                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="h-3 bg-gray-200 rounded"></div>
+                  <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Gestión de Soportes</h1>
           <p className="mt-2 text-gray-600">
             Administra todos tus espacios publicitarios
           </p>
         </div>
-        <div className="flex space-x-3">
-          <Button variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-50">
-            <Upload className="w-4 h-4 mr-2" />
-            Importar masivamente
-          </Button>
-          <Button className="bg-[#D7514C] hover:bg-[#c23d3b] text-white">
-            <Plus className="w-4 h-4 mr-2" />
+        <Link href="/publicar-espacio">
+          <Button className="flex items-center gap-2">
+            <Plus className="h-4 w-4" />
             Nuevo Soporte
           </Button>
-        </div>
+        </Link>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-4">
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Soportes</CardTitle>
-            <Monitor className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalSoportes}</div>
-            <p className="text-xs text-muted-foreground">
-              Espacios registrados
-            </p>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <Monitor className="h-8 w-8 text-red-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-500">Total Soportes</p>
+                <p className="text-2xl font-semibold text-gray-900">{supports.length}</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Disponibles</CardTitle>
-            <Monitor className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">{soportesDisponibles}</div>
-            <p className="text-xs text-muted-foreground">
-              Listos para alquilar
-            </p>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <div className="h-8 w-8 bg-green-100 rounded-lg flex items-center justify-center">
+                <div className="h-4 w-4 bg-green-600 rounded-full"></div>
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-500">Disponibles</p>
+                <p className="text-2xl font-semibold text-gray-900">
+                  {supports.filter(s => s.status === 'DISPONIBLE').length}
+                </p>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Ocupados</CardTitle>
-            <Monitor className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{soportesOcupados}</div>
-            <p className="text-xs text-muted-foreground">
-              Con campañas activas
-            </p>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <Euro className="h-8 w-8 text-red-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-500">Ingresos Potenciales</p>
+                <p className="text-2xl font-semibold text-gray-900">
+                  {formatPrice(supports.reduce((sum, s) => sum + (s.pricePerMonth || 0), 0))}
+                </p>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Ingresos Mensuales</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">Bs. {ingresosMensuales.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">
-              De soportes activos
-            </p>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <Calendar className="h-8 w-8 text-red-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-500">Este Mes</p>
+                <p className="text-2xl font-semibold text-gray-900">
+                  {supports.filter(s => {
+                    const created = new Date(s.createdAt);
+                    const now = new Date();
+                    return created.getMonth() === now.getMonth() && created.getFullYear() === now.getFullYear();
+                  }).length}
+                </p>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Filters */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-wrap gap-4 items-center">
-            <div className="flex items-center space-x-2">
-              <Search className="w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Buscar por código o ubicación..."
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <Input
+            placeholder="Buscar soportes..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
               />
             </div>
-            <Button variant="outline" size="sm">
-              <Filter className="w-4 h-4 mr-2" />
-              Filtros
-            </Button>
-            <select className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
-              <option value="">Todos los estados</option>
-              <option value="disponible">Disponible</option>
-              <option value="ocupado">Ocupado</option>
-              <option value="reservado">Reservado</option>
-              <option value="mantenimiento">Mantenimiento</option>
-            </select>
-            <select className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
-              <option value="">Todos los tipos</option>
-              <option value="vallas">Vallas</option>
-              <option value="pantallas">Pantallas LED</option>
-              <option value="mupis">MUPIs</option>
-              <option value="totems">Totems</option>
+        <div className="flex gap-2">
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-md text-sm"
+          >
+            <option value="all">Todos los estados</option>
+            <option value="DISPONIBLE">Disponible</option>
+            <option value="OCUPADO">Ocupado</option>
+            <option value="MANTENIMIENTO">Mantenimiento</option>
+            <option value="INACTIVO">Inactivo</option>
             </select>
           </div>
+      </div>
+
+      {/* Supports Grid */}
+      {filteredSupports.length === 0 ? (
+        <Card>
+          <CardContent className="p-12 text-center">
+            <Monitor className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No hay soportes</h3>
+            <p className="text-gray-500 mb-4">
+              {searchTerm || filterStatus !== 'all' 
+                ? 'No se encontraron soportes con los filtros aplicados.'
+                : 'Comienza creando tu primer soporte publicitario.'
+              }
+            </p>
+            <Link href="/publicar-espacio">
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Crear Primer Soporte
+              </Button>
+            </Link>
         </CardContent>
       </Card>
-
-      {/* Soportes Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Lista de Soportes Publicitarios</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Código
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Soporte
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Ubicación
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Especificaciones
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Precio/Mes
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Estado
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Cliente
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Acciones
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {soportes.map((soporte) => (
-                  <tr key={soporte.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{soporte.codigo}</div>
-                      <div className="text-sm text-gray-500">{soporte.tipo}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{soporte.titulo}</div>
-                      <div className="flex items-center text-sm text-gray-500">
-                        <Ruler className="w-3 h-3 mr-1" />
-                        {soporte.dimensiones}
-                        {soporte.iluminacion && (
-                          <>
-                            <Zap className="w-3 h-3 ml-2 mr-1" />
-                            Iluminado
-                          </>
-                        )}
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredSupports.map((support) => (
+            <Card key={support.id} className="hover:shadow-md transition-shadow">
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <CardTitle className="text-lg line-clamp-1">{support.title}</CardTitle>
+                    <div className="flex items-center gap-2 mt-1">
+                      <MapPin className="h-3 w-3 text-gray-400" />
+                      <span className="text-sm text-gray-500">{support.city}</span>
+                    </div>
                       </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center text-sm text-gray-900">
-                        <MapPin className="w-3 h-3 mr-1" />
-                        {soporte.ciudad}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem asChild>
+                        <Link href={`/product/${support.slug}`}>
+                          <Eye className="h-4 w-4 mr-2" />
+                          Ver Público
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href={`/panel/soportes/${support.id}/editar`}>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Editar
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => setDeleteDialog({ open: true, support })}
+                        className="text-red-600"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Eliminar
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                       </div>
-                      <div className="text-sm text-gray-500 max-w-xs truncate">
-                        {soporte.direccion}
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-500">Estado</span>
+                    {getStatusBadge(support.status)}
                       </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center text-sm text-gray-900">
-                        <Users className="w-3 h-3 mr-1" />
-                        {soporte.impresionesdiarias.toLocaleString()} imp/día
+                  
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-500">Dimensiones</span>
+                    <span className="text-sm font-medium">{support.dimensions}</span>
                       </div>
-                      <div className="text-sm text-gray-500">
-                        Impresiones diarias
+                  
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-500">Precio/mes</span>
+                    <span className="text-sm font-medium text-green-600">
+                      {formatPrice(support.pricePerMonth || 0)}
+                    </span>
                       </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      Bs. {soporte.precioMensual.toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <Badge className={estadoColors[soporte.estado as keyof typeof estadoColors]}>
-                        {estadoLabels[soporte.estado as keyof typeof estadoLabels]}
+                  
+                  {support.shortDescription && (
+                    <p className="text-sm text-gray-600 line-clamp-2">
+                      {support.shortDescription}
+                    </p>
+                  )}
+                  
+                  <div className="flex items-center justify-between pt-2">
+                    <span className="text-xs text-gray-400">
+                      Creado: {new Date(support.createdAt).toLocaleDateString()}
+                    </span>
+                    {support.featured && (
+                      <Badge variant="secondary" className="text-xs">
+                        Destacado
                       </Badge>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {soporte.cliente ? (
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">{soporte.cliente}</div>
-                          {soporte.fechaVence && (
-                            <div className="flex items-center text-sm text-gray-500">
-                              <Calendar className="w-3 h-3 mr-1" />
-                              Vence: {new Date(soporte.fechaVence).toLocaleDateString('es-ES')}
-                            </div>
                           )}
                         </div>
-                      ) : (
-                        <span className="text-sm text-gray-500">Sin asignar</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex space-x-2">
-                        <Button variant="outline" size="sm" title="Ver detalles">
-                          <Eye className="w-3 h-3" />
-                        </Button>
-                        <Button variant="outline" size="sm" title="Editar soporte">
-                          <Edit className="w-3 h-3" />
-                        </Button>
-                        <Button variant="outline" size="sm" title="Eliminar" className="text-red-600 hover:text-red-700">
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
           </div>
         </CardContent>
       </Card>
+          ))}
+        </div>
+      )}
 
+      {/* Delete Dialog */}
+      <Dialog open={deleteDialog.open} onOpenChange={(open) => setDeleteDialog({ open, support: null })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>¿Eliminar soporte?</DialogTitle>
+            <DialogDescription>
+              Esta acción no se puede deshacer. Se eliminará permanentemente el soporte "{deleteDialog.support?.title}".
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setDeleteDialog({ open: false, support: null })}
+            >
+              Cancelar
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={() => deleteDialog.support && handleDelete(deleteDialog.support)}
+            >
+              Eliminar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

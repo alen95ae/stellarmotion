@@ -41,6 +41,33 @@ async function main() {
     data: { name: 'StellarMotion Media', website: 'https://stellarmotion.io' },
   })
 
+  // Crear partner de prueba
+  const partner = await prisma.partner.upsert({
+    where: { email: 'contacto@publicidadvialimagen.com' },
+    update: {},
+    create: {
+      name: 'Carlos Mendoza',
+      email: 'contacto@publicidadvialimagen.com',
+      phone: '+34 123 456 789',
+      companyName: 'Publicidad Vial Imagen SRL',
+      country: 'España',
+      city: 'Madrid'
+    }
+  })
+
+  // Crear usuario para el partner
+  const partnerUser = await prisma.user.upsert({
+    where: { email: 'contacto@publicidadvialimagen.com' },
+    update: {},
+    create: {
+      email: 'contacto@publicidadvialimagen.com',
+      name: 'Carlos Mendoza',
+      password: await bcrypt.hash('partner123', 10),
+      role: 'PARTNER',
+      partnerId: partner.id
+    }
+  })
+
   // Crear categorías de ejemplo
   const categories = await Promise.all([
     prisma.category.upsert({
@@ -92,6 +119,10 @@ async function main() {
 
   // Crear soportes de ejemplo
   const existingSupports = await prisma.support.count()
+  const existingPartnerSupports = await prisma.support.count({
+    where: { partnerId: partner.id }
+  })
+  
   if (existingSupports < 5) {
     await prisma.support.createMany({
       data: [
@@ -198,8 +229,171 @@ async function main() {
           categoryId: categories[4].id, // Displays
           latitude: 39.4699, 
           longitude: -0.3763 
-        },
+        }
       ].map((d:any)=>({ ...d })),
+    })
+  }
+
+  // Crear soportes del partner si no existen
+  if (existingPartnerSupports === 0) {
+    await prisma.support.createMany({
+      data: [
+        { 
+          code: 'PVI-001', 
+          title: 'Valla Gran Vía Madrid', 
+          type: 'Valla', 
+          city: 'Madrid', 
+          country: 'España', 
+          priceMonth: 850, 
+          available: true, 
+          status: 'DISPONIBLE',
+          widthM: 6.0,
+          heightM: 3.0,
+          areaM2: 18.0,
+          pricePerM2: 15.0,
+          productionCost: 270.0,
+          productionCostOverride: false,
+          owner: 'Publicidad Vial Imagen SRL',
+          partnerId: partner.id,
+          categoryId: categories[0].id, // Vallas
+          latitude: 40.4168, 
+          longitude: -3.7038,
+          slug: 'valla-gran-via-madrid',
+          dimensions: '6x3m',
+          dailyImpressions: 50000,
+          lighting: true,
+          tags: 'centro, gran-via, alta-visibilidad',
+          shortDescription: 'Valla premium en el corazón de Madrid con iluminación LED',
+          description: 'Excelente ubicación en Gran Vía con alta visibilidad y tráfico peatonal. Incluye iluminación LED para máxima visibilidad nocturna.',
+          featured: true,
+          rating: 4.8,
+          reviewsCount: 12
+        },
+        { 
+          code: 'PVI-002', 
+          title: 'Mupi Plaza Mayor', 
+          type: 'Mupi', 
+          city: 'Madrid', 
+          country: 'España', 
+          priceMonth: 450, 
+          available: true, 
+          status: 'DISPONIBLE',
+          widthM: 3.0,
+          heightM: 2.0,
+          areaM2: 6.0,
+          pricePerM2: 18.0,
+          productionCost: 108.0,
+          productionCostOverride: false,
+          owner: 'Publicidad Vial Imagen SRL',
+          partnerId: partner.id,
+          categoryId: categories[1].id, // Mupis
+          latitude: 40.4155, 
+          longitude: -3.7074,
+          slug: 'mupi-plaza-mayor-madrid',
+          dimensions: '3x2m',
+          dailyImpressions: 25000,
+          lighting: false,
+          tags: 'plaza-mayor, turistico, centro-historico',
+          shortDescription: 'Mupi en Plaza Mayor con gran afluencia turística',
+          description: 'Ubicación estratégica en Plaza Mayor, punto de alta concentración turística y local. Perfecto para campañas dirigidas al sector turístico.',
+          featured: false,
+          rating: 4.5,
+          reviewsCount: 8
+        },
+        { 
+          code: 'PVI-003', 
+          title: 'Pantalla LED Retiro', 
+          type: 'Pantalla', 
+          city: 'Madrid', 
+          country: 'España', 
+          priceMonth: 1200, 
+          available: true, 
+          status: 'DISPONIBLE',
+          widthM: 4.0,
+          heightM: 3.0,
+          areaM2: 12.0,
+          pricePerM2: 25.0,
+          productionCost: 300.0,
+          productionCostOverride: false,
+          owner: 'Publicidad Vial Imagen SRL',
+          partnerId: partner.id,
+          categoryId: categories[2].id, // Pantallas
+          latitude: 40.4150, 
+          longitude: -3.6850,
+          slug: 'pantalla-led-retiro-madrid',
+          dimensions: '4x3m',
+          dailyImpressions: 35000,
+          lighting: true,
+          tags: 'retiro, pantalla-led, alta-tecnologia',
+          shortDescription: 'Pantalla LED de alta resolución en zona Retiro',
+          description: 'Pantalla LED de última generación con alta resolución. Ubicada en zona de alto tráfico cerca del Parque del Retiro.',
+          featured: true,
+          rating: 4.9,
+          reviewsCount: 15
+        },
+        { 
+          code: 'PVI-004', 
+          title: 'Display Aeropuerto Barajas', 
+          type: 'Display', 
+          city: 'Madrid', 
+          country: 'España', 
+          priceMonth: 1800, 
+          available: true, 
+          status: 'DISPONIBLE',
+          widthM: 5.0,
+          heightM: 3.5,
+          areaM2: 17.5,
+          pricePerM2: 30.0,
+          productionCost: 525.0,
+          productionCostOverride: false,
+          owner: 'Publicidad Vial Imagen SRL',
+          partnerId: partner.id,
+          categoryId: categories[4].id, // Displays
+          latitude: 40.4839, 
+          longitude: -3.5680,
+          slug: 'display-aeropuerto-barajas-madrid',
+          dimensions: '5x3.5m',
+          dailyImpressions: 75000,
+          lighting: true,
+          tags: 'aeropuerto, barajas, premium, internacional',
+          shortDescription: 'Display premium en Aeropuerto Adolfo Suárez Madrid-Barajas',
+          description: 'Display de alta gama en el aeropuerto más importante de España. Audiencia internacional y de alto poder adquisitivo.',
+          featured: true,
+          rating: 4.7,
+          reviewsCount: 22
+        },
+        { 
+          code: 'PVI-005', 
+          title: 'Cartelera Sol', 
+          type: 'Cartelera', 
+          city: 'Madrid', 
+          country: 'España', 
+          priceMonth: 650, 
+          available: true, 
+          status: 'OCUPADO',
+          widthM: 4.0,
+          heightM: 2.5,
+          areaM2: 10.0,
+          pricePerM2: 20.0,
+          productionCost: 200.0,
+          productionCostOverride: false,
+          owner: 'Publicidad Vial Imagen SRL',
+          partnerId: partner.id,
+          categoryId: categories[3].id, // Carteleras
+          latitude: 40.4168, 
+          longitude: -3.7038,
+          slug: 'cartelera-sol-madrid',
+          dimensions: '4x2.5m',
+          dailyImpressions: 60000,
+          lighting: true,
+          tags: 'puerta-del-sol, centro, iconico',
+          shortDescription: 'Cartelera icónica en Puerta del Sol',
+          description: 'Ubicación emblemática en Puerta del Sol, el corazón de Madrid. Máxima visibilidad y reconocimiento.',
+          featured: false,
+          rating: 4.6,
+          reviewsCount: 18
+        }
+      ]
     })
   }
 
@@ -348,6 +542,9 @@ async function main() {
   console.log('Seed completado:', { 
     admin: admin.email, 
     company: comp.name,
+    partner: partner.companyName,
+    partnerEmail: partner.email,
+    partnerPassword: 'partner123',
     categories: categories.length,
     contacts: contacts.length,
     tags: tags.length
