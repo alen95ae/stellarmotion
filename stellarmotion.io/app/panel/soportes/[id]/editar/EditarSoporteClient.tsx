@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,7 +11,38 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
-import { Upload, MapPin, DollarSign, Ruler, Lightbulb, Pencil, Eye, Globe, Link, Hash } from 'lucide-react';
+import { Upload, MapPin, DollarSign, Ruler, Lightbulb, Pencil, Eye, Globe, Link, Hash, ArrowLeft } from 'lucide-react';
+
+interface Support {
+  id: string;
+  slug: string;
+  title: string;
+  city: string;
+  country: string;
+  dimensions: string;
+  dailyImpressions: number;
+  type: string;
+  lighting: boolean;
+  tags: string;
+  images: string;
+  shortDescription: string;
+  description: string;
+  featured: boolean;
+  lat: number;
+  lng: number;
+  pricePerMonth: number;
+  printingCost: number;
+  rating: number;
+  reviewsCount: number;
+  categoryId: string;
+  status: string;
+  available: boolean;
+  address: string;
+  googleMapsLink?: string; // Enlace de Google Maps
+  createdAt: string;
+  updatedAt: string;
+  code?: string;
+}
 
 interface FormData {
   title: string;
@@ -27,6 +58,7 @@ interface FormData {
   dailyImpressions: string;
   description: string;
   googleMapsLink: string;
+  status: string;
 }
 
 const TYPES = [
@@ -82,11 +114,17 @@ const CITIES_BY_COUNTRY: Record<string, string[]> = {
   'Uruguay': ['Montevideo', 'Salto', 'Ciudad de la Costa', 'Paysandú', 'Las Piedras', 'Rivera', 'Maldonado', 'Tacuarembó', 'Melo', 'Mercedes']
 };
 
-export function PublicarEspacioClient() {
+interface EditarSoporteClientProps {
+  supportId: string;
+}
+
+export default function EditarSoporteClient({ supportId }: EditarSoporteClientProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [support, setSupport] = useState<Support | null>(null);
   const [formData, setFormData] = useState<FormData>({
     title: '',
     pricePerMonth: '',
@@ -101,7 +139,57 @@ export function PublicarEspacioClient() {
     dailyImpressions: '',
     description: '',
     googleMapsLink: '',
+    status: 'DISPONIBLE'
   });
+
+  // Cargar datos del soporte
+  useEffect(() => {
+    const fetchSupport = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch(`/api/soportes/${supportId}`);
+        if (!response.ok) {
+          throw new Error('Soporte no encontrado');
+        }
+        const supportData = await response.json();
+        setSupport(supportData);
+        
+        // Extraer dimensiones
+        const dimensionsMatch = supportData.dimensions?.match(/(\d+(?:\.\d+)?)×(\d+(?:\.\d+)?)/);
+        const width = dimensionsMatch ? dimensionsMatch[1] : '';
+        const height = dimensionsMatch ? dimensionsMatch[2] : '';
+        
+        setFormData({
+          title: supportData.title || '',
+          pricePerMonth: supportData.pricePerMonth?.toString() || '',
+          images: [],
+          city: supportData.city || '',
+          country: supportData.country || '',
+          width: width,
+          height: height,
+          lighting: supportData.lighting || false,
+          type: supportData.type || '',
+          code: supportData.code || '',
+          dailyImpressions: supportData.dailyImpressions?.toString() || '',
+          description: supportData.description || '',
+          googleMapsLink: supportData.googleMapsLink || '', // Cargar el enlace existente
+          status: supportData.status || 'DISPONIBLE'
+        });
+      } catch (error) {
+        console.error('Error fetching support:', error);
+        toast({
+          title: "Error",
+          description: "No se pudo cargar el soporte",
+          variant: "destructive",
+        });
+        router.push('/panel/soportes');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchSupport();
+  }, [supportId, router, toast]);
 
   const handleInputChange = (field: keyof FormData, value: string | boolean | File[]) => {
     setFormData(prev => ({
@@ -277,7 +365,7 @@ export function PublicarEspacioClient() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log('=== Formulario enviado ===');
+    console.log('=== Formulario de edición enviado ===');
     console.log('FormData:', formData);
     
     // Validar formulario
@@ -317,6 +405,7 @@ export function PublicarEspacioClient() {
       formDataToSend.append('dailyImpressions', formData.dailyImpressions || '0');
       formDataToSend.append('description', formData.description);
       formDataToSend.append('googleMapsLink', formData.googleMapsLink);
+      formDataToSend.append('status', formData.status);
       
       // Agregar partnerId por defecto (ID del partner creado en el seed)
       formDataToSend.append('partnerId', 'cmfskhuda0004sj2w46q3g7rc');
@@ -325,6 +414,10 @@ export function PublicarEspacioClient() {
       if (coordinates.lat !== null && coordinates.lng !== null) {
         formDataToSend.append('lat', coordinates.lat.toString());
         formDataToSend.append('lng', coordinates.lng.toString());
+      } else if (support?.lat && support?.lng) {
+        // Usar coordenadas existentes si no se proporcionan nuevas
+        formDataToSend.append('lat', support.lat.toString());
+        formDataToSend.append('lng', support.lng.toString());
       }
 
       // Agregar imágenes
@@ -340,9 +433,9 @@ export function PublicarEspacioClient() {
         });
       }, 200);
 
-      console.log('Enviando petición a /api/soportes');
-      const response = await fetch('/api/soportes', {
-        method: 'POST',
+      console.log('Enviando petición a /api/soportes/' + supportId);
+      const response = await fetch(`/api/soportes/${supportId}`, {
+        method: 'PUT',
         body: formDataToSend,
       });
 
@@ -354,7 +447,7 @@ export function PublicarEspacioClient() {
       if (!response.ok) {
         const errorText = await response.text();
         console.error('Error en la respuesta:', errorText);
-        throw new Error('Error al crear el producto');
+        throw new Error('Error al actualizar el soporte');
       }
 
       const result = await response.json();
@@ -363,23 +456,23 @@ export function PublicarEspacioClient() {
       
       toast({
         title: "¡Éxito!",
-        description: "Tu soporte ha sido publicado correctamente.",
+        description: "Tu soporte ha sido actualizado correctamente.",
       });
 
-      // Redirigir a la página del producto creado
+      // Redirigir a la página del soporte actualizado
       if (result.product && result.product.slug) {
         router.push(`/product/${result.product.slug}`);
       } else if (result.slug) {
         router.push(`/product/${result.slug}`);
       } else {
-        // Si no hay slug, redirigir a la página de búsqueda
-        router.push('/buscar-un-espacio');
+        // Si no hay slug, redirigir al dashboard
+        router.push('/panel/soportes');
       }
     } catch (error) {
       console.error('Error:', error);
       toast({
         title: "Error",
-        description: "Hubo un problema al publicar tu soporte. Inténtalo de nuevo.",
+        description: "Hubo un problema al actualizar tu soporte. Inténtalo de nuevo.",
         variant: "destructive",
       });
     } finally {
@@ -388,14 +481,52 @@ export function PublicarEspacioClient() {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <div className="animate-pulse space-y-6">
+          <div className="h-8 bg-gray-200 rounded w-1/3"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="h-32 bg-gray-200 rounded"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!support) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Soporte no encontrado</h1>
+          <Button onClick={() => router.push('/panel/soportes')}>
+            Volver al dashboard
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       <div className="mb-8">
+        <div className="flex items-center gap-4 mb-4">
+          <Button
+            variant="outline"
+            onClick={() => router.back()}
+            className="flex items-center gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Volver
+          </Button>
+        </div>
         <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Publicar un Soporte
+          Editar Soporte
         </h1>
         <p className="text-gray-600">
-          Completa la información de tu soporte publicitario para que otros puedan encontrarlo y reservarlo.
+          Modifica la información de tu soporte publicitario.
         </p>
       </div>
 
@@ -486,6 +617,22 @@ export function PublicarEspacioClient() {
                   />
                 </div>
               </div>
+            </div>
+
+            <div>
+              <Label htmlFor="status" className="block mb-2">Estado del Soporte *</Label>
+              <Select value={formData.status} onValueChange={(value) => handleInputChange('status', value)}>
+                <SelectTrigger className="bg-white">
+                  <SelectValue placeholder="Selecciona el estado" />
+                </SelectTrigger>
+                <SelectContent className="bg-white">
+                  <SelectItem value="DISPONIBLE">Disponible</SelectItem>
+                  <SelectItem value="RESERVADO">Reservado</SelectItem>
+                  <SelectItem value="OCUPADO">Ocupado</SelectItem>
+                  <SelectItem value="MANTENIMIENTO">Mantenimiento</SelectItem>
+                  <SelectItem value="INACTIVO">Inactivo</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </CardContent>
         </Card>
@@ -621,7 +768,7 @@ export function PublicarEspacioClient() {
               Imágenes
             </CardTitle>
             <CardDescription>
-              Sube imágenes de tu espacio publicitario
+              Sube nuevas imágenes de tu espacio publicitario
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -704,7 +851,7 @@ export function PublicarEspacioClient() {
             <CardContent className="pt-6">
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span>Publicando tu soporte...</span>
+                  <span>Actualizando tu soporte...</span>
                   <span>{Math.round(uploadProgress)}%</span>
                 </div>
                 <Progress value={uploadProgress} className="w-full" />
@@ -731,10 +878,10 @@ export function PublicarEspacioClient() {
             {isSubmitting ? (
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                Publicando...
+                Actualizando...
               </div>
             ) : (
-              'Publicar Espacio'
+              'Actualizar Soporte'
             )}
           </Button>
         </div>

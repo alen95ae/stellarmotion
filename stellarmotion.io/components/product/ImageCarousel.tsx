@@ -55,7 +55,7 @@ export default function ImageCarousel({ images, title }: ImageCarouselProps) {
         >
           {images.map((image, index) => (
             <div
-              key={index}
+              key={`${image}-${index}`}
               className="flex-shrink-0 w-full snap-start"
             >
               <Image
@@ -72,9 +72,9 @@ export default function ImageCarousel({ images, title }: ImageCarouselProps) {
 
         {/* Indicadores de imagen */}
         <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
-          {images.map((_, index) => (
+          {images.map((img, index) => (
             <button
-              key={index}
+              key={`${img}-${index}`}
               onClick={() => scrollToImage(index)}
               className={`w-2 h-2 rounded-full transition-colors ${
                 index === currentIndex

@@ -1,10 +1,10 @@
 export const dynamic = "force-dynamic";
 
 export default function EnvCheck() {
-  const pub = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-    ? process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY.replace(/^(.{6}).+(.{4})$/, "$1•••$2")
+  const pub = process.env.NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_KEY
+    ? process.env.NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_KEY.replace(/^(.{6}).+(.{4})$/, "$1•••$2")
     : "NO CARGADA";
-  const srv = process.env.GOOGLE_MAPS_API_KEY ? "CARGADA" : "NO CARGADA";
+  const srv = process.env.GOOGLE_MAPS_SERVER_KEY ? "CARGADA" : "NO CARGADA";
 
   return (
     <main className="max-w-3xl mx-auto p-6">

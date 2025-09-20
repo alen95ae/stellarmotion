@@ -13,7 +13,8 @@ import {
   Monitor,
   Search,
   Filter,
-  MoreHorizontal
+  MoreHorizontal,
+  Upload
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,6 +37,7 @@ import {
 
 interface Support {
   id: string;
+  code?: string;
   slug: string;
   title: string;
   city: string;
@@ -44,23 +46,24 @@ interface Support {
   dailyImpressions: number;
   type: string;
   lighting: boolean;
-  tags: string;
-  images: string;
+  tags: string[];
+  images: string[];
   shortDescription: string;
   description: string;
   featured: boolean;
-  lat: number;
-  lng: number;
+  latitude: number | null;
+  longitude: number | null;
   pricePerMonth: number;
   printingCost: number;
   rating: number;
   reviewsCount: number;
-  categoryId: string;
+  categoryId: string | null;
   status: string;
   available: boolean;
   address: string;
   createdAt: string;
   updatedAt: string;
+  ownerName?: string | null;
 }
 
 export default function SoportesPage() {
@@ -84,9 +87,48 @@ export default function SoportesPage() {
   const fetchSupports = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/soportes?partnerId=${partnerId}`);
-      const data = await response.json();
-      setSupports(data);
+      const partnerResponse = await fetch(`/api/soportes?partnerId=${partnerId}`);
+      if (!partnerResponse.ok) {
+        throw new Error(`Failed partner fetch: ${partnerResponse.status}`);
+      }
+
+      let data: Support[] = await partnerResponse.json();
+
+      // Si no hay soportes asociados al partner, traer todos para mostrarlos
+      if (!Array.isArray(data) || data.length === 0) {
+        const generalResponse = await fetch('/api/soportes');
+        if (generalResponse.ok) {
+          const generalData = await generalResponse.json();
+          if (Array.isArray(generalData) && generalData.length) {
+            data = generalData;
+          }
+        }
+      }
+
+      // Sanitizar estructura para evitar valores inesperados en la UI
+      const normalizedSupports = (Array.isArray(data) ? data : []).map((support: any) => {
+        const images = Array.isArray(support.images)
+          ? support.images
+          : typeof support.images === 'string' && support.images.trim()
+            ? [support.images.trim()]
+            : [];
+
+        const tags = Array.isArray(support.tags)
+          ? support.tags
+          : typeof support.tags === 'string'
+            ? support.tags.split(',').map((tag: string) => tag.trim()).filter(Boolean)
+            : [];
+
+        return {
+          ...support,
+          images,
+          tags,
+          latitude: typeof support.latitude === 'number' ? support.latitude : null,
+          longitude: typeof support.longitude === 'number' ? support.longitude : null,
+        } as Support;
+      });
+
+      setSupports(normalizedSupports);
     } catch (error) {
       console.error('Error fetching supports:', error);
     } finally {
@@ -111,21 +153,23 @@ export default function SoportesPage() {
 
   const filteredSupports = supports.filter(support => {
     const matchesSearch = support.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         support.city.toLowerCase().includes(searchTerm.toLowerCase());
+                         support.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (support.code || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === 'all' || support.status === filterStatus;
     return matchesSearch && matchesStatus;
   });
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      'DISPONIBLE': { label: 'Disponible', variant: 'default' as const },
-      'OCUPADO': { label: 'Ocupado', variant: 'secondary' as const },
-      'MANTENIMIENTO': { label: 'Mantenimiento', variant: 'destructive' as const },
-      'INACTIVO': { label: 'Inactivo', variant: 'outline' as const }
+      'DISPONIBLE': { label: 'Disponible', className: 'bg-green-100 text-green-800 border-green-200' },
+      'RESERVADO': { label: 'Reservado', className: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
+      'OCUPADO': { label: 'Ocupado', className: 'bg-red-100 text-red-800 border-red-200' },
+      'MANTENIMIENTO': { label: 'Mantenimiento', className: 'bg-black text-white border-black' },
+      'INACTIVO': { label: 'Inactivo', className: 'bg-gray-100 text-gray-800 border-gray-200' }
     };
     
-    const config = statusConfig[status as keyof typeof statusConfig] || { label: status, variant: 'outline' as const };
-    return <Badge variant={config.variant}>{config.label}</Badge>;
+    const config = statusConfig[status as keyof typeof statusConfig] || { label: status, className: 'bg-gray-100 text-gray-800 border-gray-200' };
+    return <Badge className={config.className}>{config.label}</Badge>;
   };
 
   const formatPrice = (price: number) => {
@@ -176,12 +220,18 @@ export default function SoportesPage() {
             Administra todos tus espacios publicitarios
           </p>
         </div>
-        <Link href="/publicar-espacio">
-          <Button className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            Nuevo Soporte
+        <div className="flex gap-2">
+          <Button variant="outline" className="flex items-center gap-2">
+            <Upload className="h-4 w-4" />
+            Importar
           </Button>
-        </Link>
+          <Link href="/publicar-espacio">
+            <Button className="flex items-center gap-2 bg-red-600 hover:bg-red-700">
+              <Plus className="h-4 w-4" />
+              Nuevo Soporte
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Stats */}
@@ -189,7 +239,6 @@ export default function SoportesPage() {
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center">
-              <Monitor className="h-8 w-8 text-red-600" />
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-500">Total Soportes</p>
                 <p className="text-2xl font-semibold text-gray-900">{supports.length}</p>
@@ -201,9 +250,6 @@ export default function SoportesPage() {
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center">
-              <div className="h-8 w-8 bg-green-100 rounded-lg flex items-center justify-center">
-                <div className="h-4 w-4 bg-green-600 rounded-full"></div>
-              </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-500">Disponibles</p>
                 <p className="text-2xl font-semibold text-gray-900">
@@ -217,7 +263,6 @@ export default function SoportesPage() {
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center">
-              <Euro className="h-8 w-8 text-red-600" />
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-500">Ingresos Potenciales</p>
                 <p className="text-2xl font-semibold text-gray-900">
@@ -231,7 +276,6 @@ export default function SoportesPage() {
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center">
-              <Calendar className="h-8 w-8 text-red-600" />
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-500">Este Mes</p>
                 <p className="text-2xl font-semibold text-gray-900">
@@ -266,6 +310,7 @@ export default function SoportesPage() {
           >
             <option value="all">Todos los estados</option>
             <option value="DISPONIBLE">Disponible</option>
+            <option value="RESERVADO">Reservado</option>
             <option value="OCUPADO">Ocupado</option>
             <option value="MANTENIMIENTO">Mantenimiento</option>
             <option value="INACTIVO">Inactivo</option>
@@ -273,7 +318,7 @@ export default function SoportesPage() {
           </div>
       </div>
 
-      {/* Supports Grid */}
+      {/* Supports Table */}
       {filteredSupports.length === 0 ? (
         <Card>
           <CardContent className="p-12 text-center">
@@ -294,88 +339,136 @@ export default function SoportesPage() {
         </CardContent>
       </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredSupports.map((support) => (
-            <Card key={support.id} className="hover:shadow-md transition-shadow">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <CardTitle className="text-lg line-clamp-1">{support.title}</CardTitle>
-                    <div className="flex items-center gap-2 mt-1">
-                      <MapPin className="h-3 w-3 text-gray-400" />
-                      <span className="text-sm text-gray-500">{support.city}</span>
-                    </div>
+      <Card>
+        <CardHeader>
+            <CardTitle>Lista de Soportes</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Soporte
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Código
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Ubicación
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Tipo
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Dimensiones
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Precio/mes
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Estado
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Acciones
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredSupports.map((support) => (
+                    <tr key={support.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-10 w-10">
+                            <div className="h-10 w-10 rounded-lg bg-red-100 flex items-center justify-center">
+                              <Monitor className="h-5 w-5 text-red-600" />
+                            </div>
+                          </div>
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-gray-900">
+                              {support.title}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {support.shortDescription || 'Sin descripción'}
+                            </div>
+                            {support.featured && (
+                              <Badge variant="secondary" className="text-xs mt-1">
+                                Destacado
+                              </Badge>
+                            )}
+                          </div>
                       </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem asChild>
-                        <Link href={`/product/${support.slug}`}>
-                          <Eye className="h-4 w-4 mr-2" />
-                          Ver Público
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link href={`/panel/soportes/${support.id}/editar`}>
-                          <Edit className="h-4 w-4 mr-2" />
-                          Editar
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={() => setDeleteDialog({ open: true, support })}
-                        className="text-red-600"
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Eliminar
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                      </div>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-500">Estado</span>
-                    {getStatusBadge(support.status)}
-                      </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-500">Dimensiones</span>
-                    <span className="text-sm font-medium">{support.dimensions}</span>
-                      </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-500">Precio/mes</span>
-                    <span className="text-sm font-medium text-green-600">
-                      {formatPrice(support.pricePerMonth || 0)}
-                    </span>
-                      </div>
-                  
-                  {support.shortDescription && (
-                    <p className="text-sm text-gray-600 line-clamp-2">
-                      {support.shortDescription}
-                    </p>
-                  )}
-                  
-                  <div className="flex items-center justify-between pt-2">
-                    <span className="text-xs text-gray-400">
-                      Creado: {new Date(support.createdAt).toLocaleDateString()}
-                    </span>
-                    {support.featured && (
-                      <Badge variant="secondary" className="text-xs">
-                        Destacado
-                      </Badge>
-                          )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">
+                          {support.code || 'N/A'}
                         </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <MapPin className="h-4 w-4 text-gray-400 mr-2" />
+                          <div>
+                            <div className="text-sm text-gray-900">{support.city}</div>
+                            <div className="text-sm text-gray-500">{support.country}</div>
+                      </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{support.type}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{support.dimensions}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-green-600">
+                          {formatPrice(support.pricePerMonth || 0)}
+                        </div>
+                        {support.printingCost && (
+                          <div className="text-xs text-gray-500">
+                            +{formatPrice(support.printingCost)} impresión
+                          </div>
+                      )}
+                    </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {getStatusBadge(support.status)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem asChild>
+                              <Link href={`/product/${support.slug}`}>
+                                <Eye className="h-4 w-4 mr-2" />
+                                Ver Público
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem asChild>
+                              <Link href={`/panel/soportes/${support.id}/editar`}>
+                                <Edit className="h-4 w-4 mr-2" />
+                                Editar
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => setDeleteDialog({ open: true, support })}
+                              className="text-red-600"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Eliminar
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </CardContent>
       </Card>
-          ))}
-        </div>
       )}
 
       {/* Delete Dialog */}

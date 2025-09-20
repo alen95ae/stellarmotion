@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { MapPin, Heart, Eye, Ruler, Building, Globe, Lightbulb, Star, Calendar, Send, MessageSquare } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { MapPin, Heart, Eye, Ruler, Building, Globe, Lightbulb, Star, Calendar, Send, MessageSquare, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { IconBox } from '@/components/ui/IconBox';
 import { FEATURE_ICONS } from '@/lib/icons';
@@ -58,9 +59,15 @@ export default function ProductClient({ product }: ProductClientProps) {
     installation: false,
     graphicDesign: false
   });
+  const router = useRouter();
 
   // Asegurar que images y tags sean arrays
   const safeImages = Array.isArray(product.images) ? product.images : [];
+  const displayedImages = safeImages.length > 0
+    ? safeImages
+    : ['/placeholder.svg?height=400&width=600'];
+  const clampedSelectedIndex = Math.min(selectedImage, Math.max(displayedImages.length - 1, 0));
+  const mainImage = displayedImages[clampedSelectedIndex] || '/placeholder.svg?height=400&width=600';
   const safeTags = Array.isArray(product.tags) ? product.tags : [];
   
   // Asegurar que category tenga valores por defecto
@@ -184,13 +191,13 @@ export default function ProductClient({ product }: ProductClientProps) {
 
         {/* Top Section - Images */}
         <div className="mb-8">
-          {safeImages.length === 1 ? (
+          {displayedImages.length === 1 ? (
             /* Single Image - 4:3 Aspect Ratio, Smaller */
             <div className="max-w-4xl mx-auto">
               <div className="bg-white rounded-2xl overflow-hidden border border-gray-200">
                 <div className="aspect-[4/3] w-full">
                   <img
-                    src={safeImages[0] || '/placeholder.svg?height=400&width=600'}
+                    src={displayedImages[0] || '/placeholder.svg?height=400&width=600'}
                     alt={product.title}
                     className="w-full h-full object-cover"
                   />
@@ -206,7 +213,7 @@ export default function ProductClient({ product }: ProductClientProps) {
                   <div className="bg-white rounded-2xl overflow-hidden border border-gray-200">
                     <div className="aspect-[4/3] w-full">
                       <img
-                        src={safeImages[selectedImage] || '/placeholder.svg?height=400&width=600'}
+                        src={mainImage}
                         alt={product.title}
                         className="w-full h-full object-cover"
                       />
@@ -216,12 +223,15 @@ export default function ProductClient({ product }: ProductClientProps) {
                 
                 {/* Thumbnail Grid */}
                 <div className="grid grid-cols-2 gap-2">
-                  {safeImages.slice(0, 4).map((image, index) => (
+                  {displayedImages.slice(0, 4).map((image, index) => {
+                    const thumbKey = `${product.id}-${image}-${index}`;
+                    const isSelected = clampedSelectedIndex === index;
+                    return (
                     <button
-                      key={index}
+                      key={thumbKey}
                       onClick={() => setSelectedImage(index)}
                       className={`bg-white rounded-lg overflow-hidden border-2 transition-colors aspect-square ${
-                        selectedImage === index ? 'border-[#D7514C]' : 'border-gray-200'
+                        isSelected ? 'border-[#D7514C]' : 'border-gray-200'
                       }`}
                     >
                       <img
@@ -230,10 +240,11 @@ export default function ProductClient({ product }: ProductClientProps) {
                         className="w-full h-full object-cover"
                       />
                     </button>
-                  ))}
-                  {safeImages.length > 4 && (
+                  );
+                  })}
+                  {displayedImages.length > 4 && (
                     <div className="bg-gray-100 rounded-lg border-2 border-gray-200 flex items-center justify-center aspect-square">
-                      <span className="text-sm text-gray-600">+{safeImages.length - 4} más</span>
+                      <span className="text-sm text-gray-600">+{displayedImages.length - 4} más</span>
                     </div>
                   )}
                 </div>
@@ -254,14 +265,25 @@ export default function ProductClient({ product }: ProductClientProps) {
                     {availabilityStatus.text}
                   </span>
                 </div>
-                <button
-                  onClick={() => setIsFavorite(!isFavorite)}
-                  className={`p-2 rounded-full transition-colors ${
-                    isFavorite ? 'text-[#D7514C]' : 'text-gray-400'
-                  } hover:text-[#D7514C]`}
-                >
-                  <Heart className={`w-6 h-6 ${isFavorite ? 'fill-current' : ''}`} />
-                </button>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => router.push(`/panel/soportes/${product.id}/editar`)}
+                    className="border-[#D7514C] text-[#D7514C] hover:bg-[#D7514C] hover:text-white"
+                  >
+                    <Edit className="w-4 h-4 mr-2" />
+                    Editar
+                  </Button>
+                  <button
+                    onClick={() => setIsFavorite(!isFavorite)}
+                    className={`p-2 rounded-full transition-colors ${
+                      isFavorite ? 'text-[#D7514C]' : 'text-gray-400'
+                    } hover:text-[#D7514C]`}
+                  >
+                    <Heart className={`w-6 h-6 ${isFavorite ? 'fill-current' : ''}`} />
+                  </button>
+                </div>
               </div>
               
               <h1 className="text-3xl font-bold text-gray-900 mb-2 break-words">

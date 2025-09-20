@@ -300,7 +300,7 @@ export default function HomeClient() {
                   className="flex-shrink-0 snap-start w-80 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
                   onClick={() => {
                     if (product.slug && product.slug !== 'null') {
-                      window.location.href = `/product/${product.slug}`;
+                      router.push(`/product/${product.slug}`);
                     }
                   }}
                 >

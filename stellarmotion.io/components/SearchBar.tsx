@@ -80,42 +80,24 @@ export default function SearchBar({ defaultKeywords = "", defaultLocation = "", 
     lastRequestTime.current = Date.now();
     
     try {
-      console.log("🔍 Fetching OpenStreetMap suggestions for:", query);
-      
-      // Usar Nominatim API para buscar lugares con rate limiting
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1&countrycodes=bo,ar,cl,co,ec,py,pe,uy,ve`,
-        {
-          headers: {
-            'User-Agent': 'StellarMotion/1.0 (https://stellarmotion.io)',
-          },
-        }
-      );
-      
-      console.log("📡 Response status:", response.status, "ok:", response.ok);
+      // Usar backend que integra Google Places
+      const response = await fetch(`/api/places?q=${encodeURIComponent(query)}`);
       if (response.ok) {
         const data = await response.json();
-        console.log("✅ OpenStreetMap suggestions received:", data);
-        
-        const suggestions = data.map((item: any) => ({
-          placeId: item.place_id,
-          label: item.display_name,
-          lat: parseFloat(item.lat),
-          lng: parseFloat(item.lon),
-          displayName: item.display_name
+        const suggestions = (Array.isArray(data) ? data : []).map((item: any) => ({
+          placeId: item.placeId,
+          label: item.label ?? item.displayName,
+          lat: typeof item.lat === 'number' ? item.lat : undefined,
+          lng: typeof item.lng === 'number' ? item.lng : undefined,
+          displayName: item.label ?? item.displayName
         }));
-        
-        console.log("📊 Data type:", typeof suggestions, "Array?", Array.isArray(suggestions), "Length:", suggestions?.length);
         setSuggestions(suggestions);
         setShowSuggestions(true);
-        console.log("🎯 State updated - suggestions:", suggestions, "showSuggestions: true");
       } else {
-        console.warn("❌ Nominatim API error:", response.status, response.statusText);
         setSuggestions([]);
         setShowSuggestions(false);
       }
     } catch (error) {
-      console.error("💥 Error fetching OpenStreetMap suggestions:", error);
       setSuggestions([]);
       setShowSuggestions(false);
     } finally {
@@ -163,53 +145,47 @@ export default function SearchBar({ defaultKeywords = "", defaultLocation = "", 
       }
       lastRequestTime.current = Date.now();
 
-      // Usar Nominatim para obtener el nombre del lugar desde coordenadas
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.coords.latitude}&lon=${position.coords.longitude}&addressdetails=1`,
-        {
-          headers: {
-            'User-Agent': 'StellarMotion/1.0 (https://stellarmotion.io)',
-          },
-        }
-      );
+      // Usar backend que integra Google Geocoding
+      const response = await fetch(`/api/places?lat=${position.coords.latitude}&lng=${position.coords.longitude}`);
       
       if (response.ok) {
         const data = await response.json();
-        if (data?.display_name) {
-          setLocation(data.display_name);
-          setShowSuggestions(false);
-          setSuggestions([]);
-          
-          // Store coordinates for the map to use
+        const label = data?.label ?? 'Ubicación';
+        setLocation(label);
+        setShowSuggestions(false);
+        setSuggestions([]);
+        
+        // Store coordinates for the map to use
+        if (typeof window !== 'undefined') {
           sessionStorage.setItem('selectedLocation', JSON.stringify({
-            label: data.display_name,
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
+          label,
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
           }));
+        }
+        
+        // If we're already on the search page, trigger a search
+        if (pathname === '/buscar-un-espacio') {
+          const qs = new URLSearchParams();
+          if (keywords.trim()) qs.set("keywords", keywords.trim());
+          qs.set("location", label);
           
-          // If we're already on the search page, trigger a search
-          if (pathname === '/buscar-un-espacio') {
-            const qs = new URLSearchParams();
-            if (keywords.trim()) qs.set("keywords", keywords.trim());
-            qs.set("location", data.display_name);
-            
-            const queryString = qs.toString();
-            const searchUrl = queryString ? `/buscar-un-espacio?${queryString}` : "/buscar-un-espacio";
-            
-            console.log("Updating search page with location:", searchUrl);
-            router.replace(searchUrl);
-          } else {
-            // Navigate to search page with the location
-            const qs = new URLSearchParams();
-            if (keywords.trim()) qs.set("keywords", keywords.trim());
-            qs.set("location", data.display_name);
-            
-            const queryString = qs.toString();
-            const searchUrl = queryString ? `/buscar-un-espacio?${queryString}` : "/buscar-un-espacio";
-            
-            console.log("Navigating to search page with location:", searchUrl);
-            router.push(searchUrl);
-          }
+          const queryString = qs.toString();
+          const searchUrl = queryString ? `/buscar-un-espacio?${queryString}` : "/buscar-un-espacio";
+          
+          console.log("Updating search page with location:", searchUrl);
+          router.replace(searchUrl);
+        } else {
+          // Navigate to search page with the location
+          const qs = new URLSearchParams();
+          if (keywords.trim()) qs.set("keywords", keywords.trim());
+          qs.set("location", label);
+          
+          const queryString = qs.toString();
+          const searchUrl = queryString ? `/buscar-un-espacio?${queryString}` : "/buscar-un-espacio";
+          
+          console.log("Navigating to search page with location:", searchUrl);
+          router.push(searchUrl);
         }
       } else {
         alert("No se pudo obtener la ubicación. Intenta de nuevo.");
@@ -229,11 +205,13 @@ export default function SearchBar({ defaultKeywords = "", defaultLocation = "", 
     
     // Store coordinates for the map to use
     if (suggestion.lat && suggestion.lng) {
-      sessionStorage.setItem('selectedLocation', JSON.stringify({
-        label: suggestion.displayName,
-        lat: suggestion.lat,
-        lng: suggestion.lng
-      }));
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('selectedLocation', JSON.stringify({
+          label: suggestion.displayName,
+          lat: suggestion.lat,
+          lng: suggestion.lng
+        }));
+      }
     }
     
     // If we're already on the search page, trigger a search
@@ -256,7 +234,7 @@ export default function SearchBar({ defaultKeywords = "", defaultLocation = "", 
   
     
     // Clear stored location when user types
-    if (sessionStorage.getItem('selectedLocation')) {
+    if (typeof window !== 'undefined' && sessionStorage.getItem('selectedLocation')) {
       sessionStorage.removeItem('selectedLocation');
     }
   };

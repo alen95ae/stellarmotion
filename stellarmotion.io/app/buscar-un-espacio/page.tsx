@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { RedSlider } from "@/components/ui/red-slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuerySync } from '@/hooks/useQuerySync';
@@ -30,15 +30,16 @@ interface Product {
   pricePerMonth: number;
   rating: number;
   reviewsCount: number;
-  images: string;
+  images: string[];
   featured: boolean;
   available: boolean;
   status: string;
-  latitude: number;
-  longitude: number;
+  latitude: number | null;
+  longitude: number | null;
   shortDescription: string;
   description: string;
-  tags: string;
+  tags: string[];
+  ownerName?: string | null;
   category?: {
     id: string;
     slug: string;
@@ -49,6 +50,7 @@ interface Product {
 
 export default function BuscarEspacioPage() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const setQuery = useQuerySync();
   const { categories, loading: categoriesLoading } = useCategories();
   
@@ -93,7 +95,37 @@ export default function BuscarEspacioPage() {
         
         // Verificar que la respuesta sea un array
         if (Array.isArray(data)) {
-          setProducts(data);
+          const sanitized = data.map((item: any) => {
+            const images = Array.isArray(item.images)
+              ? item.images
+              : typeof item.images === 'string' && item.images.trim()
+              ? [item.images.trim()]
+              : [];
+
+            const tags = Array.isArray(item.tags)
+              ? item.tags
+              : typeof item.tags === 'string'
+              ? item.tags.split(',').map((tag: string) => tag.trim()).filter(Boolean)
+              : [];
+
+            const latitude = typeof item.latitude === 'number' && !Number.isNaN(item.latitude)
+              ? item.latitude
+              : null;
+
+            const longitude = typeof item.longitude === 'number' && !Number.isNaN(item.longitude)
+              ? item.longitude
+              : null;
+
+            return {
+              ...item,
+              images,
+              tags,
+              latitude,
+              longitude,
+            } as Product;
+          });
+
+          setProducts(sanitized);
         } else {
           console.warn('Invalid response format from supports API:', data);
           setProducts([]);
@@ -122,6 +154,16 @@ export default function BuscarEspacioPage() {
   const handleCategoryClick = (slug: string) => {
     setQuery({ category: slug === category ? null : slug });
   };
+
+  const productsWithCoordinates = products.filter((product) => {
+    const { latitude, longitude } = product;
+    return (
+      typeof latitude === 'number' &&
+      typeof longitude === 'number' &&
+      !Number.isNaN(latitude) &&
+      !Number.isNaN(longitude)
+    );
+  });
 
   // Función para obtener el estado de disponibilidad
   const getAvailabilityStatus = (status: string, available: boolean) => {
@@ -293,11 +335,11 @@ export default function BuscarEspacioPage() {
 
           {/* Map Section - 3/4 width */}
           <div className="w-3/4">
-            {products.length > 0 ? (
+            {productsWithCoordinates.length > 0 ? (
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 h-[600px]">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">Ubicaciones en el mapa</h2>
                 <div className="h-[540px]">
-                  <SearchMap products={products} />
+                  <SearchMap products={productsWithCoordinates} />
                 </div>
               </div>
             ) : (
@@ -356,11 +398,11 @@ export default function BuscarEspacioPage() {
                   <div
                     key={product.id}
                     className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
-                    onClick={() => window.location.href = `/product/${product.slug}`}
+                    onClick={() => router.push(`/product/${product.slug}`)}
                   >
                     <div className="relative">
                       <img
-                        src={(Array.isArray(product.images) ? product.images[0] : undefined) || '/placeholder.svg?height=200&width=300'}
+                        src={product.images?.[0] || '/placeholder.svg?height=200&width=300'}
                         alt={product.title}
                         className="w-full h-48 object-cover"
                       />

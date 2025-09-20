@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
-const KEY = process.env.GOOGLE_MAPS_API_KEY;
+// Prefer server key; keep backward compatibility with old var name
+const KEY = process.env.GOOGLE_MAPS_SERVER_KEY || process.env.GOOGLE_MAPS_API_KEY;
 
 // Mock data for testing when Google API fails
 const mockPlaces = [
@@ -97,29 +98,8 @@ export async function GET(req: Request) {
       console.error("Google Maps API error:", googleError);
     }
 
-    // Fallback to OpenStreetMap Nominatim if Google API fails
+    // No OpenStreetMap fallback: if Google fails, return simple coordinate label when possible
     if (lat && lng) {
-      try {
-        // Try OpenStreetMap Nominatim as fallback
-        const nominatimResponse = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=es&addressdetails=1`
-        );
-        
-        if (nominatimResponse.ok) {
-          const nominatimData = await nominatimResponse.json();
-          if (nominatimData.display_name) {
-            return NextResponse.json({
-              label: nominatimData.display_name,
-              lat: Number(lat),
-              lng: Number(lng),
-            });
-          }
-        }
-      } catch (nominatimError) {
-        console.error("Nominatim API error:", nominatimError);
-      }
-      
-      // Final fallback with coordinates
       return NextResponse.json({
         label: `Ubicación (${lat}, ${lng})`,
         lat: Number(lat),

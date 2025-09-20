@@ -85,6 +85,7 @@ model Support {
   heightM                Float?
   latitude               Float?
   longitude              Float?
+  googleMapsLink         String? // Enlace original de Google Maps
   address                String?
   city                   String?
   country                String?

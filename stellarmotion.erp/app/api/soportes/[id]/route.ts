@@ -1,6 +1,17 @@
 import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
 
+function withCors(response: NextResponse) {
+  response.headers.set("Access-Control-Allow-Origin", "*")
+  response.headers.set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+  response.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+  return response
+}
+
+export async function OPTIONS() {
+  return withCors(new NextResponse(null, { status: 204 }))
+}
+
 // Funciones de normalización y cálculo
 function toNum(n: any) { const x = Number(n); return isFinite(x) ? x : 0 }
 function calcArea(widthM?: any, heightM?: any) {
@@ -14,8 +25,9 @@ function mapAvailableFromStatus(status?: string) {
 }
 
 async function normalizeSupportInput(data: any, existing?: any) {
-  const widthM  = data.widthM ?? existing?.widthM
-  const heightM = data.heightM ?? existing?.heightM
+  // Usar los valores enviados directamente, solo usar existentes si no se envió nada
+  const widthM  = data.widthM !== undefined ? data.widthM : existing?.widthM
+  const heightM = data.heightM !== undefined ? data.heightM : existing?.heightM
   const areaM2  = calcArea(widthM, heightM)
 
   const status = (data.status ?? existing?.status ?? 'DISPONIBLE') as any
@@ -36,63 +48,107 @@ async function normalizeSupportInput(data: any, existing?: any) {
   }
 }
 
-export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
+// GET - Obtener un soporte específico
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = await params
-    const item = await prisma.support.findUnique({ 
+    const { id } = await params;
+    
+    if (!id) {
+      return withCors(NextResponse.json(
+        { error: "ID de soporte requerido" },
+        { status: 400 }
+      ));
+    }
+
+    const support = await prisma.support.findUnique({
       where: { id },
       include: {
-        company: {
-          select: { name: true }
-        }
+        company: { select: { name: true } },
+        category: { select: { id: true, slug: true, label: true, iconKey: true } },
+        partner: { select: { id: true, name: true, companyName: true, email: true } }
       }
-    })
-    
-    if (!item) {
-      return NextResponse.json(
+    });
+
+    if (!support) {
+      return withCors(NextResponse.json(
         { error: "Soporte no encontrado" },
         { status: 404 }
-      )
+      ));
     }
-    
-    return NextResponse.json(item)
+
+    return withCors(NextResponse.json(support));
   } catch (error) {
-    console.error("Error fetching support:", error)
-    return NextResponse.json(
+    console.error("Error fetching support:", error);
+    return withCors(NextResponse.json(
       { error: "Error interno del servidor" },
       { status: 500 }
-    )
+    ));
   }
 }
 
+// PUT - Actualizar un soporte existente
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = await params
+    const { id } = await params;
     const data = await req.json()
     
-    console.log("API PUT - Datos recibidos:", data)
-    console.log("API PUT - ID:", id)
+    console.log('ERP: Actualizando soporte con ID:', id);
+    console.log('ERP: Datos recibidos:', data);
     
-    // Validación básica
-    if (!data.code || !data.title) {
-      console.log("API PUT - Error de validación:", { code: data.code, title: data.title })
-      return NextResponse.json(
-        { error: "Código y título son requeridos" },
+    if (!id) {
+      return withCors(NextResponse.json(
+        { error: "ID de soporte requerido" },
         { status: 400 }
-      )
+      ));
     }
-    
-    // Leer el soporte existente para normalización
-    const existing = await prisma.support.findUnique({ where: { id } })
-    if (!existing) {
-      return NextResponse.json(
+
+    // Verificar que el soporte existe
+    const existingSupport = await prisma.support.findUnique({
+      where: { id }
+    });
+
+    console.log('ERP: Soporte encontrado:', existingSupport ? 'SÍ' : 'NO');
+    if (existingSupport) {
+      console.log('ERP: Soporte existente:', existingSupport.id, existingSupport.title);
+    }
+
+    if (!existingSupport) {
+      console.log('ERP: Error - Soporte no encontrado con ID:', id);
+      return withCors(NextResponse.json(
         { error: "Soporte no encontrado" },
         { status: 404 }
-      )
+      ));
+    }
+
+    // Permitir edición sin verificación de permisos por ahora
+    
+    // Si no hay partnerId en los datos, usar el existente
+    if (!data.partnerId) {
+      data.partnerId = existingSupport.partnerId;
     }
     
-    const payload = await normalizeSupportInput(data, existing)
-    console.log("API PUT - Payload normalizado:", payload)
+    // Validar que el partner existe
+    if (data.partnerId) {
+      const partner = await prisma.partner.findUnique({
+        where: { id: data.partnerId }
+      })
+      if (!partner) {
+        return withCors(NextResponse.json(
+          { error: "Partner no encontrado" },
+          { status: 400 }
+        ));
+      }
+    }
+    
+    // Validación básica
+    if (!data.title) {
+      return withCors(NextResponse.json(
+        { error: "Título es requerido" },
+        { status: 400 }
+      ));
+    }
+    
+    const payload = await normalizeSupportInput(data, existingSupport)
     
     // Normalizar imageUrl: si es una ruta local, asegurar que empiece con /
     let normalizedImageUrl = payload.imageUrl
@@ -121,72 +177,73 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       }
     }
     
-    const allowedKeys = [
-      'code','title','type','status','owner','description','city','country','lighting','available','slug','categoryId','featured',
-      // numéricas/casteadas
-      'priceMonth','widthM','heightM','latitude','longitude','pricePerM2','areaM2','productionCost','dailyImpressions','printingCost','rating','reviewsCount'
-    ] as const
-
-    const base: Record<string, any> = {}
-    for (const k of Object.keys(payload)) {
-      if ((allowedKeys as readonly string[]).includes(k)) base[k] = (payload as any)[k]
-    }
-
-    const updateData = {
-      ...base,
-      imageUrl: normalizedImageUrl !== undefined ? normalizedImageUrl : base.imageUrl,
-      images: normalizedImages !== undefined ? JSON.stringify(normalizedImages) : base.images,
-      priceMonth: base.priceMonth !== undefined ? parseFloat(base.priceMonth) : null,
-      widthM: base.widthM !== undefined ? parseFloat(base.widthM) : null,
-      heightM: base.heightM !== undefined ? parseFloat(base.heightM) : null,
-      latitude: base.latitude !== undefined ? parseFloat(base.latitude) : null,
-      longitude: base.longitude !== undefined ? parseFloat(base.longitude) : null,
-      pricePerM2: base.pricePerM2 !== undefined ? parseFloat(base.pricePerM2) : null,
-      areaM2: base.areaM2 !== undefined ? parseFloat(base.areaM2) : null,
-      productionCost: base.productionCost !== undefined ? parseFloat(base.productionCost) : null,
-      dailyImpressions: base.dailyImpressions !== undefined ? parseInt(base.dailyImpressions) : null,
-      printingCost: base.printingCost !== undefined ? parseFloat(base.printingCost) : null,
-      rating: base.rating !== undefined ? parseFloat(base.rating) : null,
-      reviewsCount: base.reviewsCount !== undefined ? parseInt(base.reviewsCount) : 0,
-    }
-    
-    console.log("API PUT - Datos finales para actualizar:", updateData)
-    
-    let updated
-    try {
-      updated = await prisma.support.update({ 
-        where: { id }, 
-        data: updateData
-      })
-    } catch (e: any) {
-      console.error('API PUT - Prisma error:', e)
-      if (e?.code === 'P2002') {
-        return NextResponse.json({ error: 'Código duplicado' }, { status: 409 })
+    const updated = await prisma.support.update({
+      where: { id },
+      data: {
+        ...payload,
+        imageUrl: normalizedImageUrl || null,
+        images: normalizedImages ? JSON.stringify(normalizedImages) : null,
+        priceMonth: payload.priceMonth ? parseFloat(payload.priceMonth) : null,
+        widthM: payload.widthM ? parseFloat(payload.widthM) : null,
+        heightM: payload.heightM ? parseFloat(payload.heightM) : null,
+        latitude: payload.latitude ? parseFloat(payload.latitude) : null,
+        longitude: payload.longitude ? parseFloat(payload.longitude) : null,
+        pricePerM2: payload.pricePerM2 ? parseFloat(payload.pricePerM2) : null,
+        areaM2: payload.areaM2 ? parseFloat(payload.areaM2) : null,
+        productionCost: payload.productionCost ? parseFloat(payload.productionCost) : null,
+        dailyImpressions: payload.dailyImpressions ? parseInt(payload.dailyImpressions) : null,
+        rating: payload.rating ? parseFloat(payload.rating) : null,
+        reviewsCount: payload.reviewsCount ? parseInt(payload.reviewsCount) : 0,
+        printingCost: payload.printingCost ? parseFloat(payload.printingCost) : null,
       }
-      return NextResponse.json({ error: 'Error al actualizar en base de datos' }, { status: 500 })
-    }
+    })
     
-    console.log("API PUT - Soporte actualizado:", updated)
-    return NextResponse.json(updated)
+    return withCors(NextResponse.json(updated, { status: 200 }))
   } catch (error) {
     console.error("Error updating support:", error)
-    return NextResponse.json(
+    return withCors(NextResponse.json(
       { error: "Error interno del servidor" },
       { status: 500 }
-    )
+    ))
   }
 }
 
-export async function DELETE(_: Request, { params }: { params: Promise<{ id: string }> }) {
+// DELETE - Eliminar un soporte
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = await params
-    await prisma.support.delete({ where: { id } })
-    return NextResponse.json({ ok: true })
+    const { id } = await params;
+    
+    if (!id) {
+      return withCors(NextResponse.json(
+        { error: "ID de soporte requerido" },
+        { status: 400 }
+      ));
+    }
+
+    // Verificar que el soporte existe
+    const existingSupport = await prisma.support.findUnique({
+      where: { id }
+    });
+
+    if (!existingSupport) {
+      return withCors(NextResponse.json(
+        { error: "Soporte no encontrado" },
+        { status: 404 }
+      ));
+    }
+
+    // Permitir eliminación sin verificación de permisos por ahora
+    
+    await prisma.support.delete({
+      where: { id }
+    })
+    
+    return withCors(NextResponse.json({ success: true }, { status: 200 }))
   } catch (error) {
     console.error("Error deleting support:", error)
-    return NextResponse.json(
+    return withCors(NextResponse.json(
       { error: "Error interno del servidor" },
       { status: 500 }
-    )
+    ))
   }
 }
