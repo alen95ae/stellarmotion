@@ -4,15 +4,31 @@ import ProductClient from "./ProductClient";
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   
+  // Validar que el slug no sea null o vacío
+  if (!slug || slug === 'null') {
+    return {
+      title: 'Producto no encontrado | StellarMotion',
+      description: 'El producto solicitado no existe'
+    };
+  }
+  
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'}/api/products/${slug}`, {
+    // Construir la URL base correctamente
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3001';
+    const response = await fetch(`${baseUrl}/api/products/${slug}`, {
       cache: 'no-store'
     });
     
-    if (!response.ok) return {};
+    if (!response.ok) return {
+      title: 'Producto no encontrado | StellarMotion',
+      description: 'El producto solicitado no existe'
+    };
     
     const product = await response.json();
-    if (!product) return {};
+    if (!product) return {
+      title: 'Producto no encontrado | StellarMotion',
+      description: 'El producto solicitado no existe'
+    };
     
     return {
       title: `${product.title} | StellarMotion`,
@@ -26,16 +42,25 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     };
   } catch (error) {
     console.error('Error generating metadata:', error);
-    return {};
+    return {
+      title: 'Producto no encontrado | StellarMotion',
+      description: 'El producto solicitado no existe'
+    };
   }
 }
 
 export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   
+  // Validar que el slug no sea null o vacío
+  if (!slug || slug === 'null') {
+    return notFound();
+  }
+  
   try {
-    // Usar la API del frontend que ya procesa las imágenes correctamente
-    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'}/api/products/${slug}`, {
+    // Construir la URL base correctamente
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3001';
+    const response = await fetch(`${baseUrl}/api/products/${slug}`, {
       cache: 'no-store'
     });
     

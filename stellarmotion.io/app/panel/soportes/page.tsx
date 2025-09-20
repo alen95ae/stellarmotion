@@ -15,7 +15,8 @@ import {
   DollarSign,
   Zap,
   Ruler,
-  Users
+  Users,
+  Upload
 } from 'lucide-react';
 
 export const metadata: Metadata = {
@@ -161,10 +162,16 @@ export default function SoportesPage() {
             Administra todos tus espacios publicitarios
           </p>
         </div>
-        <Button className="bg-blue-600 hover:bg-blue-700">
-          <Plus className="w-4 h-4 mr-2" />
-          Nuevo Soporte
-        </Button>
+        <div className="flex space-x-3">
+          <Button variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-50">
+            <Upload className="w-4 h-4 mr-2" />
+            Importar masivamente
+          </Button>
+          <Button className="bg-[#D7514C] hover:bg-[#c23d3b] text-white">
+            <Plus className="w-4 h-4 mr-2" />
+            Nuevo Soporte
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -251,12 +258,6 @@ export default function SoportesPage() {
               <option value="pantallas">Pantallas LED</option>
               <option value="mupis">MUPIs</option>
               <option value="totems">Totems</option>
-            </select>
-            <select className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
-              <option value="">Todas las ciudades</option>
-              <option value="la-paz">La Paz</option>
-              <option value="santa-cruz">Santa Cruz</option>
-              <option value="cochabamba">Cochabamba</option>
             </select>
           </div>
         </CardContent>
@@ -380,80 +381,6 @@ export default function SoportesPage() {
         </CardContent>
       </Card>
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Acciones Rápidas</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <Button variant="outline" className="w-full justify-start">
-                <Plus className="w-4 h-4 mr-2" />
-                Registrar nuevo soporte
-              </Button>
-              <Button variant="outline" className="w-full justify-start">
-                <Monitor className="w-4 h-4 mr-2" />
-                Importar soportes masivamente
-              </Button>
-              <Button variant="outline" className="w-full justify-start">
-                <MapPin className="w-4 h-4 mr-2" />
-                Ver todos en el mapa
-              </Button>
-              <Button variant="outline" className="w-full justify-start">
-                <DollarSign className="w-4 h-4 mr-2" />
-                Actualizar precios
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Resumen de Ocupación</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Vallas</span>
-                <div className="flex items-center space-x-2">
-                  <div className="w-24 bg-gray-200 rounded-full h-2">
-                    <div className="bg-blue-600 h-2 rounded-full" style={{ width: '50%' }} />
-                  </div>
-                  <span className="text-sm font-medium">1/2</span>
-                </div>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Pantallas LED</span>
-                <div className="flex items-center space-x-2">
-                  <div className="w-24 bg-gray-200 rounded-full h-2">
-                    <div className="bg-blue-600 h-2 rounded-full" style={{ width: '100%' }} />
-                  </div>
-                  <span className="text-sm font-medium">2/2</span>
-                </div>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm">MUPIs</span>
-                <div className="flex items-center space-x-2">
-                  <div className="w-24 bg-gray-200 rounded-full h-2">
-                    <div className="bg-blue-600 h-2 rounded-full" style={{ width: '100%' }} />
-                  </div>
-                  <span className="text-sm font-medium">1/1</span>
-                </div>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Totems</span>
-                <div className="flex items-center space-x-2">
-                  <div className="w-24 bg-gray-200 rounded-full h-2">
-                    <div className="bg-red-600 h-2 rounded-full" style={{ width: '100%' }} />
-                  </div>
-                  <span className="text-sm font-medium">0/1 (Mant.)</span>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
     </div>
   );
 }

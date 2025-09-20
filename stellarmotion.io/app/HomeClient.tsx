@@ -298,7 +298,11 @@ export default function HomeClient() {
                 <div
                   key={product.id}
                   className="flex-shrink-0 snap-start w-80 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
-                  onClick={() => window.location.href = `/product/${product.slug}`}
+                  onClick={() => {
+                    if (product.slug && product.slug !== 'null') {
+                      window.location.href = `/product/${product.slug}`;
+                    }
+                  }}
                 >
                   <div className="relative">
                     <img

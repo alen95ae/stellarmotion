@@ -8,8 +8,24 @@ export async function GET(
   try {
     const { slug } = await params;
     
-    // Obtener el soporte del backend por slug
-    const support = await fetchFromERP(API_ENDPOINTS.supportBySlug(slug));
+    // Si el slug es null o vacío, devolver 404
+    if (!slug || slug === 'null') {
+      return NextResponse.json(
+        { error: 'Product not found' },
+        { status: 404 }
+      );
+    }
+    
+    let support;
+    
+    // Si el slug es generado (support-{id}), buscar por ID
+    if (slug.startsWith('support-')) {
+      const id = slug.replace('support-', '');
+      support = await fetchFromERP(`${API_ENDPOINTS.supports}/${id}`);
+    } else {
+      // Buscar por slug normal
+      support = await fetchFromERP(API_ENDPOINTS.supportBySlug(slug));
+    }
 
     if (!support) {
       return NextResponse.json(

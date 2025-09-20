@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
+import { getServerSession } from 'next-auth'
+import { authOptions } from '../auth/[...nextauth]/route'
 
 function withCors(response: NextResponse) {
   response.headers.set("Access-Control-Allow-Origin", "*")
@@ -50,6 +52,7 @@ async function normalizeSupportInput(data: any, existing?: any) {
 
 export async function GET(req: Request) {
   try {
+    const session = await getServerSession(authOptions)
     const { searchParams } = new URL(req.url)
     const q = searchParams.get("q") || ""
     const statuses = (searchParams.get('status') || '')
@@ -60,6 +63,7 @@ export async function GET(req: Request) {
     const city = searchParams.get('city')
     const country = searchParams.get('country')
     const available = searchParams.get('available')
+    const partnerId = searchParams.get('partnerId')
     
     // Si se busca por slug específico, devolver solo ese soporte
     if (slug) {
@@ -73,6 +77,12 @@ export async function GET(req: Request) {
       return NextResponse.json(support)
     }
     
+    // Autorización: si es partner, solo puede ver sus propios soportes
+    let effectivePartnerId = partnerId
+    if (session?.user && session.user.role === 'PARTNER' && session.user.partnerId) {
+      effectivePartnerId = session.user.partnerId
+    }
+
     const where: any = {
       AND: [
         statuses.length ? { status: { in: statuses as any } } : {},
@@ -81,6 +91,7 @@ export async function GET(req: Request) {
         city ? { city: { contains: city } } : {},
         country ? { country: { contains: country } } : {},
         available ? { available: available === 'true' } : {},
+        effectivePartnerId ? { partnerId: effectivePartnerId } : {},
         {
           OR: [
             { code: { contains: q } },
@@ -97,7 +108,7 @@ export async function GET(req: Request) {
       ]
     }
     
-    if (!q && !statuses.length && !categoryId && !featured && !city && !country && !available) {
+    if (!q && !statuses.length && !categoryId && !featured && !city && !country && !available && !effectivePartnerId) {
       delete where.AND
       where.OR = [
         { code: { contains: '' } },
@@ -154,7 +165,13 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
+    const session = await getServerSession(authOptions)
     const data = await req.json()
+    
+    // Si el usuario es partner, asignar automáticamente su partnerId
+    if (session?.user && session.user.role === 'PARTNER' && session.user.partnerId) {
+      data.partnerId = session.user.partnerId
+    }
     
     // Validación básica - para web pública, slug es opcional pero recomendado
     if (!data.title) {

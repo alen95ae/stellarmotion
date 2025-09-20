@@ -46,11 +46,16 @@ export async function GET(request: NextRequest) {
     const limit = searchParams.get('limit');
 
     if (category) {
-      // Buscar el ID de la categoría por slug
-      const categories = await fetchFromERP(API_ENDPOINTS.categories);
-      const categoryObj = categories.find((cat: any) => cat.slug === category);
-      if (categoryObj) {
-        params.append('categoryId', categoryObj.id);
+      try {
+        // Buscar el ID de la categoría por slug
+        const categories = await fetchFromERP(API_ENDPOINTS.categories);
+        const categoryObj = categories.find((cat: any) => cat.slug === category);
+        if (categoryObj) {
+          params.append('categoryId', categoryObj.id);
+        }
+      } catch (error) {
+        console.warn('Error fetching categories for filtering:', error);
+        // Continuar sin filtro de categoría si falla
       }
     }
 
@@ -66,7 +71,15 @@ export async function GET(request: NextRequest) {
     const supports = await fetchFromERP(url);
 
     // Transformar soportes a formato de productos para compatibilidad
-    const products = supports.map((support: any) => {
+    const products = supports
+      .filter((support: any) => {
+        // Si no tiene slug, generar uno basado en el ID
+        if (!support.slug || support.slug === 'null') {
+          support.slug = `support-${support.id}`;
+        }
+        return true; // Incluir todos los soportes
+      })
+      .map((support: any) => {
       let tags = [];
       let images = [];
       

@@ -41,6 +41,55 @@ async function main() {
     data: { name: 'StellarMotion Media', website: 'https://stellarmotion.io' },
   })
 
+  // Crear categorías de ejemplo
+  const categories = await Promise.all([
+    prisma.category.upsert({
+      where: { slug: 'vallas' },
+      update: {},
+      create: {
+        slug: 'vallas',
+        label: 'Vallas',
+        iconKey: 'vallas'
+      }
+    }),
+    prisma.category.upsert({
+      where: { slug: 'mupis' },
+      update: {},
+      create: {
+        slug: 'mupis',
+        label: 'Mupis',
+        iconKey: 'mupis'
+      }
+    }),
+    prisma.category.upsert({
+      where: { slug: 'pantallas' },
+      update: {},
+      create: {
+        slug: 'pantallas',
+        label: 'Pantallas',
+        iconKey: 'pantallas'
+      }
+    }),
+    prisma.category.upsert({
+      where: { slug: 'carteleras' },
+      update: {},
+      create: {
+        slug: 'carteleras',
+        label: 'Carteleras',
+        iconKey: 'carteleras'
+      }
+    }),
+    prisma.category.upsert({
+      where: { slug: 'displays' },
+      update: {},
+      create: {
+        slug: 'displays',
+        label: 'Displays',
+        iconKey: 'displays'
+      }
+    })
+  ])
+
   // Crear soportes de ejemplo
   const existingSupports = await prisma.support.count()
   if (existingSupports < 5) {
@@ -62,7 +111,8 @@ async function main() {
           productionCost: 144.0,
           productionCostOverride: false,
           owner: 'Imagen',
-          companyId: comp.id, 
+          companyId: comp.id,
+          categoryId: categories[0].id, // Vallas
           latitude: 41.503, 
           longitude: -5.744 
         },
@@ -81,7 +131,8 @@ async function main() {
           pricePerM2: 15.0,
           productionCost: 360.0,
           productionCostOverride: false,
-          companyId: comp.id, 
+          companyId: comp.id,
+          categoryId: categories[2].id, // Pantallas
           latitude: 41.505, 
           longitude: -5.741 
         },
@@ -101,7 +152,8 @@ async function main() {
           productionCost: 81.0,
           productionCostOverride: false,
           owner: 'Ayuntamiento',
-          companyId: comp.id, 
+          companyId: comp.id,
+          categoryId: categories[1].id, // Mupis
           latitude: 40.4168, 
           longitude: -3.7038 
         },
@@ -121,7 +173,8 @@ async function main() {
           productionCost: 120.0,
           productionCostOverride: false,
           owner: 'Clear Channel',
-          companyId: comp.id, 
+          companyId: comp.id,
+          categoryId: categories[1].id, // Mupis
           latitude: 41.3851, 
           longitude: 2.1734 
         },
@@ -141,7 +194,8 @@ async function main() {
           productionCost: 300.0,
           productionCostOverride: false,
           owner: 'JCDecaux',
-          companyId: comp.id, 
+          companyId: comp.id,
+          categoryId: categories[4].id, // Displays
           latitude: 39.4699, 
           longitude: -0.3763 
         },
@@ -294,6 +348,7 @@ async function main() {
   console.log('Seed completado:', { 
     admin: admin.email, 
     company: comp.name,
+    categories: categories.length,
     contacts: contacts.length,
     tags: tags.length
   })

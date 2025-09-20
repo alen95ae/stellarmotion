@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { supabaseAdmin } from "@/lib/supabaseAdmin"
+// import { supabaseAdmin } from "@/lib/supabaseAdmin"
 
 // POST /api/test-supabase
 // Inserta un registro ficticio en la tabla `soportes` usando el cliente admin.
@@ -12,7 +12,10 @@ export async function POST() {
       )
     }
 
-    const payload = {
+    // Temporalmente deshabilitado para evitar errores de build
+    return NextResponse.json({ ok: false, error: "API temporalmente deshabilitada" }, { status: 503 })
+
+    /* const payload = {
       title: "Soporte de prueba",
       status: "DISPONIBLE",
       created_at: new Date().toISOString(),
@@ -22,7 +25,7 @@ export async function POST() {
     if (error) {
       return NextResponse.json({ ok: false, error: error.message }, { status: 400 })
     }
-    return NextResponse.json({ ok: true, soporte: data })
+    return NextResponse.json({ ok: true, soporte: data }) */
   } catch (error: any) {
     console.error("test-supabase error:", error)
     return NextResponse.json({ ok: false, error: error?.message || "Unknown error" }, { status: 500 })

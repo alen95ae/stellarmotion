@@ -24,6 +24,11 @@ interface BubbleMenuProps {
 
 export function BubbleMenu({ data }: BubbleMenuProps) {
   const [hoveredBubble, setHoveredBubble] = useState<string | null>(null)
+  const [isHydrated, setIsHydrated] = useState(false)
+
+  useEffect(() => {
+    setIsHydrated(true)
+  }, [])
 
   // Función para obtener el tamaño de las burbujas con soportes como la más grande
   const getBubbleSize = (item: BubbleData) => {
@@ -83,6 +88,22 @@ export function BubbleMenu({ data }: BubbleMenuProps) {
     }
   }
 
+
+  // Evitar problemas de hidratación
+  if (!isHydrated) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4">
+        <div className="text-center mb-12">
+          <div className="flex justify-center mb-6">
+            <h1 className="text-4xl font-bold text-slate-800">Panel de Propietario</h1>
+          </div>
+        </div>
+        <div className="flex items-center justify-center h-96">
+          <div className="text-slate-600">Cargando...</div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4">

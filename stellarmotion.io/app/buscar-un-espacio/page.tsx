@@ -86,9 +86,17 @@ export default function BuscarEspacioPage() {
       
       if (response.ok) {
         const data = await response.json();
-        setProducts(data);
+        
+        // Verificar que la respuesta sea un array
+        if (Array.isArray(data)) {
+          setProducts(data);
+        } else {
+          console.warn('Invalid response format from products API:', data);
+          setProducts([]);
+        }
       } else {
-        console.error('Error fetching products:', response.statusText);
+        const errorText = await response.text();
+        console.error('Error fetching products:', response.status, errorText);
         setProducts([]);
       }
     } catch (error) {

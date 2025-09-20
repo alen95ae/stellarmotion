@@ -1,231 +1,274 @@
-import { Metadata } from 'next';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+'use client'
+
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { 
   BarChart3, 
   Calendar, 
   Users, 
+  FileText, 
+  TrendingUp, 
+  Wrench, 
+  Map as MapIcon, 
+  MessageSquare, 
+  Settings,
+  Home,
   Monitor,
-  TrendingUp,
-  DollarSign,
-  Clock,
-  AlertTriangle,
-  Map as MapIcon
+  Megaphone,
+  Plus
 } from 'lucide-react';
 
-export const metadata: Metadata = {
-  title: 'Inicio - Panel de Control | StellarMotion',
-  description: 'Dashboard principal con métricas y KPIs'
-};
-
-// Mock data - en producción vendría de la base de datos
-const stats = {
-  totalSoportes: 24,
-  disponibles: 8,
-  ocupados: 14,
-  reservados: 2,
-  ingresosMes: 45600,
-  reservasVencen: 3,
-  ocupacionMensual: [
-    { mes: 'Ene', ocupacion: 65 },
-    { mes: 'Feb', ocupacion: 78 },
-    { mes: 'Mar', ocupacion: 85 },
-    { mes: 'Abr', ocupacion: 72 },
-    { mes: 'May', ocupacion: 90 },
-    { mes: 'Jun', ocupacion: 88 },
-  ]
-};
-
-const proximasReservas = [
+const dashboardCards = [
   {
-    id: 1,
-    cliente: 'Coca Cola Bolivia',
-    soporte: 'Valla Zona Sur - A001',
-    fechaVence: '2025-01-15',
-    estado: 'confirmada'
+    title: 'Soportes',
+    description: 'Gestiona tus soportes publicitarios',
+    href: '/panel/soportes',
+    icon: Monitor,
+    color: 'bg-red-100'
   },
   {
-    id: 2,
-    cliente: 'Banco Nacional',
-    soporte: 'Pantalla LED Centro - P005',
-    fechaVence: '2025-01-18',
-    estado: 'pendiente'
+    title: 'Reservas',
+    description: 'Ve y gestiona las reservas activas',
+    href: '/panel/reservas',
+    icon: Calendar,
+    color: 'bg-red-100'
   },
   {
-    id: 3,
-    cliente: 'Supermercados Ketal',
-    soporte: 'MUPI Avenida Arce - M012',
-    fechaVence: '2025-01-20',
-    estado: 'confirmada'
+    title: 'Clientes',
+    description: 'Administra tu base de clientes',
+    href: '/panel/clientes',
+    icon: Users,
+    color: 'bg-red-100'
+  },
+  {
+    title: 'Facturación',
+    description: 'Controla tus ingresos y facturas',
+    href: '/panel/facturacion',
+    icon: FileText,
+    color: 'bg-red-100'
+  },
+  {
+    title: 'Métricas',
+    description: 'Analiza el rendimiento de tus soportes',
+    href: '/panel/metricas',
+    icon: TrendingUp,
+    color: 'bg-red-100'
+  },
+  {
+    title: 'Mapa',
+    description: 'Visualiza tus soportes en el mapa',
+    href: '/panel/mapa',
+    icon: MapIcon,
+    color: 'bg-red-100'
   }
 ];
 
-const soportesPorEstado = [
-  { estado: 'Disponible', cantidad: 8, color: 'bg-green-500' },
-  { estado: 'Ocupado', cantidad: 14, color: 'bg-blue-500' },
-  { estado: 'Reservado', cantidad: 2, color: 'bg-yellow-500' },
+const quickActions = [
+  {
+    title: 'Nuevo Soporte',
+    description: 'Publicar un nuevo espacio publicitario',
+    href: '/publicar-espacio',
+    icon: Plus,
+    color: 'bg-red-100'
+  },
+  {
+    title: 'Ver Anuncios',
+    description: 'Gestionar anuncios existentes',
+    href: '/panel/anuncios',
+    icon: Megaphone,
+    color: 'bg-red-100'
+  },
+  {
+    title: 'Mensajería',
+    description: 'Comunicación con clientes',
+    href: '/panel/mensajeria',
+    icon: MessageSquare,
+    color: 'bg-red-100'
+  },
+  {
+    title: 'Ajustes',
+    description: 'Configuración del perfil',
+    href: '/panel/ajustes',
+    icon: Settings,
+    color: 'bg-red-100'
+  }
 ];
 
-export default function InicioPage() {
-  const ocupacionPromedio = Math.round(
-    stats.ocupacionMensual.reduce((acc, curr) => acc + curr.ocupacion, 0) / stats.ocupacionMensual.length
-  );
+interface DashboardStats {
+  totalSupports: number;
+  activeReservations: number;
+  totalClients: number;
+  monthlyRevenue: number;
+}
+
+export default function DashboardPage() {
+  const [stats, setStats] = useState<DashboardStats>({
+    totalSupports: 0,
+    activeReservations: 0,
+    totalClients: 0,
+    monthlyRevenue: 0
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchDashboardStats();
+  }, []);
+
+  const fetchDashboardStats = async () => {
+    try {
+      setLoading(true);
+      
+      // Obtener soportes del partner actual
+      const supportsResponse = await fetch('/api/soportes');
+      const supports = supportsResponse.ok ? await supportsResponse.json() : [];
+      
+      // Calcular estadísticas
+      const totalSupports = supports.length;
+      const availableSupports = supports.filter((s: any) => s.status === 'DISPONIBLE').length;
+      const monthlyRevenue = supports.reduce((sum: number, support: any) => 
+        sum + (support.priceMonth || 0), 0
+      );
+
+      setStats({
+        totalSupports,
+        activeReservations: availableSupports, // Usar soportes disponibles como proxy
+        totalClients: Math.floor(totalSupports * 0.8), // Estimación
+        monthlyRevenue
+      });
+    } catch (error) {
+      console.error('Error fetching dashboard stats:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat("es-ES", {
+      style: "currency",
+      currency: "EUR"
+    }).format(price);
+  };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Panel de Control</h1>
+        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
         <p className="mt-2 text-gray-600">
-          Resumen general de tus espacios publicitarios
+          Bienvenido a tu panel de control. Gestiona tus soportes publicitarios y anuncios.
         </p>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Soportes</CardTitle>
-            <Monitor className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalSoportes}</div>
-            <p className="text-xs text-muted-foreground">
-              {stats.disponibles} disponibles
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Ingresos del Mes</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">Bs. {stats.ingresosMes.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">
-              +12% vs mes anterior
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Ocupación</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{ocupacionPromedio}%</div>
-            <p className="text-xs text-muted-foreground">
-              Promedio mensual
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Próximas a Vencer</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.reservasVencen}</div>
-            <p className="text-xs text-muted-foreground">
-              En los próximos 7 días
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Charts and Details */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Ocupación Mensual */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Ocupación Mensual</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {stats.ocupacionMensual.map((item) => (
-                <div key={item.mes} className="flex items-center space-x-4">
-                  <div className="w-12 text-sm font-medium">{item.mes}</div>
-                  <div className="flex-1">
-                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-blue-600 rounded-full transition-all duration-300"
-                        style={{ width: `${item.ocupacion}%` }}
-                      />
-                    </div>
-                  </div>
-                  <div className="w-12 text-sm text-right">{item.ocupacion}%</div>
+      {/* Dashboard Cards */}
+      <div>
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">Gestión de Soportes</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {dashboardCards.map((card) => (
+            <Link
+              key={card.title}
+              href={card.href}
+              className="group relative overflow-hidden rounded-lg bg-white p-6 shadow-sm ring-1 ring-gray-200 hover:shadow-md transition-shadow"
+            >
+              <div className="flex items-center">
+                <div className={`flex h-12 w-12 items-center justify-center rounded-lg ${card.color}`}>
+                  <card.icon className="h-6 w-6 text-red-600" />
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Distribución por Estado */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Soportes por Estado</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {soportesPorEstado.map((item) => (
-                <div key={item.estado} className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <div className={`w-3 h-3 rounded-full ${item.color}`} />
-                    <span className="text-sm font-medium">{item.estado}</span>
-                  </div>
-                  <span className="text-sm font-bold">{item.cantidad}</span>
-                </div>
-              ))}
-            </div>
-            
-            {/* Mini mapa placeholder */}
-            <div className="mt-6 p-4 bg-gray-100 rounded-lg">
-              <div className="text-center text-gray-500 text-sm">
-                <MapIcon className="w-8 h-8 mx-auto mb-2" />
-                Mapa interactivo
-                <br />
-                <span className="text-xs">Ver ubicaciones en el mapa</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Próximas Reservas */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <Calendar className="w-5 h-5 mr-2" />
-            Próximas Reservas a Vencer
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {proximasReservas.map((reserva) => (
-              <div key={reserva.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                <div>
-                  <div className="font-medium text-gray-900">{reserva.cliente}</div>
-                  <div className="text-sm text-gray-600">{reserva.soporte}</div>
-                </div>
-                <div className="text-right">
-                  <div className="text-sm font-medium text-gray-900">
-                    Vence: {new Date(reserva.fechaVence).toLocaleDateString('es-ES')}
-                  </div>
-                  <Badge 
-                    variant={reserva.estado === 'confirmada' ? 'default' : 'secondary'}
-                    className="mt-1"
-                  >
-                    {reserva.estado === 'confirmada' ? 'Confirmada' : 'Pendiente'}
-                  </Badge>
+                <div className="ml-4">
+                  <h3 className="text-lg font-medium text-gray-900 group-hover:text-gray-700">
+                    {card.title}
+                  </h3>
+                  <p className="text-sm text-gray-500">{card.description}</p>
                 </div>
               </div>
-            ))}
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      {/* Quick Actions */}
+      <div>
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">Acciones Rápidas</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {quickActions.map((action) => (
+            <Link
+              key={action.title}
+              href={action.href}
+              className="group relative overflow-hidden rounded-lg bg-white p-4 shadow-sm ring-1 ring-gray-200 hover:shadow-md transition-shadow"
+            >
+              <div className="flex items-center">
+                <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${action.color}`}>
+                  <action.icon className="h-5 w-5 text-red-600" />
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-gray-900 group-hover:text-gray-700">
+                    {action.title}
+                  </h3>
+                  <p className="text-xs text-gray-500">{action.description}</p>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      {/* Stats Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="bg-white p-6 rounded-lg shadow-sm ring-1 ring-gray-200">
+          <div className="flex items-center">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-100">
+              <Monitor className="h-4 w-4 text-red-600" />
+            </div>
+            <div className="ml-3">
+              <p className="text-sm font-medium text-gray-500">Soportes Totales</p>
+              <p className="text-2xl font-semibold text-gray-900">
+                {loading ? '...' : stats.totalSupports}
+              </p>
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+        
+        <div className="bg-white p-6 rounded-lg shadow-sm ring-1 ring-gray-200">
+          <div className="flex items-center">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-100">
+              <Calendar className="h-4 w-4 text-red-600" />
+            </div>
+            <div className="ml-3">
+              <p className="text-sm font-medium text-gray-500">Soportes Disponibles</p>
+              <p className="text-2xl font-semibold text-gray-900">
+                {loading ? '...' : stats.activeReservations}
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="bg-white p-6 rounded-lg shadow-sm ring-1 ring-gray-200">
+          <div className="flex items-center">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-100">
+              <Users className="h-4 w-4 text-red-600" />
+            </div>
+            <div className="ml-3">
+              <p className="text-sm font-medium text-gray-500">Clientes Estimados</p>
+              <p className="text-2xl font-semibold text-gray-900">
+                {loading ? '...' : stats.totalClients}
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="bg-white p-6 rounded-lg shadow-sm ring-1 ring-gray-200">
+          <div className="flex items-center">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-100">
+              <TrendingUp className="h-4 w-4 text-red-600" />
+            </div>
+            <div className="ml-3">
+              <p className="text-sm font-medium text-gray-500">Ingresos Potenciales</p>
+              <p className="text-2xl font-semibold text-gray-900">
+                {loading ? '...' : formatPrice(stats.monthlyRevenue)}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

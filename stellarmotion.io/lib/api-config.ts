@@ -31,15 +31,36 @@ export async function fetchFromERP(endpoint: string, options?: RequestInit) {
         'Content-Type': 'application/json',
         ...options?.headers,
       },
+      // Agregar timeout para evitar requests colgados
+      signal: AbortSignal.timeout(10000), // 10 segundos timeout
     })
     
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
+      const errorText = await response.text().catch(() => 'Unknown error');
+      throw new Error(`HTTP ${response.status}: ${errorText}`)
     }
     
-    return await response.json()
+    const data = await response.json()
+    
+    // Verificar que la respuesta sea válida
+    if (data === null || data === undefined) {
+      throw new Error('Empty response from ERP')
+    }
+    
+    return data
   } catch (error) {
     console.error('Error fetching from ERP:', error)
+    
+    // Si es un error de timeout o conexión, devolver array vacío en lugar de fallar
+    if (error instanceof Error && (
+      error.message.includes('timeout') || 
+      error.message.includes('fetch') ||
+      error.message.includes('network')
+    )) {
+      console.warn('ERP connection failed, returning empty array');
+      return [];
+    }
+    
     throw error
   }
 }

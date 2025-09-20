@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { ChevronDown, Search, User, Calendar, Heart, Settings, LogOut, BarChart3, Megaphone } from "lucide-react"
+import { ChevronDown, Search, User, Heart, Settings, LogOut, BarChart3, Megaphone } from "lucide-react"
 
 export default function Header() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
@@ -105,22 +105,6 @@ export default function Header() {
                   >
                     <Heart className="w-4 h-4 mr-3" />
                     Favoritos
-                  </Link>
-                  <Link
-                    href="/calendar"
-                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    role="menuitem"
-                  >
-                    <Calendar className="w-4 h-4 mr-3" />
-                    Calendar
-                  </Link>
-                  <Link
-                    href="/bookings"
-                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    role="menuitem"
-                  >
-                    <Calendar className="w-4 h-4 mr-3" />
-                    Bookings
                   </Link>
                   <Link
                     href="/ajustes"
