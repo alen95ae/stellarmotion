@@ -64,6 +64,10 @@ export async function GET(request: NextRequest) {
     if (featured) params.append('featured', featured);
     if (limit) params.append('limit', limit);
 
+    // Solo mostrar soportes disponibles y públicos para la web
+    params.append('available', 'true');
+    params.append('status', 'DISPONIBLE');
+
     // Construir URL con parámetros
     const url = `${API_ENDPOINTS.supports}?${params.toString()}`;
     

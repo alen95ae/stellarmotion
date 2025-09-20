@@ -98,6 +98,13 @@ interface Support {
   areaM2: number | null
   pricePerM2: number | null
   productionCost: number | null
+  partnerId: string | null
+  partner: {
+    id: string
+    name: string
+    companyName: string | null
+    email: string
+  } | null
   owner: string | null
   imageUrl: string | null
   company?: { name: string }
@@ -620,15 +627,26 @@ export default function SoportesPage() {
                         />
                       </TableCell>
                       <TableCell>
-                        <EditableField 
-                          support={support} 
-                          field="owner" 
-                          value={support.owner}
-                          type="text"
-                          className="truncate max-w-[20ch]"
-                          title={support.owner || ''}
-                          onSave={handleFieldSave}
-                        />
+                        {support.partner ? (
+                          <div className="text-sm">
+                            <div className="font-medium text-blue-600">
+                              {support.partner.companyName || support.partner.name}
+                            </div>
+                            <div className="text-gray-500 text-xs">
+                              Partner: {support.partner.email}
+                            </div>
+                          </div>
+                        ) : (
+                          <EditableField 
+                            support={support} 
+                            field="owner" 
+                            value={support.owner}
+                            type="text"
+                            className="truncate max-w-[20ch]"
+                            title={support.owner || ''}
+                            onSave={handleFieldSave}
+                          />
+                        )}
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2">

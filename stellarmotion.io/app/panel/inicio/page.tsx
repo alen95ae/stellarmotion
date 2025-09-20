@@ -118,15 +118,18 @@ export default function DashboardPage() {
     try {
       setLoading(true);
       
+      // Mock partner ID - en producción esto vendría de la sesión
+      const partnerId = 'mock-partner-id';
+      
       // Obtener soportes del partner actual
-      const supportsResponse = await fetch('/api/soportes');
+      const supportsResponse = await fetch(`/api/soportes?partnerId=${partnerId}`);
       const supports = supportsResponse.ok ? await supportsResponse.json() : [];
       
       // Calcular estadísticas
       const totalSupports = supports.length;
       const availableSupports = supports.filter((s: any) => s.status === 'DISPONIBLE').length;
       const monthlyRevenue = supports.reduce((sum: number, support: any) => 
-        sum + (support.priceMonth || 0), 0
+        sum + (support.pricePerMonth || 0), 0
       );
 
       setStats({

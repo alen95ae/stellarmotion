@@ -71,7 +71,8 @@ export async function GET(req: Request) {
         where: { slug },
         include: {
           company: { select: { name: true } },
-          category: { select: { id: true, slug: true, label: true, iconKey: true } }
+          category: { select: { id: true, slug: true, label: true, iconKey: true } },
+          partner: { select: { id: true, name: true, companyName: true, email: true } }
         }
       })
       return NextResponse.json(support)
@@ -127,6 +128,9 @@ export async function GET(req: Request) {
         },
         category: {
           select: { id: true, slug: true, label: true, iconKey: true }
+        },
+        partner: {
+          select: { id: true, name: true, companyName: true, email: true }
         }
       },
       orderBy: { createdAt: "desc" }

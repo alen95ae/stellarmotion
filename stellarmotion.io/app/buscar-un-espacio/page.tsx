@@ -73,16 +73,20 @@ export default function BuscarEspacioPage() {
   const fetchProducts = async () => {
     setLoading(true);
     try {
-      // Construir parámetros de búsqueda
+      // Construir parámetros de búsqueda para soportes
       const params = new URLSearchParams();
       
-      if (category) params.append('category', category);
+      if (category) params.append('categoryId', category);
       if (q) params.append('q', q);
       if (city) params.append('city', city);
       if (priceMin && priceMin !== '0') params.append('priceMin', priceMin);
       if (priceMax && priceMax !== '5000') params.append('priceMax', priceMax);
       
-      const response = await fetch(`/api/products?${params.toString()}`);
+      // Solo mostrar soportes disponibles y públicos
+      params.append('available', 'true');
+      params.append('status', 'DISPONIBLE');
+      
+      const response = await fetch(`/api/soportes?${params.toString()}`);
       
       if (response.ok) {
         const data = await response.json();
@@ -91,16 +95,16 @@ export default function BuscarEspacioPage() {
         if (Array.isArray(data)) {
           setProducts(data);
         } else {
-          console.warn('Invalid response format from products API:', data);
+          console.warn('Invalid response format from supports API:', data);
           setProducts([]);
         }
       } else {
         const errorText = await response.text();
-        console.error('Error fetching products:', response.status, errorText);
+        console.error('Error fetching supports:', response.status, errorText);
         setProducts([]);
       }
     } catch (error) {
-      console.error('Error fetching products:', error);
+      console.error('Error fetching supports:', error);
       setProducts([]);
     } finally {
       setLoading(false);
