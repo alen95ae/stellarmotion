@@ -1,5 +1,5 @@
-import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
+import { AirtableService } from "@/lib/airtable"
 
 function withCors(response: NextResponse) {
   response.headers.set("Access-Control-Allow-Origin", "*")
@@ -60,14 +60,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       ));
     }
 
-    const support = await prisma.support.findUnique({
-      where: { id },
-      include: {
-        company: { select: { name: true } },
-        category: { select: { id: true, slug: true, label: true, iconKey: true } },
-        partner: { select: { id: true, name: true, companyName: true, email: true } }
-      }
-    });
+    const support = await AirtableService.getSoporteById(id);
 
     if (!support) {
       return withCors(NextResponse.json(
@@ -103,13 +96,11 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     }
 
     // Verificar que el soporte existe
-    const existingSupport = await prisma.support.findUnique({
-      where: { id }
-    });
+    const existingSupport = await AirtableService.getSoporteById(id);
 
     console.log('ERP: Soporte encontrado:', existingSupport ? 'SÍ' : 'NO');
     if (existingSupport) {
-      console.log('ERP: Soporte existente:', existingSupport.id, existingSupport.title);
+      console.log('ERP: Soporte existente:', existingSupport.id, existingSupport.nombre);
     }
 
     if (!existingSupport) {
@@ -120,83 +111,30 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       ));
     }
 
-    // Permitir edición sin verificación de permisos por ahora
-    
-    // Si no hay partnerId en los datos, usar el existente
-    if (!data.partnerId) {
-      data.partnerId = existingSupport.partnerId;
-    }
-    
-    // Validar que el partner existe
-    if (data.partnerId) {
-      const partner = await prisma.partner.findUnique({
-        where: { id: data.partnerId }
-      })
-      if (!partner) {
-        return withCors(NextResponse.json(
-          { error: "Partner no encontrado" },
-          { status: 400 }
-        ));
-      }
-    }
-    
     // Validación básica
-    if (!data.title) {
+    if (!data.nombre) {
       return withCors(NextResponse.json(
-        { error: "Título es requerido" },
+        { error: "Nombre es requerido" },
         { status: 400 }
       ));
     }
     
-    const payload = await normalizeSupportInput(data, existingSupport)
-    
-    // Normalizar imageUrl: si es una ruta local, asegurar que empiece con /
-    let normalizedImageUrl = payload.imageUrl
-    if (normalizedImageUrl && !normalizedImageUrl.startsWith('http') && !normalizedImageUrl.startsWith('/')) {
-      normalizedImageUrl = `/${normalizedImageUrl}`
+    // Mapear datos al formato de Airtable
+    const updateData = {
+      nombre: data.nombre || existingSupport.nombre,
+      descripcion: data.descripcion || existingSupport.descripcion,
+      ubicacion: data.ubicacion || existingSupport.ubicacion,
+      latitud: data.latitud || existingSupport.latitud,
+      longitud: data.longitud || existingSupport.longitud,
+      tipo: data.tipo || existingSupport.tipo,
+      estado: data.estado || existingSupport.estado,
+      precio: data.precio || existingSupport.precio,
+      dimensiones: data.dimensiones || existingSupport.dimensiones,
+      imagenes: data.imagenes || existingSupport.imagenes,
+      categoria: data.categoria || existingSupport.categoria
     }
     
-    // Normalizar images: procesar array de imágenes
-    let normalizedImages = payload.images
-    if (normalizedImages) {
-      if (typeof normalizedImages === 'string') {
-        try {
-          normalizedImages = JSON.parse(normalizedImages)
-        } catch (e) {
-          console.warn('Error parsing images JSON:', e)
-          normalizedImages = []
-        }
-      }
-      if (Array.isArray(normalizedImages)) {
-        normalizedImages = normalizedImages.map(img => {
-          if (img && !img.startsWith('http') && !img.startsWith('/')) {
-            return `/${img}`
-          }
-          return img
-        }).filter(Boolean)
-      }
-    }
-    
-    const updated = await prisma.support.update({
-      where: { id },
-      data: {
-        ...payload,
-        imageUrl: normalizedImageUrl || null,
-        images: normalizedImages ? JSON.stringify(normalizedImages) : null,
-        priceMonth: payload.priceMonth ? parseFloat(payload.priceMonth) : null,
-        widthM: payload.widthM ? parseFloat(payload.widthM) : null,
-        heightM: payload.heightM ? parseFloat(payload.heightM) : null,
-        latitude: payload.latitude ? parseFloat(payload.latitude) : null,
-        longitude: payload.longitude ? parseFloat(payload.longitude) : null,
-        pricePerM2: payload.pricePerM2 ? parseFloat(payload.pricePerM2) : null,
-        areaM2: payload.areaM2 ? parseFloat(payload.areaM2) : null,
-        productionCost: payload.productionCost ? parseFloat(payload.productionCost) : null,
-        dailyImpressions: payload.dailyImpressions ? parseInt(payload.dailyImpressions) : null,
-        rating: payload.rating ? parseFloat(payload.rating) : null,
-        reviewsCount: payload.reviewsCount ? parseInt(payload.reviewsCount) : 0,
-        printingCost: payload.printingCost ? parseFloat(payload.printingCost) : null,
-      }
-    })
+    const updated = await AirtableService.updateSoporte(id, updateData);
     
     return withCors(NextResponse.json(updated, { status: 200 }))
   } catch (error) {
@@ -221,9 +159,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     }
 
     // Verificar que el soporte existe
-    const existingSupport = await prisma.support.findUnique({
-      where: { id }
-    });
+    const existingSupport = await AirtableService.getSoporteById(id);
 
     if (!existingSupport) {
       return withCors(NextResponse.json(
@@ -232,11 +168,14 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
       ));
     }
 
-    // Permitir eliminación sin verificación de permisos por ahora
+    const success = await AirtableService.deleteSoporte(id);
     
-    await prisma.support.delete({
-      where: { id }
-    })
+    if (!success) {
+      return withCors(NextResponse.json(
+        { error: "Error al eliminar el soporte" },
+        { status: 500 }
+      ));
+    }
     
     return withCors(NextResponse.json({ success: true }, { status: 200 }))
   } catch (error) {
