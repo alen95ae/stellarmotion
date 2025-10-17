@@ -1,8 +1,15 @@
 import NextAuth, { type NextAuthOptions } from "next-auth"
 import Credentials from "next-auth/providers/credentials"
-import { PrismaAdapter } from "@auth/prisma-adapter"
-import { prisma } from "@/lib/prisma"
-import bcrypt from "bcryptjs"
+
+// Usuario mock para desarrollo
+const mockUser = {
+  id: "1",
+  email: "admin@stellarmotion.com",
+  name: "Administrador",
+  password: "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi", // password
+  role: "admin",
+  partnerId: null
+}
 
 export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt" },
@@ -16,17 +23,19 @@ export const authOptions: NextAuthOptions = {
       credentials: { email: {}, password: {} },
       async authorize(creds) {
         if (!creds?.email || !creds?.password) return null
-        const user = await prisma.user.findUnique({ where: { email: creds.email } })
-        if (!user) return null
-        const ok = await bcrypt.compare(creds.password, user.password)
-        if (!ok) return null
-        return { 
-          id: user.id, 
-          email: user.email, 
-          name: user.name, 
-          role: user.role,
-          partnerId: user.partnerId 
+        
+        // Verificar credenciales mock
+        if (creds.email === mockUser.email && creds.password === "password") {
+          return { 
+            id: mockUser.id, 
+            email: mockUser.email, 
+            name: mockUser.name, 
+            role: mockUser.role,
+            partnerId: mockUser.partnerId 
+          }
         }
+        
+        return null
       }
     })
   ],
