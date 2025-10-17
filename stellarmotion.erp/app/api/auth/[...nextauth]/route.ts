@@ -13,19 +13,28 @@ const mockUser = {
 
 export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt" },
-  secret: process.env.NEXTAUTH_SECRET || "fallback-secret-for-development",
+  secret: process.env.NEXTAUTH_SECRET || "fallback-secret-for-development-12345",
   pages: {
     signIn: "/login",
   },
   providers: [
     Credentials({
       name: "Credentials",
-      credentials: { email: {}, password: {} },
+      credentials: { 
+        email: { label: "Email", type: "email" }, 
+        password: { label: "Password", type: "password" } 
+      },
       async authorize(creds) {
-        if (!creds?.email || !creds?.password) return null
+        console.log('Auth attempt:', creds?.email)
+        
+        if (!creds?.email || !creds?.password) {
+          console.log('Missing credentials')
+          return null
+        }
         
         // Verificar credenciales mock
         if (creds.email === mockUser.email && creds.password === "password") {
+          console.log('Auth successful')
           return { 
             id: mockUser.id, 
             email: mockUser.email, 
@@ -35,19 +44,20 @@ export const authOptions: NextAuthOptions = {
           }
         }
         
+        console.log('Auth failed - invalid credentials')
         return null
       }
     })
   ],
   callbacks: {
-    async jwt({ token, user }: { token: any; user: any }) {
+    async jwt({ token, user }) {
       if (user) {
         token.role = user.role
         token.partnerId = user.partnerId
       }
       return token
     },
-    async session({ session, token }: { session: any; token: any }) {
+    async session({ session, token }) {
       if (token?.sub) session.user.id = token.sub
       if (token?.role) session.user.role = token.role
       if (token?.partnerId) session.user.partnerId = token.partnerId
