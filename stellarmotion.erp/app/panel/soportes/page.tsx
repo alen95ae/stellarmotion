@@ -191,7 +191,39 @@ export default function SoportesPage() {
       if (response.ok) {
         const data = await response.json()
         // La API devuelve { soportes: [...], pagination: {...} }
-        setSupports(data.soportes || data || [])
+        const soportes = data.soportes || data || []
+        
+        // Mapear datos de Airtable a la interfaz Support
+        const mappedSupports = soportes.map((soporte: any) => ({
+          id: soporte.id,
+          code: soporte.id, // Usar ID como código interno
+          title: soporte.nombre, // Título del soporte
+          type: soporte.tipo, // Tipo de soporte
+          status: soporte.estado === 'disponible' ? 'DISPONIBLE' : 
+                  soporte.estado === 'ocupado' ? 'OCUPADO' : 
+                  soporte.estado === 'mantenimiento' ? 'NO_DISPONIBLE' : 'DISPONIBLE',
+          widthM: soporte.dimensiones?.ancho || null,
+          heightM: soporte.dimensiones?.alto || null,
+          city: soporte.ubicacion?.split(',')[0]?.trim() || 'N/A', // Ciudad
+          country: soporte.ubicacion?.split(',')[1]?.trim() || 'Bolivia', // País
+          priceMonth: soporte.precio || null, // Precio por mes
+          available: soporte.estado === 'disponible',
+          areaM2: soporte.dimensiones?.area || null,
+          pricePerM2: null,
+          productionCost: null,
+          partnerId: soporte.partnerId || null,
+          partner: soporte.partner ? {
+            id: soporte.partner.id,
+            name: soporte.partner.name,
+            companyName: soporte.partner.companyName,
+            email: soporte.partner.email
+          } : null,
+          owner: soporte.partner?.name || soporte.partner?.companyName || 'N/A',
+          imageUrl: soporte.imagenes?.[0] || null,
+          company: { name: soporte.categoria || 'N/A' }
+        }))
+        
+        setSupports(mappedSupports)
       } else {
         toast.error("Error al cargar los soportes")
       }
@@ -584,23 +616,13 @@ export default function SoportesPage() {
                       <TableCell>
                         <div className="text-sm">
                           <div className="flex items-center gap-0.5">
-                            <EditableField 
-                              support={support} 
-                              field="widthM" 
-                              value={support.widthM}
-                              type="number"
-                              isNumeric={true}
-                              onSave={handleFieldSave}
-                            />
-                            ×
-                            <EditableField 
-                              support={support} 
-                              field="heightM" 
-                              value={support.heightM}
-                              type="number"
-                              isNumeric={true}
-                              onSave={handleFieldSave}
-                            />
+                            <span className="font-medium">
+                              {support.widthM || 'N/A'} × {support.heightM || 'N/A'}
+                            </span>
+                            <span className="text-gray-500">m</span>
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {support.areaM2 ? `${support.areaM2} m²` : 'N/A'}
                           </div>
                         </div>
                       </TableCell>
