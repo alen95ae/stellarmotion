@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { CATEGORIES } from '@/lib/categories';
 
 export interface Category {
   id: string;
@@ -29,35 +30,38 @@ export function useCategories() {
         }
         
         const data = await response.json();
-        
-        // Verificar que la respuesta sea un array
+
         if (!Array.isArray(data)) {
           throw new Error('Invalid response format: expected array');
         }
-        
-        // Agregar conteo de soportes (simulado por ahora)
-        const categoriesWithCount = data.map((cat: any) => ({
-          ...cat,
-          id: cat.slug, // Usar slug como ID temporal
-          _count: {
-            supports: Math.floor(Math.random() * 50) + 10 // Número aleatorio para demo
-          }
-        }));
-        
-        setCategories(categoriesWithCount);
+
+        const normalized = CATEGORIES.map((base) => {
+          const match = data.find((cat: any) => cat.slug === base.slug);
+          const id = match?.id ?? match?.slug ?? base.slug;
+          const supportsCount = match?._count?.supports ?? match?.supportsCount ?? 0;
+          return {
+            id,
+            slug: base.slug,
+            label: match?.label ?? base.label,
+            iconKey: base.iconKey,
+            _count: { supports: supportsCount }
+          };
+        });
+
+        setCategories(normalized);
         setError(null);
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Unknown error';
         setError(errorMessage);
         console.error('Error fetching categories:', err);
         
-        // En caso de error, usar categorías por defecto para evitar que la UI se rompa
-        setCategories([
-          { id: 'vallas', slug: 'vallas', label: 'Vallas', iconKey: 'vallas', _count: { supports: 0 } },
-          { id: 'mupis', slug: 'mupis', label: 'Mupis', iconKey: 'mupis', _count: { supports: 0 } },
-          { id: 'pantallas', slug: 'pantallas', label: 'Pantallas', iconKey: 'pantallas', _count: { supports: 0 } },
-          { id: 'carteleras', slug: 'carteleras', label: 'Carteleras', iconKey: 'carteleras', _count: { supports: 0 } }
-        ]);
+        setCategories(CATEGORIES.map((base) => ({
+          id: base.slug,
+          slug: base.slug,
+          label: base.label,
+          iconKey: base.iconKey,
+          _count: { supports: 0 }
+        })));
       } finally {
         setLoading(false);
       }

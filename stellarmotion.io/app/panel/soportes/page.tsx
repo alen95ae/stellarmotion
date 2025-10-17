@@ -66,6 +66,19 @@ interface Support {
   ownerName?: string | null;
 }
 
+const ERP_ASSET_BASE = process.env.NEXT_PUBLIC_ERP_ASSET_URL || process.env.NEXT_PUBLIC_ERP_API_URL || '';
+
+const makeAbsoluteUrl = (value?: string | null) => {
+  if (!value) return value;
+  if (value.startsWith('http://') || value.startsWith('https://') || value.startsWith('data:')) {
+    return value;
+  }
+  if (!ERP_ASSET_BASE) return value;
+  const base = ERP_ASSET_BASE.replace(/\/$/, '');
+  const path = value.startsWith('/') ? value : `/${value}`;
+  return `${base}${path}`;
+};
+
 export default function SoportesPage() {
   const [supports, setSupports] = useState<Support[]>([]);
   const [loading, setLoading] = useState(true);
@@ -107,11 +120,22 @@ export default function SoportesPage() {
 
       // Sanitizar estructura para evitar valores inesperados en la UI
       const normalizedSupports = (Array.isArray(data) ? data : []).map((support: any) => {
-        const images = Array.isArray(support.images)
+        const rawImages = Array.isArray(support.images)
           ? support.images
           : typeof support.images === 'string' && support.images.trim()
             ? [support.images.trim()]
             : [];
+
+        const images = rawImages
+          .map((img: string) => makeAbsoluteUrl(img) || img)
+          .filter((img) => !!img);
+
+        if (images.length === 0 && support.imageUrl) {
+          const fallback = makeAbsoluteUrl(support.imageUrl) || support.imageUrl;
+          if (fallback) {
+            images.push(fallback);
+          }
+        }
 
         const tags = Array.isArray(support.tags)
           ? support.tags

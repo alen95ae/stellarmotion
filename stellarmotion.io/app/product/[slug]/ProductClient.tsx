@@ -7,11 +7,7 @@ import { Button } from '@/components/ui/button';
 import { IconBox } from '@/components/ui/IconBox';
 import { FEATURE_ICONS } from '@/lib/icons';
 import dynamic from 'next/dynamic';
-
-const ProductMap = dynamic(() => import('@/components/ProductMap'), {
-  ssr: false,
-  loading: () => <div className="w-full h-[400px] bg-gray-100 rounded-lg animate-pulse flex items-center justify-center">Cargando mapa...</div>
-});
+import LeafletHybridMap, { SupportPoint } from '@/components/maps/LeafletHybridMap';
 
 interface Product {
   id: string;
@@ -373,13 +369,21 @@ export default function ProductClient({ product }: ProductClientProps) {
             {/* Map */}
             <div className="bg-white rounded-2xl p-6 border border-gray-200">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Ubicación</h3>
-              <ProductMap
-                lat={product.lat}
-                lng={product.lng}
-                title={product.title}
-                city={product.city}
-                country={product.country}
-                height="400px"
+              <LeafletHybridMap
+                points={[{
+                  id: product.id,
+                  lat: product.lat,
+                  lng: product.lng,
+                  title: product.title,
+                  type: product.type === 'building' ? 'building' : 'billboard',
+                  dimensions: product.dimensions,
+                  monthlyPrice: product.pricePerMonth,
+                  city: product.city,
+                  format: product.type
+                }]}
+                height={400}
+                center={[product.lat, product.lng]}
+                zoom={15}
               />
             </div>
 

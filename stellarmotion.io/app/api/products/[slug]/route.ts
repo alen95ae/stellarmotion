@@ -16,94 +16,105 @@ export async function GET(
       );
     }
     
-    let support;
-    
-    // Si el slug es generado (support-{id}), buscar por ID
-    if (slug.startsWith('support-')) {
-      const id = slug.replace('support-', '');
-      support = await fetchFromERP(`${API_ENDPOINTS.supports}/${id}`);
-    } else {
-      // Buscar por slug normal
-      support = await fetchFromERP(API_ENDPOINTS.supportBySlug(slug));
-    }
+    // Datos de ejemplo para testing
+    const sampleProducts = {
+      '1': {
+        id: '1',
+        slug: '1',
+        title: 'Valla Principal La Paz',
+        city: 'La Paz',
+        country: 'Bolivia',
+        dimensions: '6m x 3m',
+        dailyImpressions: 15000,
+        type: 'billboard',
+        lighting: true,
+        tags: ['digital', 'centro', 'premium'],
+        images: ['/placeholder.svg'],
+        shortDescription: 'Valla digital premium en el centro de La Paz',
+        description: 'Valla publicitaria digital de alta calidad ubicada en el centro de La Paz. Perfecta visibilidad y alto tráfico vehicular.',
+        featured: true,
+        lat: -16.5000,
+        lng: -68.1500,
+        pricePerMonth: 2500,
+        printingCost: 200,
+        rating: 4.8,
+        reviewsCount: 24,
+        category: {
+          slug: 'vallas-digitales',
+          label: 'Vallas Digitales',
+          iconKey: 'billboard'
+        },
+        available: true,
+        status: 'disponible'
+      },
+      '2': {
+        id: '2',
+        slug: '2',
+        title: 'Edificio Corporativo',
+        city: 'La Paz',
+        country: 'Bolivia',
+        dimensions: '8m x 4m',
+        dailyImpressions: 8000,
+        type: 'building',
+        lighting: false,
+        tags: ['fachada', 'corporativo', 'exclusivo'],
+        images: ['/placeholder.svg'],
+        shortDescription: 'Fachada de edificio corporativo exclusivo',
+        description: 'Fachada de edificio corporativo con excelente ubicación y visibilidad. Ideal para campañas de alto impacto.',
+        featured: false,
+        lat: -16.5200,
+        lng: -68.1700,
+        pricePerMonth: 3500,
+        printingCost: 300,
+        rating: 4.9,
+        reviewsCount: 18,
+        category: {
+          slug: 'fachadas',
+          label: 'Fachadas',
+          iconKey: 'building'
+        },
+        available: true,
+        status: 'disponible'
+      },
+      '3': {
+        id: '3',
+        slug: '3',
+        title: 'Valla Centro Comercial',
+        city: 'La Paz',
+        country: 'Bolivia',
+        dimensions: '4m x 2.5m',
+        dailyImpressions: 12000,
+        type: 'billboard',
+        lighting: true,
+        tags: ['tradicional', 'comercial', 'acceso'],
+        images: ['/placeholder.svg'],
+        shortDescription: 'Valla tradicional en centro comercial',
+        description: 'Valla publicitaria tradicional ubicada en centro comercial con alto tráfico peatonal y vehicular.',
+        featured: false,
+        lat: -16.4800,
+        lng: -68.1300,
+        pricePerMonth: 1800,
+        printingCost: 150,
+        rating: 4.6,
+        reviewsCount: 12,
+        category: {
+          slug: 'vallas-tradicionales',
+          label: 'Vallas Tradicionales',
+          iconKey: 'billboard'
+        },
+        available: false,
+        status: 'ocupado'
+      }
+    };
 
-    if (!support) {
+    const product = sampleProducts[slug as keyof typeof sampleProducts];
+    
+    if (!product) {
       return NextResponse.json(
         { error: 'Product not found' },
         { status: 404 }
       );
     }
-
-    // Parse JSON strings back to arrays
-    let tags = [];
-    let images = [];
-    
-    try {
-      tags = support.tags ? support.tags.split(',').map((tag: string) => tag.trim()) : [];
-    } catch (e) {
-      console.warn('Failed to parse tags for support:', support.slug, support.tags);
-      tags = [];
-    }
-    
-    try {
-      images = support.images ? JSON.parse(support.images) : [];
-      if (!Array.isArray(images)) images = [];
-    } catch (e) {
-      console.warn('Failed to parse images for support:', support.slug, support.images);
-      images = [];
-    }
-    
-    // Filtrar placeholders y URLs vacías
-    images = images.filter(img => 
-      img && 
-      img.trim() !== '' && 
-      !img.includes('placeholder.svg') && 
-      !img.includes('placeholder.jpg') &&
-      !img.includes('placeholder.png')
-    );
-    
-    // Si no hay imágenes válidas en el array pero hay imageUrl válida, usarla
-    if (images.length === 0 && support.imageUrl && 
-        support.imageUrl.trim() !== '' && 
-        !support.imageUrl.includes('placeholder.svg') &&
-        !support.imageUrl.includes('placeholder.jpg') &&
-        !support.imageUrl.includes('placeholder.png')) {
-      // Convertir la URL relativa a una URL absoluta del backend
-      const imageUrl = support.imageUrl.startsWith('http') 
-        ? support.imageUrl 
-        : `${API_BASE_URL}${support.imageUrl}`;
-      images = [imageUrl];
-    }
-
-    // Transformar soporte a formato de producto para compatibilidad
-    const product = {
-      id: support.id,
-      slug: support.slug,
-      title: support.title,
-      city: support.city,
-      country: support.country,
-      dimensions: support.dimensions || (support.widthM && support.heightM ? `${support.widthM}×${support.heightM} m` : 'No especificado'),
-      dailyImpressions: support.dailyImpressions || 0,
-      type: support.type,
-      lighting: support.lighting,
-      tags,
-      images,
-      shortDescription: support.shortDescription || '',
-      description: support.description || '',
-      featured: support.featured,
-      lat: support.latitude,
-      lng: support.longitude,
-      pricePerMonth: support.priceMonth || 0,
-      printingCost: support.printingCost || 0,
-      rating: support.rating,
-      reviewsCount: support.reviewsCount || 0,
-      categoryId: support.categoryId,
-      category: support.category,
-      available: support.available,
-      status: support.status,
-      createdAt: support.createdAt,
-      updatedAt: support.updatedAt,
-    };
 
     return NextResponse.json(product);
   } catch (error) {

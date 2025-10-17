@@ -1,147 +1,228 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { RedSlider } from "@/components/ui/red-slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuerySync } from '@/hooks/useQuerySync';
 import { useCategories } from '@/hooks/useCategories';
 import SearchBar from '@/components/SearchBar';
-// Ya no usamos datos de ejemplo, cargamos desde la API
-import { Lightbulb, Printer, Building, Car, Ruler, MapPin } from 'lucide-react';
-import dynamic from 'next/dynamic';
-
-const SearchMap = dynamic(() => import('@/components/SearchMap'), {
-  ssr: false,
-  loading: () => <div className="w-full h-[500px] bg-gray-100 rounded-lg animate-pulse flex items-center justify-center">Cargando mapa...</div>
-});
-
-interface Product {
-  id: string;
-  code: string;
-  slug: string;
-  title: string;
-  city: string;
-  country: string;
-  dimensions: string;
-  dailyImpressions: number;
-  type: string;
-  lighting: boolean;
-  pricePerMonth: number;
-  rating: number;
-  reviewsCount: number;
-  images: string[];
-  featured: boolean;
-  available: boolean;
-  status: string;
-  latitude: number | null;
-  longitude: number | null;
-  shortDescription: string;
-  description: string;
-  tags: string[];
-  ownerName?: string | null;
-  category?: {
-    id: string;
-    slug: string;
-    label: string;
-    iconKey: string;
-  };
-}
+import { Lightbulb, Printer, Building, Car, Ruler, MapPin, Star, Eye } from 'lucide-react';
+import LeafletHybridMap, { SupportPoint } from '@/components/maps/LeafletHybridMap';
+import Link from 'next/link';
+import Image from 'next/image';
 
 export default function BuscarEspacioPage() {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const setQuery = useQuerySync();
   const { categories, loading: categoriesLoading } = useCategories();
   
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
   const [priceRange, setPriceRange] = useState([0, 5000]);
   const [lighting, setLighting] = useState(false);
   const [printing, setPrinting] = useState(false);
   const [centerZone, setCenterZone] = useState(false);
   const [mobile, setMobile] = useState(false);
+  const [mapPoints, setMapPoints] = useState<SupportPoint[]>([]);
+  const [supports, setSupports] = useState<any[]>([]);
   
   const category = searchParams.get('category') || '';
-  const q = searchParams.get('q') || '';
   const priceMin = searchParams.get('priceMin') || '0';
   const priceMax = searchParams.get('priceMax') || '5000';
-  const city = searchParams.get('city') || '';
 
+  // Datos de ejemplo para el mapa y soportes
   useEffect(() => {
-    fetchProducts();
-  }, [category, q, priceMin, priceMax, city]);
-
-  const fetchProducts = async () => {
-    setLoading(true);
-    try {
-      // Construir parámetros de búsqueda para soportes
-      const params = new URLSearchParams();
-      
-      if (category) params.append('categoryId', category);
-      if (q) params.append('q', q);
-      if (city) params.append('city', city);
-      if (priceMin && priceMin !== '0') params.append('priceMin', priceMin);
-      if (priceMax && priceMax !== '5000') params.append('priceMax', priceMax);
-      
-      // Solo mostrar soportes disponibles y públicos
-      params.append('available', 'true');
-      params.append('status', 'DISPONIBLE');
-      
-      const response = await fetch(`/api/soportes?${params.toString()}`);
-      
-      if (response.ok) {
-        const data = await response.json();
-        
-        // Verificar que la respuesta sea un array
-        if (Array.isArray(data)) {
-          const sanitized = data.map((item: any) => {
-            const images = Array.isArray(item.images)
-              ? item.images
-              : typeof item.images === 'string' && item.images.trim()
-              ? [item.images.trim()]
-              : [];
-
-            const tags = Array.isArray(item.tags)
-              ? item.tags
-              : typeof item.tags === 'string'
-              ? item.tags.split(',').map((tag: string) => tag.trim()).filter(Boolean)
-              : [];
-
-            const latitude = typeof item.latitude === 'number' && !Number.isNaN(item.latitude)
-              ? item.latitude
-              : null;
-
-            const longitude = typeof item.longitude === 'number' && !Number.isNaN(item.longitude)
-              ? item.longitude
-              : null;
-
-            return {
-              ...item,
-              images,
-              tags,
-              latitude,
-              longitude,
-            } as Product;
-          });
-
-          setProducts(sanitized);
-        } else {
-          console.warn('Invalid response format from supports API:', data);
-          setProducts([]);
-        }
-      } else {
-        const errorText = await response.text();
-        console.error('Error fetching supports:', response.status, errorText);
-        setProducts([]);
+    const samplePoints: SupportPoint[] = [
+      {
+        id: '1',
+        lat: -16.5000,
+        lng: -68.1500,
+        title: 'Valla Principal La Paz',
+        type: 'billboard',
+        dimensions: '6m x 3m',
+        monthlyPrice: 2500,
+        city: 'La Paz',
+        format: 'Valla Digital'
+      },
+      {
+        id: '2',
+        lat: -16.5200,
+        lng: -68.1700,
+        title: 'Edificio Corporativo',
+        type: 'building',
+        dimensions: '8m x 4m',
+        monthlyPrice: 3500,
+        city: 'La Paz',
+        format: 'Fachada'
+      },
+      {
+        id: '3',
+        lat: -16.4800,
+        lng: -68.1300,
+        title: 'Valla Centro Comercial',
+        type: 'billboard',
+        dimensions: '4m x 2.5m',
+        monthlyPrice: 1800,
+        city: 'La Paz',
+        format: 'Valla Tradicional'
       }
-    } catch (error) {
-      console.error('Error fetching supports:', error);
-      setProducts([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+    ];
+    setMapPoints(samplePoints);
+
+    // Datos de ejemplo para el listado de soportes
+    const sampleSupports = [
+      {
+        id: '1',
+        name: 'Valla Principal La Paz',
+        dimensions: '6m x 3m',
+        monthlyPrice: 2500,
+        city: 'La Paz',
+        format: 'Valla Digital',
+        available: true,
+        rating: 4.8,
+        reviewsCount: 24,
+        images: ['/placeholder.svg'],
+        featured: true,
+        lighting: true,
+        type: 'billboard'
+      },
+      {
+        id: '2',
+        name: 'Edificio Corporativo',
+        dimensions: '8m x 4m',
+        monthlyPrice: 3500,
+        city: 'La Paz',
+        format: 'Fachada',
+        available: true,
+        rating: 4.9,
+        reviewsCount: 18,
+        images: ['/placeholder.svg'],
+        featured: false,
+        lighting: false,
+        type: 'building'
+      },
+      {
+        id: '3',
+        name: 'Valla Centro Comercial',
+        dimensions: '4m x 2.5m',
+        monthlyPrice: 1800,
+        city: 'La Paz',
+        format: 'Valla Tradicional',
+        available: false,
+        rating: 4.6,
+        reviewsCount: 12,
+        images: ['/placeholder.svg'],
+        featured: false,
+        lighting: true,
+        type: 'billboard'
+      },
+      {
+        id: '4',
+        name: 'Pantalla LED Plaza',
+        dimensions: '5m x 3m',
+        monthlyPrice: 4200,
+        city: 'La Paz',
+        format: 'Pantalla LED',
+        available: true,
+        rating: 4.7,
+        reviewsCount: 31,
+        images: ['/placeholder.svg'],
+        featured: true,
+        lighting: true,
+        type: 'billboard'
+      },
+      {
+        id: '5',
+        name: 'Valla Avenida Principal',
+        dimensions: '7m x 4m',
+        monthlyPrice: 3200,
+        city: 'La Paz',
+        format: 'Valla Digital',
+        available: true,
+        rating: 4.5,
+        reviewsCount: 15,
+        images: ['/placeholder.svg'],
+        featured: false,
+        lighting: true,
+        type: 'billboard'
+      },
+      {
+        id: '6',
+        name: 'Mural Artístico',
+        dimensions: '10m x 6m',
+        monthlyPrice: 2800,
+        city: 'La Paz',
+        format: 'Mural',
+        available: true,
+        rating: 4.9,
+        reviewsCount: 22,
+        images: ['/placeholder.svg'],
+        featured: true,
+        lighting: false,
+        type: 'building'
+      },
+      {
+        id: '7',
+        name: 'Valla Zona Norte',
+        dimensions: '3m x 2m',
+        monthlyPrice: 1500,
+        city: 'La Paz',
+        format: 'Valla Tradicional',
+        available: true,
+        rating: 4.3,
+        reviewsCount: 8,
+        images: ['/placeholder.svg'],
+        featured: false,
+        lighting: false,
+        type: 'billboard'
+      },
+      {
+        id: '8',
+        name: 'Edificio Residencial',
+        dimensions: '6m x 5m',
+        monthlyPrice: 2900,
+        city: 'La Paz',
+        format: 'Fachada',
+        available: false,
+        rating: 4.4,
+        reviewsCount: 19,
+        images: ['/placeholder.svg'],
+        featured: false,
+        lighting: true,
+        type: 'building'
+      },
+      {
+        id: '9',
+        name: 'Valla Estación de Servicio',
+        dimensions: '4m x 3m',
+        monthlyPrice: 2100,
+        city: 'La Paz',
+        format: 'Valla Digital',
+        available: true,
+        rating: 4.6,
+        reviewsCount: 14,
+        images: ['/placeholder.svg'],
+        featured: false,
+        lighting: true,
+        type: 'billboard'
+      },
+      {
+        id: '10',
+        name: 'Pantalla LED Centro',
+        dimensions: '8m x 5m',
+        monthlyPrice: 5500,
+        city: 'La Paz',
+        format: 'Pantalla LED',
+        available: true,
+        rating: 4.8,
+        reviewsCount: 27,
+        images: ['/placeholder.svg'],
+        featured: true,
+        lighting: true,
+        type: 'billboard'
+      }
+    ];
+    setSupports(sampleSupports);
+  }, []);
 
   const handlePriceChange = (values: number[]) => {
     setPriceRange(values);
@@ -153,49 +234,6 @@ export default function BuscarEspacioPage() {
 
   const handleCategoryClick = (slug: string) => {
     setQuery({ category: slug === category ? null : slug });
-  };
-
-  const productsWithCoordinates = products.filter((product) => {
-    const { latitude, longitude } = product;
-    return (
-      typeof latitude === 'number' &&
-      typeof longitude === 'number' &&
-      !Number.isNaN(latitude) &&
-      !Number.isNaN(longitude)
-    );
-  });
-
-  // Función para obtener el estado de disponibilidad
-  const getAvailabilityStatus = (status: string, available: boolean) => {
-    if (!available) {
-      return {
-        text: 'No disponible',
-        className: 'bg-gray-500 text-white'
-      };
-    }
-
-    switch (status?.toUpperCase()) {
-      case 'DISPONIBLE':
-        return {
-          text: 'Disponible',
-          className: 'bg-green-500 text-white'
-        };
-      case 'RESERVADO':
-        return {
-          text: 'Reservado',
-          className: 'bg-yellow-500 text-white'
-        };
-      case 'OCUPADO':
-        return {
-          text: 'Ocupado',
-          className: 'bg-red-500 text-white'
-        };
-      default:
-        return {
-          text: 'Disponible',
-          className: 'bg-green-500 text-white'
-        };
-    }
   };
 
   return (
@@ -335,171 +373,143 @@ export default function BuscarEspacioPage() {
 
           {/* Map Section - 3/4 width */}
           <div className="w-3/4">
-            {productsWithCoordinates.length > 0 ? (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 h-[600px]">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Ubicaciones en el mapa</h2>
-                <div className="h-[540px]">
-                  <SearchMap products={productsWithCoordinates} />
-                </div>
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 h-[600px]">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Ubicaciones en el mapa</h2>
+              <div className="h-[540px]">
+                <LeafletHybridMap 
+                  points={mapPoints}
+                  height={540}
+                  center={[-16.5000, -68.1500]}
+                  zoom={13}
+                />
               </div>
-            ) : (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 h-[600px] flex items-center justify-center">
-                <div className="text-center">
-                  <p className="text-gray-500 text-lg">No hay espacios para mostrar en el mapa</p>
-                  <p className="text-gray-400">Ajusta los filtros para ver resultados</p>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Sort Section - Below map */}
-        <div className="flex justify-end mb-6">
-          <div className="flex items-center space-x-2">
-            <span className="text-sm text-gray-600">Ordenar por:</span>
-            <Select defaultValue="relevance">
-              <SelectTrigger className="w-48 bg-white">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-white">
-                <SelectItem value="relevance">Relevancia</SelectItem>
-                <SelectItem value="price-low">Precio: menor a mayor</SelectItem>
-                <SelectItem value="price-high">Precio: mayor a menor</SelectItem>
-                <SelectItem value="rating">Mejor valorados</SelectItem>
-                <SelectItem value="newest">Más recientes</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        {/* Products Grid - Below filters and map */}
-        <div>
-          {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {[...Array(8)].map((_, i) => (
-                <div key={i} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 animate-pulse">
-                  <div className="w-full h-48 bg-gray-200 rounded-md mb-4"></div>
-                  <div className="h-4 bg-gray-200 rounded mb-2"></div>
-                  <div className="h-3 bg-gray-200 rounded mb-4"></div>
-                  <div className="h-6 bg-gray-200 rounded"></div>
-                </div>
-              ))}
             </div>
-          ) : (
-            <>
-              <div className="mb-4">
-                <p className="text-gray-600">
-                  {products.length} {products.length === 1 ? 'resultado' : 'resultados'} encontrados
-                </p>
-              </div>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {products.map((product) => (
-                  <div
-                    key={product.id}
-                    className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
-                    onClick={() => router.push(`/product/${product.slug}`)}
-                  >
-                    <div className="relative">
-                      <img
-                        src={product.images?.[0] || '/placeholder.svg?height=200&width=300'}
-                        alt={product.title}
-                        className="w-full h-48 object-cover"
-                      />
-                      <div className="absolute top-3 left-3 flex flex-col gap-2">
-                        {product.featured && (
-                          <span className="bg-[#e94446] text-white text-xs font-medium px-2 py-1 rounded-full">
-                            Destacado
-                          </span>
-                        )}
-                        {(() => {
-                          const status = getAvailabilityStatus(product.status, product.available);
-                          return (
-                            <span className={`${status.className} text-xs font-medium px-2 py-1 rounded-full`}>
-                              {status.text}
-                            </span>
-                          );
-                        })()}
+          </div>
+        </div>
+
+        {/* Supports Grid Section */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Soportes Disponibles</h2>
+              <p className="text-gray-600">{supports.length} soportes encontrados</p>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-gray-600">Ordenar por:</span>
+              <Select defaultValue="featured">
+                <SelectTrigger className="w-48 bg-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-white">
+                  <SelectItem value="featured">Destacados</SelectItem>
+                  <SelectItem value="price-low">Precio: menor a mayor</SelectItem>
+                  <SelectItem value="price-high">Precio: mayor a menor</SelectItem>
+                  <SelectItem value="rating">Mejor valorados</SelectItem>
+                  <SelectItem value="newest">Más recientes</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+            {supports.map((support) => (
+              <div
+                key={support.id}
+                className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
+              >
+                <div className="relative">
+                  <Image
+                    src={support.images?.[0] || '/placeholder.svg'}
+                    alt={support.name}
+                    width={300}
+                    height={200}
+                    className="w-full h-48 object-cover"
+                  />
+                  <div className="absolute top-3 left-3 flex flex-col gap-2">
+                    {support.featured && (
+                      <span className="bg-[#e94446] text-white text-xs font-medium px-2 py-1 rounded-full">
+                        Destacado
+                      </span>
+                    )}
+                    <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+                      support.available 
+                        ? 'bg-green-500 text-white' 
+                        : 'bg-gray-500 text-white'
+                    }`}>
+                      {support.available ? 'Disponible' : 'No disponible'}
+                    </span>
+                  </div>
+                  <div className="absolute bottom-3 right-3 flex items-center space-x-1 bg-black/70 text-white text-xs px-2 py-1 rounded-full">
+                    <Star className="w-3 h-3 text-yellow-400 fill-current" />
+                    <span>{support.rating}</span>
+                    <span>({support.reviewsCount})</span>
+                  </div>
+                </div>
+                
+                <div className="p-4">
+                  <h3 className="font-semibold text-gray-900 mb-2 text-lg line-clamp-2">{support.name}</h3>
+                  
+                  {/* Características con iconos - 2 columnas */}
+                  <div className="grid grid-cols-2 gap-2 mb-4">
+                    {/* Tipo */}
+                    <div className="flex items-center space-x-1.5">
+                      <div className="w-3 h-3 flex items-center justify-center flex-shrink-0">
+                        <Building className="w-2.5 h-2.5 text-gray-500" />
                       </div>
-                      <div className="absolute bottom-3 right-3 flex items-center space-x-1 bg-black/70 text-white text-xs px-2 py-1 rounded-full">
-                        <span className="text-yellow-400">★</span>
-                        <span>{product.rating}</span>
-                        <span>({product.reviewsCount})</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-gray-500 truncate">Tipo</p>
+                        <p className="text-xs font-medium text-gray-900 truncate">{support.format}</p>
                       </div>
                     </div>
                     
-                      <div className="p-4">
-                        <h3 className="font-semibold text-gray-900 mb-2 text-lg">{product.title}</h3>
-                        
-                        {/* Características con iconos */}
-                        <div className="grid grid-cols-2 gap-3 mb-4">
-                          {/* Tipo */}
-                          <div className="flex items-center space-x-2">
-                            <div className="w-5 h-5 flex items-center justify-center">
-                              <Building className="w-4 h-4 text-gray-500" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs text-gray-500 truncate">Tipo</p>
-                              <p className="text-sm font-medium text-gray-900 truncate">{product.type}</p>
-                            </div>
-                          </div>
-                          
-                          {/* Iluminación */}
-                          <div className="flex items-center space-x-2">
-                            <div className="w-5 h-5 flex items-center justify-center">
-                              <Lightbulb className={`w-4 h-4 ${product.lighting ? 'text-yellow-500' : 'text-gray-400'}`} />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs text-gray-500 truncate">Iluminación</p>
-                              <p className="text-sm font-medium text-gray-900 truncate">{product.lighting ? 'Sí' : 'No'}</p>
-                            </div>
-                          </div>
-                          
-                          {/* Medidas */}
-                          <div className="flex items-center space-x-2">
-                            <div className="w-5 h-5 flex items-center justify-center">
-                              <Ruler className="w-4 h-4 text-gray-500" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs text-gray-500 truncate">Medidas</p>
-                              <p className="text-sm font-medium text-gray-900 truncate">{product.dimensions}</p>
-                            </div>
-                          </div>
-                          
-                          {/* Ciudad */}
-                          <div className="flex items-center space-x-2">
-                            <div className="w-5 h-5 flex items-center justify-center">
-                              <MapPin className="w-4 h-4 text-gray-500" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs text-gray-500 truncate">Ciudad</p>
-                              <p className="text-sm font-medium text-gray-900 truncate">{product.city}</p>
-                            </div>
-                          </div>
-                        </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <span className="text-2xl font-bold text-[#e94446]">${product.pricePerMonth || 0}</span>
-                          <span className="text-gray-600 text-sm"> / mes</span>
-                        </div>
-                        <div className="px-4 py-2 rounded-lg text-sm bg-[#e94446] text-white font-medium">
-                          Ver detalles
-                        </div>
+                    {/* Iluminación */}
+                    <div className="flex items-center space-x-1.5">
+                      <div className="w-3 h-3 flex items-center justify-center flex-shrink-0">
+                        <Lightbulb className={`w-2.5 h-2.5 ${support.lighting ? 'text-yellow-500' : 'text-gray-400'}`} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-gray-500 truncate">Iluminación</p>
+                        <p className="text-xs font-medium text-gray-900 truncate">{support.lighting ? 'Sí' : 'No'}</p>
+                      </div>
+                    </div>
+                    
+                    {/* Medidas */}
+                    <div className="flex items-center space-x-1.5">
+                      <div className="w-3 h-3 flex items-center justify-center flex-shrink-0">
+                        <Ruler className="w-2.5 h-2.5 text-gray-500" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-gray-500 truncate">Medidas</p>
+                        <p className="text-xs font-medium text-gray-900 truncate">{support.dimensions}</p>
+                      </div>
+                    </div>
+                    
+                    {/* Ciudad */}
+                    <div className="flex items-center space-x-1.5">
+                      <div className="w-3 h-3 flex items-center justify-center flex-shrink-0">
+                        <MapPin className="w-2.5 h-2.5 text-gray-500" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-gray-500 truncate">Ciudad</p>
+                        <p className="text-xs font-medium text-gray-900 truncate">{support.city}</p>
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
-              
-              {products.length === 0 && (
-                <div className="text-center py-12">
-                  <p className="text-gray-500 text-lg">No se encontraron resultados</p>
-                  <p className="text-gray-400">Intenta ajustar los filtros de búsqueda</p>
+                
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-lg font-bold text-[#e94446]">${support.monthlyPrice.toLocaleString()}</span>
+                      <span className="text-gray-600 text-xs"> / mes</span>
+                    </div>
+                    <Link href={`/product/${support.id}`} className="flex items-center px-3 py-1.5 rounded-lg text-sm bg-[#e94446] text-white font-medium hover:bg-[#D7514C] transition-colors">
+                      <Eye className="w-3 h-3 mr-1" />
+                      Ver
+                    </Link>
+                  </div>
                 </div>
-              )}
-            </>
-          )}
+              </div>
+            ))}
+          </div>
         </div>
       </main>
     </div>

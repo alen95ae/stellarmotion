@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { fetchFromERP } from '@/lib/api-config';
+import { API_ENDPOINTS, fetchFromERP } from '@/lib/api-config';
+import { PrismaClient } from '@prisma/client';
 
-const ERP_BASE_URL = process.env.NEXT_PUBLIC_ERP_API_URL || 'http://localhost:3000';
+const prisma = new PrismaClient();
+
+const ERP_BASE_URL = process.env.NEXT_PUBLIC_ERP_API_URL || 'http://localhost:3002';
 const PLACEHOLDER_PATTERN = /placeholder(\.(svg|png|jpe?g))?/i;
 
 const toNumber = (value: unknown): number | null => {
@@ -108,7 +111,7 @@ const normalizeSupport = (support: any) => {
   const longitude = toNumber(support?.longitude ?? support?.lng);
   const tags = parseTags(support?.tags);
   const images = parseImages(support);
-  const pricePerMonth = toNumber(support?.priceMonth) ?? 0;
+  const pricePerMonth = toNumber(support?.pricePerMonth ?? support?.priceMonth) ?? 0;
   const printingCost = toNumber(support?.printingCost) ?? 0;
   const rating = toNumber(support?.rating) ?? 0;
   const available = typeof support?.available === 'boolean'
@@ -155,43 +158,43 @@ const normalizeSupport = (support: any) => {
   };
 };
 
-// GET - Obtener soportes del partner actual
+// GET - Obtener soportes del ERP (proxy)
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const partnerId = searchParams.get('partnerId');
-    const featured = searchParams.get('featured');
-    const limit = searchParams.get('limit');
-    const available = searchParams.get('available');
-    const status = searchParams.get('status');
-    const q = searchParams.get('q');
-    const city = searchParams.get('city');
-    const country = searchParams.get('country');
-    const categoryId = searchParams.get('categoryId');
     
-    // Construir URL para el ERP
-    let erpUrl = `${ERP_BASE_URL}/api/soportes`;
-    const params = new URLSearchParams();
+    console.log('IO API: Proxying request to ERP at', ERP_BASE_URL);
     
-    if (partnerId) params.append('partnerId', partnerId);
-    if (featured) params.append('featured', featured);
-    if (limit) params.append('limit', limit);
-    if (available) params.append('available', available);
-    if (status) params.append('status', status);
-    if (q) params.append('q', q);
-    if (city) params.append('city', city);
-    if (country) params.append('country', country);
-    if (categoryId) params.append('categoryId', categoryId);
+    // Construir la URL del ERP con todos los parámetros
+    const erpUrl = `${ERP_BASE_URL}/api/soportes?${searchParams.toString()}`;
     
-    if (params.toString()) {
-      erpUrl += `?${params.toString()}`;
+    console.log('IO API: Fetching from ERP:', erpUrl);
+    
+    // Hacer petición al ERP
+    const response = await fetch(erpUrl, {
+      headers: {
+        'User-Agent': 'StellarMotion-IO/1.0',
+      },
+    });
+    
+    if (!response.ok) {
+      console.error('IO API: ERP response not ok:', response.status, response.statusText);
+      const errorText = await response.text();
+      console.error('IO API: ERP error details:', errorText);
+      return NextResponse.json([], { status: 200 }); // Devolver array vacío en caso de error
     }
     
-    const supports = await fetchFromERP(erpUrl);
-    const supportsArray = Array.isArray(supports) ? supports : [];
-
+    const data = await response.json();
+    console.log('IO API: Received from ERP:', Array.isArray(data) ? `${data.length} items` : typeof data);
+    
+    // Verificar que la respuesta sea un array
+    if (!Array.isArray(data)) {
+      console.warn('IO API: ERP response is not an array:', data);
+      return NextResponse.json([], { status: 200 });
+    }
+    
     // Transformar datos para compatibilidad con el frontend
-    const transformedSupports = supportsArray.map(normalizeSupport);
+    const transformedSupports = data.map(normalizeSupport);
     
     return NextResponse.json(transformedSupports);
   } catch (error) {
