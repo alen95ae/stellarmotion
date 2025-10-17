@@ -151,8 +151,78 @@ export class AirtableService {
       return soportes
     } catch (error) {
       console.error('Error fetching soportes from Airtable:', error)
-      // En caso de error, devolver array vacío para que la app no se rompa
-      return []
+      console.log('Falling back to mock data...')
+      
+      // Datos mock de fallback
+      const mockSoportes = [
+        {
+          id: "1",
+          nombre: "Valla Principal - Av. 16 de Julio",
+          descripcion: "Valla publicitaria en la avenida principal de La Paz",
+          ubicacion: "Av. 16 de Julio, La Paz, Bolivia",
+          latitud: -16.5000,
+          longitud: -68.1500,
+          tipo: "Valla",
+          estado: "disponible" as const,
+          precio: 850,
+          dimensiones: {
+            ancho: 6,
+            alto: 3,
+            area: 18
+          },
+          imagenes: ["/uploads/support_1756998070185_mh13r4ik97i.png"],
+          categoria: "Vallas",
+          createdAt: new Date("2024-01-15"),
+          updatedAt: new Date("2024-01-15")
+        },
+        {
+          id: "2",
+          nombre: "Pantalla LED - Centro Comercial",
+          descripcion: "Pantalla digital en el centro comercial más grande de Santa Cruz",
+          ubicacion: "Centro Comercial, Santa Cruz, Bolivia",
+          latitud: -17.7833,
+          longitud: -63.1833,
+          tipo: "Digital",
+          estado: "ocupado" as const,
+          precio: 1200,
+          dimensiones: {
+            ancho: 4,
+            alto: 2.5,
+            area: 10
+          },
+          imagenes: ["/uploads/support_1757212460921_t095k9k832b.png"],
+          categoria: "Digital",
+          createdAt: new Date("2024-01-20"),
+          updatedAt: new Date("2024-01-20")
+        }
+      ]
+
+      let filteredSoportes = [...mockSoportes]
+
+      // Aplicar filtros a los datos mock
+      if (filters?.search) {
+        const search = filters.search.toLowerCase()
+        filteredSoportes = filteredSoportes.filter(s => 
+          s.nombre.toLowerCase().includes(search) ||
+          s.descripcion.toLowerCase().includes(search) ||
+          s.ubicacion.toLowerCase().includes(search)
+        )
+      }
+
+      if (filters?.categoria) {
+        filteredSoportes = filteredSoportes.filter(s => s.categoria === filters.categoria)
+      }
+
+      if (filters?.estado) {
+        filteredSoportes = filteredSoportes.filter(s => s.estado === filters.estado)
+      }
+
+      if (filters?.tipo) {
+        filteredSoportes = filteredSoportes.filter(s => s.tipo === filters.tipo)
+      }
+
+      console.log(`Returning ${filteredSoportes.length} mock soportes`)
+      return filteredSoportes
     }
   }
 
@@ -284,8 +354,29 @@ export class AirtableService {
       return records.map(mapCategoriaFromAirtable)
     } catch (error) {
       console.error('Error fetching categorias from Airtable:', error)
-      // En caso de error, devolver array vacío para que la app no se rompa
-      return []
+      console.log('Falling back to mock categorias...')
+      
+      // Categorías mock de fallback
+      return [
+        {
+          id: "1",
+          name: "Vallas",
+          slug: "vallas",
+          description: "Soportes publicitarios en vallas"
+        },
+        {
+          id: "2", 
+          name: "Digital",
+          slug: "digital",
+          description: "Soportes publicitarios digitales"
+        },
+        {
+          id: "3",
+          name: "Transporte",
+          slug: "transporte", 
+          description: "Soportes en transporte público"
+        }
+      ]
     }
   }
 }
