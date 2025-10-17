@@ -16,29 +16,37 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
     const search = searchParams.get("search") || ""
-    const categoria = searchParams.get("categoria") || ""
     const estado = searchParams.get("estado") || ""
-    const tipo = searchParams.get("tipo") || ""
     const page = parseInt(searchParams.get("page") || "1")
     const limit = parseInt(searchParams.get("limit") || "10")
 
-    const soportes = await AirtableService.getSoportes({
-      search: search || undefined,
-      categoria: categoria || undefined,
-      estado: estado || undefined,
-      tipo: tipo || undefined
-    })
+    let clientes = await AirtableService.getClientes()
+
+    // Aplicar filtros
+    if (search) {
+      const searchLower = search.toLowerCase()
+      clientes = clientes.filter(cliente => 
+        cliente.nombre.toLowerCase().includes(searchLower) ||
+        cliente.email.toLowerCase().includes(searchLower) ||
+        cliente.telefono.includes(search) ||
+        cliente.nit.includes(search)
+      )
+    }
+
+    if (estado) {
+      clientes = clientes.filter(cliente => cliente.estado === estado)
+    }
 
     // Aplicar paginación
-    const total = soportes.length
+    const total = clientes.length
     const startIndex = (page - 1) * limit
     const endIndex = startIndex + limit
-    const paginatedSoportes = soportes.slice(startIndex, endIndex)
+    const paginatedClientes = clientes.slice(startIndex, endIndex)
 
     const totalPages = Math.ceil(total / limit)
 
     return withCors(NextResponse.json({
-      soportes: paginatedSoportes,
+      clientes: paginatedClientes,
       pagination: {
         page,
         limit,
@@ -49,7 +57,7 @@ export async function GET(request: Request) {
       }
     }))
   } catch (error) {
-    console.error("Error fetching soportes:", error)
+    console.error("Error fetching clientes:", error)
     return withCors(NextResponse.json(
       { error: "Error interno del servidor" },
       { status: 500 }
@@ -61,27 +69,18 @@ export async function POST(request: Request) {
   try {
     const data = await request.json()
     
-    const newSoporte = await AirtableService.createSoporte({
+    const newCliente = await AirtableService.createCliente({
       nombre: data.nombre,
-      descripcion: data.descripcion,
-      ubicacion: data.ubicacion,
-      latitud: data.latitud,
-      longitud: data.longitud,
-      tipo: data.tipo,
-      estado: data.estado || 'disponible',
-      precio: data.precio,
-      dimensiones: {
-        ancho: data.dimensiones?.ancho || 0,
-        alto: data.dimensiones?.alto || 0,
-        area: data.dimensiones?.area || 0
-      },
-      imagenes: data.imagenes || [],
-      categoria: data.categoria
+      email: data.email,
+      telefono: data.telefono,
+      direccion: data.direccion,
+      nit: data.nit,
+      estado: data.estado || 'activo'
     })
 
-    return withCors(NextResponse.json(newSoporte, { status: 201 }))
+    return withCors(NextResponse.json(newCliente, { status: 201 }))
   } catch (error) {
-    console.error("Error creating soporte:", error)
+    console.error("Error creating cliente:", error)
     return withCors(NextResponse.json(
       { error: "Error interno del servidor" },
       { status: 500 }

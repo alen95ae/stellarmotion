@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { mockCategorias } from "@/lib/mock-data"
+import { AirtableService } from "@/lib/airtable"
 
 function withCors(response: NextResponse) {
   response.headers.set("Access-Control-Allow-Origin", "*")
@@ -14,7 +14,8 @@ export async function OPTIONS() {
 
 export async function GET() {
   try {
-    return withCors(NextResponse.json(mockCategorias))
+    const categorias = await AirtableService.getCategorias()
+    return withCors(NextResponse.json(categorias))
   } catch (error) {
     console.error("Error fetching categories:", error)
     return withCors(NextResponse.json(
