@@ -190,7 +190,8 @@ export default function SoportesPage() {
       const response = await fetch(`/api/soportes?${params.toString()}`)
       if (response.ok) {
         const data = await response.json()
-        setSupports(data)
+        // La API devuelve { soportes: [...], pagination: {...} }
+        setSupports(data.soportes || data || [])
       } else {
         toast.error("Error al cargar los soportes")
       }
