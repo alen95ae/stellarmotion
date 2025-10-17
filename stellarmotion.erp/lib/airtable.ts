@@ -1,5 +1,16 @@
 import Airtable from 'airtable'
 
+// Validar variables de entorno
+if (!process.env.AIRTABLE_API_KEY) {
+  throw new Error('AIRTABLE_API_KEY is not defined in environment variables')
+}
+if (!process.env.AIRTABLE_BASE_ID) {
+  throw new Error('AIRTABLE_BASE_ID is not defined in environment variables')
+}
+
+console.log('Airtable API Key:', process.env.AIRTABLE_API_KEY ? 'Set' : 'Not set')
+console.log('Airtable Base ID:', process.env.AIRTABLE_BASE_ID ? 'Set' : 'Not set')
+
 // Configuración de Airtable
 const base = new Airtable({
   apiKey: process.env.AIRTABLE_API_KEY
@@ -105,11 +116,13 @@ export class AirtableService {
     tipo?: string
   }) {
     try {
+      console.log('Fetching soportes from Airtable...')
       const records = await base('Soportes').select({
         maxRecords: 100,
         sort: [{ field: 'Created', direction: 'desc' }]
       }).all()
 
+      console.log(`Found ${records.length} records in Airtable`)
       let soportes = records.map(mapSoporteFromAirtable)
 
       // Aplicar filtros
@@ -134,10 +147,12 @@ export class AirtableService {
         soportes = soportes.filter(s => s.tipo === filters.tipo)
       }
 
+      console.log(`Returning ${soportes.length} filtered soportes`)
       return soportes
     } catch (error) {
       console.error('Error fetching soportes from Airtable:', error)
-      throw error
+      // En caso de error, devolver array vacío para que la app no se rompa
+      return []
     }
   }
 
@@ -260,14 +275,17 @@ export class AirtableService {
   // CATEGORIAS
   static async getCategorias() {
     try {
+      console.log('Fetching categorias from Airtable...')
       const records = await base('Categorias').select({
         maxRecords: 100
       }).all()
 
+      console.log(`Found ${records.length} categorias in Airtable`)
       return records.map(mapCategoriaFromAirtable)
     } catch (error) {
       console.error('Error fetching categorias from Airtable:', error)
-      throw error
+      // En caso de error, devolver array vacío para que la app no se rompa
+      return []
     }
   }
 }
