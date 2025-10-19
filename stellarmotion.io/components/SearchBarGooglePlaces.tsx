@@ -19,6 +19,7 @@ type PlaceSuggestion = {
   lat: number;
   lng: number;
   displayName: string;
+  types?: string[];
 };
 
 export default function SearchBarGooglePlaces({ 
@@ -139,7 +140,8 @@ export default function SearchBarGooglePlaces({
               label: prediction.description,
               lat: 0, // Will be filled when selected
               lng: 0, // Will be filled when selected
-              displayName: prediction.description
+              displayName: prediction.description,
+              types: prediction.types || []
             }));
             
             setSuggestions(suggestions);
@@ -217,7 +219,7 @@ export default function SearchBarGooglePlaces({
 
       const request: google.maps.places.PlaceDetailsRequest = {
         placeId: placeId,
-        fields: ['geometry', 'name', 'formatted_address']
+        fields: ['geometry', 'name', 'formatted_address', 'types']
       };
 
       placesService.current.getDetails(request, (place, status) => {
@@ -245,6 +247,12 @@ export default function SearchBarGooglePlaces({
         if (locationData.lat && locationData.lng) {
           qs.set("lat", String(locationData.lat));
           qs.set("lng", String(locationData.lng));
+          
+          // Add location type for zoom calculation
+          if (locationData.types && locationData.types.length > 0) {
+            // Use the first type as the primary location type
+            qs.set("locationType", locationData.types[0]);
+          }
         }
       } catch (error) {
         console.error('Error parsing stored location for URL:', error);
@@ -352,16 +360,22 @@ export default function SearchBarGooglePlaces({
     
     let lat = suggestion.lat;
     let lng = suggestion.lng;
+    let types = suggestion.types || [];
     
     // If coordinates are not available (Google Places), try to get them
     if ((lat === 0 && lng === 0) && suggestion.placeId && !suggestion.placeId.includes(',')) {
       try {
-        // Get place details to get coordinates
+        // Get place details to get coordinates and types
         const placeDetails = await getPlaceDetails(suggestion.placeId);
         
         if (placeDetails.geometry?.location) {
           lat = placeDetails.geometry.location.lat();
           lng = placeDetails.geometry.location.lng();
+        }
+        
+        // Get types from place details if available
+        if (placeDetails.types) {
+          types = placeDetails.types;
         }
       } catch (error) {
         console.error('Error getting place details:', error);
@@ -373,12 +387,13 @@ export default function SearchBarGooglePlaces({
       lng = parseFloat(coords[1]);
     }
     
-    // Store coordinates for the map to use
+    // Store coordinates and types for the map to use
     if (typeof window !== 'undefined' && lat !== 0 && lng !== 0) {
       const locationData = {
         label: suggestion.displayName,
         lat: lat,
-        lng: lng
+        lng: lng,
+        types: types
       };
       sessionStorage.setItem('selectedLocation', JSON.stringify(locationData));
       

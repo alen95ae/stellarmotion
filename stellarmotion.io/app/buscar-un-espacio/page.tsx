@@ -18,19 +18,7 @@ export default function BuscarEspacioPage() {
   const setQuery = useQuerySync();
   const { categories, loading: categoriesLoading } = useCategories();
   
-  const [priceRange, setPriceRange] = useState([0, 5000]);
-  const [lighting, setLighting] = useState(false);
-  const [printing, setPrinting] = useState(false);
-  const [centerZone, setCenterZone] = useState(false);
-  const [mobile, setMobile] = useState(false);
-  const [searchLocation, setSearchLocation] = useState<{ lat: number; lng: number; label?: string } | null>(null);
-  const [showMap, setShowMap] = useState(true);
-
-  // Debug effect to see when searchLocation changes
-  useEffect(() => {
-    console.log('SearchLocation state changed:', searchLocation);
-  }, [searchLocation]);
-  
+  // Get all search parameters first
   const category = searchParams.get('category') || '';
   const priceMin = searchParams.get('priceMin') || '0';
   const priceMax = searchParams.get('priceMax') || '5000';
@@ -38,6 +26,70 @@ export default function BuscarEspacioPage() {
   const searchLat = searchParams.get('lat');
   const searchLng = searchParams.get('lng');
   const searchLocationText = searchParams.get('loc') || searchParams.get('location');
+  const locationType = searchParams.get('locationType');
+  
+  const [priceRange, setPriceRange] = useState([0, 5000]);
+  const [lighting, setLighting] = useState(false);
+  const [printing, setPrinting] = useState(false);
+  const [centerZone, setCenterZone] = useState(false);
+  const [mobile, setMobile] = useState(false);
+  const [searchLocation, setSearchLocation] = useState<{ lat: number; lng: number; label?: string; types?: string[] } | null>(null);
+  const [showMap, setShowMap] = useState(true);
+  const [mapConfig, setMapConfig] = useState({
+    lat: 40.4637,
+    lng: -3.7492,
+    zoom: 6
+  });
+
+  // Function to get zoom level based on Google Places type
+  const getZoomFromGooglePlaceType = (placeType: string | null): number => {
+    if (!placeType) return 12; // Default zoom for cities
+    
+    switch (placeType) {
+      case 'country':
+        return 6; // Countries - very wide view
+      case 'administrative_area_level_1':
+        return 8; // States/regions - wide view
+      case 'locality':
+        return 12; // Cities - Madrid, Barcelona, New York
+      case 'sublocality':
+        return 13; // Neighborhoods/districts
+      case 'postal_town':
+        return 14; // Small towns - Zamora
+      case 'route':
+      case 'street_address':
+        return 16; // Streets - very close view
+      default:
+        return 12; // Default for cities
+    }
+  };
+
+  // Update map configuration when search parameters change
+  useEffect(() => {
+    if (searchLat && searchLng) {
+      const lat = parseFloat(searchLat);
+      const lng = parseFloat(searchLng);
+      const zoom = getZoomFromGooglePlaceType(locationType);
+      
+      setMapConfig({
+        lat,
+        lng,
+        zoom
+      });
+    } else {
+      // Reset to default configuration
+      setMapConfig({
+        lat: 40.4637,
+        lng: -3.7492,
+        zoom: 6
+      });
+    }
+  }, [searchLat, searchLng, locationType]);
+
+  // Debug effect to see when searchLocation changes
+  useEffect(() => {
+    console.log('SearchLocation state changed:', searchLocation);
+  }, [searchLocation]);
 
   // Cargar soportes reales desde el ERP
   const { soportes, loading: soportesLoading, error: soportesError } = useSoportes({
@@ -53,15 +105,16 @@ export default function BuscarEspacioPage() {
       const lat = parseFloat(searchLat);
       const lng = parseFloat(searchLng);
       if (!isNaN(lat) && !isNaN(lng)) {
-        console.log('Setting search location from URL:', { lat, lng, label: searchLocationText });
+        console.log('Setting search location from URL:', { lat, lng, label: searchLocationText, locationType });
         setSearchLocation({
           lat,
           lng,
-          label: searchLocationText || 'Ubicación de búsqueda'
+          label: searchLocationText || 'Ubicación de búsqueda',
+          types: locationType ? [locationType] : undefined
         });
       }
     }
-  }, [searchLat, searchLng, searchLocationText]);
+  }, [searchLat, searchLng, searchLocationText, locationType]);
 
   // Effect to handle search location from SearchBar
   useEffect(() => {
@@ -71,7 +124,8 @@ export default function BuscarEspacioPage() {
       setSearchLocation({
         lat: location.lat,
         lng: location.lng,
-        label: location.label
+        label: location.label,
+        types: location.types
       });
     };
 
@@ -83,7 +137,8 @@ export default function BuscarEspacioPage() {
           setSearchLocation({
             lat: location.lat,
             lng: location.lng,
-            label: location.label
+            label: location.label,
+            types: location.types
           });
           // Clear the stored location after using it
           sessionStorage.removeItem('selectedLocation');
@@ -279,9 +334,9 @@ export default function BuscarEspacioPage() {
                 <MapViewerGoogleMaps 
                   points={mapPoints}
                   height={440}
-                  lat={40.4637}
-                  lng={-3.7492}
-                  zoom={6}
+                  lat={mapConfig.lat}
+                  lng={mapConfig.lng}
+                  zoom={mapConfig.zoom}
                   style="streets"
                   showControls={true}
                   searchLocation={searchLocation}

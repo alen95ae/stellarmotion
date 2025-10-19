@@ -26,7 +26,7 @@ export interface MapViewerGoogleMapsProps {
   enableClustering?: boolean;
   onMarkerClick?: (point: MapPoint) => void;
   onMapClick?: (lat: number, lng: number) => void;
-  searchLocation?: { lat: number; lng: number; label?: string } | null;
+  searchLocation?: { lat: number; lng: number; label?: string; types?: string[] } | null;
 }
 
 declare global {
@@ -57,6 +57,29 @@ export default function MapViewerGoogleMaps({
   const [mapStyle, setMapStyle] = useState(style);
   const { isLoaded: googleMapsLoaded } = useGoogleMaps();
   const [isMapReady, setIsMapReady] = useState(false);
+
+  // Function to get zoom level based on Google Places type
+  const getZoomFromGooglePlaceType = (placeType: string | null): number => {
+    if (!placeType) return 12; // Default zoom for cities
+    
+    switch (placeType) {
+      case 'country':
+        return 6; // Countries - very wide view
+      case 'administrative_area_level_1':
+        return 8; // States/regions - wide view
+      case 'locality':
+        return 12; // Cities - Madrid, Barcelona, New York
+      case 'sublocality':
+        return 13; // Neighborhoods/districts
+      case 'postal_town':
+        return 14; // Small towns - Zamora
+      case 'route':
+      case 'street_address':
+        return 16; // Streets - very close view
+      default:
+        return 12; // Default for cities
+    }
+  };
 
   // Convertir estilo a tipo de mapa de Google
   const getGoogleMapType = (style: string) => {
@@ -162,7 +185,7 @@ export default function MapViewerGoogleMaps({
     });
   }, [points, isMapReady, onMarkerClick]);
 
-  // Centrar el mapa cuando cambie la ubicación de búsqueda
+  // Centrar el mapa y ajustar zoom cuando cambie la ubicación de búsqueda
   useEffect(() => {
     console.log('MapViewerGoogleMaps - searchLocation effect triggered:', { searchLocation, mapReady: !!map.current });
     if (!map.current || !searchLocation) {
@@ -172,9 +195,17 @@ export default function MapViewerGoogleMaps({
     
     console.log('Centering map to search location:', searchLocation);
     map.current.setCenter({ lat: searchLocation.lat, lng: searchLocation.lng });
-    map.current.setZoom(15); // Zoom apropiado para mostrar la ubicación
     
-    // Solo centrar el mapa, sin agregar marcador
+    // Aplicar zoom inteligente basado en el tipo de lugar
+    if (searchLocation.types && searchLocation.types.length > 0) {
+      const zoomLevel = getZoomFromGooglePlaceType(searchLocation.types[0]);
+      console.log('Applying intelligent zoom:', { type: searchLocation.types[0], zoom: zoomLevel });
+      map.current.setZoom(zoomLevel);
+    } else {
+      // Si no hay tipos, usar zoom por defecto para ciudades
+      console.log('No types available, using default zoom 12');
+      map.current.setZoom(12);
+    }
   }, [searchLocation]);
 
   // Cambiar estilo del mapa
