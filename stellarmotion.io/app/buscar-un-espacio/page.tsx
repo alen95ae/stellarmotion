@@ -8,7 +8,7 @@ import { useQuerySync } from '@/hooks/useQuerySync';
 import { useCategories } from '@/hooks/useCategories';
 import { useSoportes, Soporte } from '@/hooks/useSoportes';
 import SearchBarGooglePlaces from '@/components/SearchBarGooglePlaces';
-import { Ruler, MapPin, Eye, EyeOff } from 'lucide-react';
+import { Ruler, MapPin, Eye, EyeOff, Building } from 'lucide-react';
 import MapViewerGoogleMaps from '@/components/MapViewerGoogleMaps';
 import Link from 'next/link';
 import Image from 'next/image';
