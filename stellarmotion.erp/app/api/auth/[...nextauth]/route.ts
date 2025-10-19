@@ -4,9 +4,9 @@ import Credentials from "next-auth/providers/credentials"
 // Usuario mock para desarrollo
 const mockUser = {
   id: "1",
-  email: "admin@stellarmotion.com",
+  email: "admin@stellarmotion.io",
   name: "Administrador",
-  password: "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi", // password
+  password: "admin123",
   role: "admin",
   partnerId: null
 }
@@ -33,7 +33,7 @@ export const authOptions: NextAuthOptions = {
         }
         
         // Verificar credenciales mock
-        if (creds.email === mockUser.email && creds.password === "password") {
+        if (creds.email === mockUser.email && creds.password === mockUser.password) {
           console.log('Auth successful')
           return { 
             id: mockUser.id, 

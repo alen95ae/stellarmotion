@@ -61,29 +61,67 @@ export async function POST(request: Request) {
   try {
     const data = await request.json()
     
-    const newSoporte = await AirtableService.createSoporte({
-      nombre: data.nombre,
-      descripcion: data.descripcion,
-      ubicacion: data.ubicacion,
-      latitud: data.latitud,
-      longitud: data.longitud,
-      tipo: data.tipo,
-      estado: data.estado || 'disponible',
-      precio: data.precio,
-      dimensiones: {
-        ancho: data.dimensiones?.ancho || 0,
-        alto: data.dimensiones?.alto || 0,
-        area: data.dimensiones?.area || 0
-      },
+    console.log('🆕 Creando nuevo soporte con datos:', data)
+    
+    // Validación básica
+    if (!data['Título del soporte']) {
+      return withCors(NextResponse.json(
+        { error: "Título del soporte es requerido" },
+        { status: 400 }
+      ));
+    }
+    
+    // Mapear datos al formato de Airtable
+    const createData = {
+      'Título del soporte': data['Título del soporte'],
+      'Descripción': data['Descripción'] || '',
+      'Tipo de soporte': data['Tipo de soporte'] || '',
+      'Estado del soporte': data['Estado del soporte'] || 'DISPONIBLE',
+      'Precio por mes': data['Precio por mes'] || null,
+      dimensiones: data.dimensiones || { ancho: 0, alto: 0, area: 0 },
       imagenes: data.imagenes || [],
-      categoria: data.categoria
-    })
-
-    return withCors(NextResponse.json(newSoporte, { status: 201 }))
+      ubicacion: data.ubicacion || '',
+      ciudad: data.ciudad || '',
+      pais: data.pais || '',
+      'Código interno': data['Código interno'] || '',
+      'Código cliente': data['Código cliente'] || '',
+      'Impactos diarios': data['Impactos diarios'] || null,
+      'Enlace de Google Maps': data['Enlace de Google Maps'] || '',
+      'Propietario': data['Propietario'] || '',
+      'Iluminación': data['Iluminación'] || false,
+      'Destacado': data['Destacado'] || false
+    }
+    
+    console.log('📤 Datos que se enviarán a Airtable:', createData)
+    
+    const newSoporte = await AirtableService.createSoporte(createData)
+    
+    if (!newSoporte) {
+      console.error('❌ Error: AirtableService.createSoporte returned null');
+      return withCors(NextResponse.json(
+        { 
+          success: false,
+          error: "Error al crear en Airtable",
+          details: "El servicio de Airtable no pudo crear el registro"
+        },
+        { status: 500 }
+      ));
+    }
+    
+    console.log('✅ Soporte creado exitosamente:', newSoporte);
+    return withCors(NextResponse.json({
+      success: true,
+      data: newSoporte,
+      message: "Soporte creado correctamente"
+    }, { status: 201 }))
   } catch (error) {
     console.error("Error creating soporte:", error)
     return withCors(NextResponse.json(
-      { error: "Error interno del servidor" },
+      { 
+        success: false,
+        error: "Error interno del servidor",
+        details: error instanceof Error ? error.message : "Error desconocido"
+      },
       { status: 500 }
     ))
   }

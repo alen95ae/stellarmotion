@@ -23,24 +23,25 @@ interface LeafletMapProps {
   height?: string;
   mapStyle?: MapStyle;
   onMapClick?: (lat: number, lng: number) => void;
+  onMapLoad?: (map: any) => void;
 }
 
-// Estilos que imitan Google Maps
+// Estilos exactos como en LeafletHybridMap
 const mapStyles = {
   roadmap: {
     name: 'Google Maps Roadmap Style',
-    attribution: '© OpenStreetMap contributors',
-    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+    attribution: '© Google',
+    url: 'https://mt1.google.com/vt/lyrs=r&x={x}&y={y}&z={z}'
   },
   satellite: {
     name: 'Google Maps Satellite Style',
-    attribution: '© Esri, Maxar, GeoEye, Earthstar Geographics, CNES/Airbus DS, USDA, USGS, AeroGRID, IGN, and the GIS User Community',
-    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+    attribution: '© Google Sat',
+    url: 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}'
   },
   hybrid: {
-    name: 'Google Maps Hybrid Style',
-    attribution: '© Esri, Maxar, GeoEye, Earthstar Geographics, CNES/Airbus DS, USDA, USGS, AeroGRID, IGN, and the GIS User Community',
-    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+    name: 'OpenStreetMap Style',
+    attribution: '© OpenStreetMap',
+    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
   },
   terrain: {
     name: 'Google Maps Terrain Style',
@@ -56,7 +57,8 @@ export default function LeafletMap({
   className = "h-[420px] w-full rounded-2xl overflow-hidden border",
   height = '420px',
   mapStyle = 'roadmap',
-  onMapClick
+  onMapClick,
+  onMapLoad
 }: LeafletMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -109,6 +111,11 @@ export default function LeafletMap({
 
       console.log('Leaflet map created successfully');
       setIsLoaded(true);
+      
+      // Llamar al callback onMapLoad si está definido
+      if (onMapLoad) {
+        onMapLoad(map);
+      }
     } catch (err) {
       console.error('Error creating Leaflet map:', err);
       setError('Error al cargar el mapa');

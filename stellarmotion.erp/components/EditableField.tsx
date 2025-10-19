@@ -9,10 +9,16 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 
 // Constantes para colores de estado
 const STATUS_META = {
-  DISPONIBLE:   { label: 'Disponible',    className: 'bg-emerald-600 text-white' },
-  RESERVADO:    { label: 'Reservado',     className: 'bg-amber-500 text-black' },
-  OCUPADO:      { label: 'Ocupado',       className: 'bg-red-600 text-white' },
-  NO_DISPONIBLE:{ label: 'No disponible', className: 'bg-neutral-900 text-white' },
+  DISPONIBLE:   { label: 'Disponible',    className: 'bg-green-100 text-green-800 border-green-200' },
+  RESERVADO:    { label: 'Reservado',     className: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
+  OCUPADO:      { label: 'Ocupado',       className: 'bg-red-100 text-red-800 border-red-200' },
+  MANTENIMIENTO:{ label: 'Mantenimiento', className: 'bg-gray-100 text-gray-800 border-gray-200' },
+  NO_DISPONIBLE:{ label: 'No disponible', className: 'bg-gray-100 text-gray-800 border-gray-200' },
+  // Estados en minúsculas para Airtable
+  disponible:   { label: 'Disponible',    className: 'bg-green-100 text-green-800 border-green-200' },
+  reservado:    { label: 'Reservado',     className: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
+  ocupado:      { label: 'Ocupado',       className: 'bg-red-100 text-red-800 border-red-200' },
+  mantenimiento:{ label: 'Mantenimiento', className: 'bg-gray-100 text-gray-800 border-gray-200' },
 } as const
 
 interface EditableFieldProps {
@@ -142,13 +148,53 @@ export default function EditableField({
       title={displayTitle}
     >
       {field === 'status' ? (
-        <span className={`inline-flex items-center rounded px-2 py-1 text-xs font-medium ${STATUS_META[value as keyof typeof STATUS_META]?.className || 'bg-gray-100 text-gray-800'}`}>
-          {STATUS_META[value as keyof typeof STATUS_META]?.label || value}
-        </span>
+        (() => {
+          // Normalizar el valor del estado
+          const normalizedStatus = String(value || '').toLowerCase();
+          
+          // Mapear estados a colores y etiquetas
+          const getStatusConfig = (status: string) => {
+            switch (status) {
+              case 'disponible':
+                return {
+                  label: 'Disponible',
+                  className: 'bg-green-100 text-green-800 border-green-200'
+                };
+              case 'reservado':
+                return {
+                  label: 'Reservado', 
+                  className: 'bg-yellow-100 text-yellow-800 border-yellow-200'
+                };
+              case 'ocupado':
+                return {
+                  label: 'Ocupado',
+                  className: 'bg-red-100 text-red-800 border-red-200'
+                };
+              case 'mantenimiento':
+                return {
+                  label: 'Mantenimiento',
+                  className: 'bg-gray-100 text-gray-800 border-gray-200'
+                };
+              default:
+                return {
+                  label: String(value || 'Desconocido'),
+                  className: 'bg-gray-100 text-gray-800 border-gray-200'
+                };
+            }
+          };
+          
+          const statusConfig = getStatusConfig(normalizedStatus);
+          
+          return (
+            <Badge className={statusConfig.className}>
+              {statusConfig.label}
+            </Badge>
+          );
+        })()
       ) : field === 'owner' ? (
-        <span className="inline-flex rounded-full px-2 py-1 text-xs font-medium bg-gray-600 text-white truncate max-w-[20ch]">
+        <Badge className="bg-blue-100 text-blue-800 border-blue-200">
           {value || '—'}
-        </span>
+        </Badge>
       ) : field === 'code' ? (
         <span className="inline-flex items-center rounded-md bg-neutral-100 px-2 py-1 font-mono text-xs text-gray-800 border border-neutral-200">
           {value || '—'}

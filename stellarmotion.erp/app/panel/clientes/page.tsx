@@ -87,7 +87,7 @@ export default function ClientesPage() {
       params.set('limit', '100')
 
       console.log('🔍 Fetching contacts with params:', params.toString())
-      const response = await fetch(`/api/contactos?${params}`)
+      const response = await fetch(`/api/clientes?${params}`)
       
       if (response.ok) {
         const data = await response.json()
@@ -120,7 +120,7 @@ export default function ClientesPage() {
       if (filters.kind && filters.kind !== "ALL") params.append("kind", filters.kind)
       params.set('allIds', 'true')
 
-      const response = await fetch(`/api/contactos/all-ids?${params}`)
+      const response = await fetch(`/api/clientes/all-ids?${params}`)
       if (response.ok) {
         const data = await response.json()
         setAllContactIds(data.ids || [])
@@ -155,7 +155,7 @@ export default function ClientesPage() {
   const handleExport = async () => {
     try {
       // Exportar TODOS los contactos sin filtros
-      const response = await fetch(`/api/contactos/export`)
+      const response = await fetch(`/api/clientes/export`)
       if (response.ok) {
         const blob = await response.blob()
         const url = window.URL.createObjectURL(blob)
@@ -180,7 +180,7 @@ export default function ClientesPage() {
     
     try {
       const ids = Array.from(selectedContacts).join(',')
-      const response = await fetch(`/api/contactos/export?ids=${encodeURIComponent(ids)}`)
+      const response = await fetch(`/api/clientes/export?ids=${encodeURIComponent(ids)}`)
       if (response.ok) {
         const blob = await response.blob()
         const url = window.URL.createObjectURL(blob)
@@ -204,7 +204,7 @@ export default function ClientesPage() {
     if (!confirm("¿Estás seguro de eliminar este contacto?")) return
 
     try {
-      const response = await fetch(`/api/contactos/${id}`, { method: "DELETE" })
+      const response = await fetch(`/api/clientes/${id}`, { method: "DELETE" })
       if (response.ok) {
         fetchContacts()
         toast.success("Contacto eliminado correctamente")
@@ -222,7 +222,7 @@ export default function ClientesPage() {
     try {
       const count = selectedContacts.size
       const promises = Array.from(selectedContacts).map(id =>
-        fetch(`/api/contactos/${id}`, { method: "DELETE" })
+        fetch(`/api/clientes/${id}`, { method: "DELETE" })
       )
 
       await Promise.all(promises)
@@ -241,7 +241,7 @@ export default function ClientesPage() {
     try {
       const count = selectedContacts.size
       const promises = Array.from(selectedContacts).map(id =>
-        fetch(`/api/contactos/${id}`, {
+        fetch(`/api/clientes/${id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ relation })
@@ -277,7 +277,7 @@ export default function ClientesPage() {
     try {
       const count = Object.keys(editedContacts).length
       const promises = Object.entries(editedContacts).map(([id, changes]) =>
-        fetch(`/api/contactos/${id}`, {
+        fetch(`/api/clientes/${id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(changes)
@@ -326,7 +326,7 @@ export default function ClientesPage() {
       const formData = new FormData()
       formData.append('file', file)
 
-      const response = await fetch('/api/contactos/import', {
+      const response = await fetch('/api/clientes/import', {
         method: 'POST',
         body: formData
       })
@@ -377,7 +377,7 @@ export default function ClientesPage() {
   const detectDuplicates = async () => {
     setDuplicatesLoading(true)
     try {
-      const response = await fetch('/api/contactos/duplicates')
+      const response = await fetch('/api/clientes/duplicates')
       if (!response.ok) {
         toast.error('Error al detectar duplicados')
         return
@@ -418,7 +418,7 @@ export default function ClientesPage() {
       mergedFields['Teléfono'] = primary.phone || undefined
       mergedFields['NIT'] = primary.taxId || undefined
 
-      const response = await fetch('/api/contactos/merge', {
+      const response = await fetch('/api/clientes/merge', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mainId: primaryId, duplicates: duplicateIds, mergedFields })
@@ -584,7 +584,7 @@ export default function ClientesPage() {
                     <DialogDescription>
                       Columnas: Nombre, Tipo de Contacto, Empresa, Email, Teléfono, NIT, Dirección, Ciudad, Código Postal, País, Relación, Sitio Web, Notas
                       <br/>
-                      <a href="/api/contactos/import/template" className="underline">Descargar plantilla</a>
+                      <a href="/api/clientes/import/template" className="underline">Descargar plantilla</a>
                     </DialogDescription>
                   </DialogHeader>
                   <input 

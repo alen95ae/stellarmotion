@@ -11,6 +11,11 @@ export const metadata: Metadata = {
   title: 'Stellarmotion | Panel',
   description: 'Stellarmotion | Panel',
   generator: 'v0.app',
+  icons: {
+    icon: '/stellarmotion-logo.png',
+    shortcut: '/stellarmotion-logo.png',
+    apple: '/stellarmotion-logo.png',
+  },
 }
 
 export default function RootLayout({

@@ -8,12 +8,26 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Separator } from "@/components/ui/separator"
+import { Switch } from "@/components/ui/switch"
+import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ArrowLeft, Save, MapPin, Hash, Link as LinkIcon, Upload } from "lucide-react"
+import { ArrowLeft, Save, MapPin, Upload, Globe } from "lucide-react"
 import { toast } from "sonner"
 import SupportImage from "@/components/SupportImage"
+import Sidebar from "@/components/dashboard/Sidebar"
+import { PhotonAutocomplete } from "@/components/PhotonAutocomplete"
+import dynamic from "next/dynamic"
 
-// Constantes coherentes con la página de edición
+// Importar LeafletHybridMap dinámicamente para evitar problemas de SSR
+const LeafletHybridMap = dynamic(() => import("@/components/LeafletHybridMap"), {
+  ssr: false,
+  loading: () => <div className="w-full h-96 bg-gray-100 rounded-lg flex items-center justify-center">Cargando mapa...</div>
+})
+
+import type { SupportPoint } from "@/components/LeafletHybridMap"
+
+// Constantes para selects y colores
 const TYPE_OPTIONS = [
   'Parada de Bus',
   'Mupi',
@@ -26,36 +40,69 @@ const TYPE_OPTIONS = [
 ] as const
 
 const STATUS_META = {
-  DISPONIBLE:   { label: 'Disponible',    className: 'bg-emerald-600 text-white' },
-  RESERVADO:    { label: 'Reservado',     className: 'bg-amber-500 text-black' },
-  OCUPADO:      { label: 'Ocupado',       className: 'bg-red-600 text-white' },
-  NO_DISPONIBLE:{ label: 'No disponible', className: 'bg-neutral-900 text-white' },
+  DISPONIBLE:   { label: 'Disponible',    className: 'bg-green-100 text-green-800 border-green-200' },
+  RESERVADO:    { label: 'Reservado',     className: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
+  OCUPADO:      { label: 'Ocupado',       className: 'bg-red-100 text-red-800 border-red-200' },
+  MANTENIMIENTO:{ label: 'Mantenimiento', className: 'bg-gray-100 text-gray-800 border-gray-200' },
 } as const
 
-const COUNTRIES = [
-  'Argentina','Bolivia','Chile','Colombia','Costa Rica','Ecuador','El Salvador','España','Estados Unidos','Guatemala','Honduras','México','Nicaragua','Panamá','Paraguay','Perú','República Dominicana','Uruguay'
-];
-
-const CITIES_BY_COUNTRY: Record<string, string[]> = {
-  'Argentina': ['Buenos Aires','Córdoba','Rosario','Mendoza','La Plata','Mar del Plata','Salta','Tucumán','Santa Fe','Neuquén'],
-  'Bolivia': ['La Paz','Santa Cruz de la Sierra','Cochabamba','El Alto','Sucre','Oruro','Potosí','Tarija','Trinidad','Cobija'],
-  'Chile': ['Santiago','Valparaíso','Concepción','Antofagasta','Temuco','La Serena','Iquique','Valdivia','Puerto Montt','Punta Arenas'],
-  'Colombia': ['Bogotá','Medellín','Cali','Barranquilla','Cartagena','Bucaramanga','Pereira','Santa Marta','Ibagué','Cúcuta'],
-  'Costa Rica': ['San José','Cartago','Alajuela','Heredia','Puntarenas','Limón','Liberia','Pérez Zeledón','Desamparados','Escazú'],
-  'Ecuador': ['Quito','Guayaquil','Cuenca','Santo Domingo','Ambato','Manta','Portoviejo','Machala','Loja','Riobamba'],
-  'El Salvador': ['San Salvador','Santa Ana','San Miguel','Soyapango','Santa Tecla','Apopa','Delgado','Mejicanos','San Marcos','Usulután'],
-  'España': ['Madrid','Barcelona','Valencia','Sevilla','Zaragoza','Málaga','Murcia','Palma','Las Palmas','Bilbao'],
-  'Estados Unidos': ['Nueva York','Los Ángeles','Chicago','Houston','Phoenix','Philadelphia','San Antonio','San Diego','Dallas','Miami'],
-  'Guatemala': ['Ciudad de Guatemala','Mixco','Villa Nueva','Petapa','San Juan Sacatepéquez','Quetzaltenango','Villa Canales','Escuintla','Chinautla','Chimaltenango'],
-  'Honduras': ['Tegucigalpa','San Pedro Sula','Choloma','La Ceiba','El Progreso','Choluteca','Comayagua','Puerto Cortés','La Lima','Danlí'],
-  'México': ['Ciudad de México','Guadalajara','Monterrey','Puebla','Tijuana','León','Juárez','Torreón','Querétaro','Mérida'],
-  'Nicaragua': ['Managua','León','Granada','Masaya','Chinandega','Matagalpa','Estelí','Tipitapa','Jinotepe','Nueva Guinea'],
-  'Panamá': ['Ciudad de Panamá','San Miguelito','Tocumen','David','Arraiján','Colón','La Chorrera','Pacora','Penonome','Santiago'],
-  'Paraguay': ['Asunción','Ciudad del Este','San Lorenzo','Luque','Capiatá','Lambaré','Fernando de la Mora','Nemby','Encarnación','Mariano Roque Alonso'],
-  'Perú': ['Lima','Arequipa','Trujillo','Chiclayo','Huancayo','Piura','Iquitos','Cusco','Chimbote','Tacna'],
-  'República Dominicana': ['Santo Domingo','Santiago','Los Alcarrizos','La Romana','San Pedro de Macorís','Higüey','San Francisco de Macorís','Puerto Plata','La Vega','Bonao'],
-  'Uruguay': ['Montevideo','Salto','Ciudad de la Costa','Paysandú','Las Piedras','Rivera','Maldonado','Tacuarembó','Melo','Mercedes']
-};
+interface Support {
+  id: string
+  internalCode: string
+  userCode: string
+  title: string
+  type: string
+  status: keyof typeof STATUS_META
+  widthM: string
+  heightM: string
+  dailyImpressions: string
+  lighting: boolean
+  owner: string
+  featured: boolean
+  imageUrl: string
+  images: string[]
+  googleMapsLink: string
+  description: string
+  city: string
+  country: string
+  priceMonth: string
+  available: boolean
+  latitud?: number
+  longitud?: number
+  company?: {
+    name: string
+  }
+  createdTime?: string
+  // Campos adicionales de Airtable
+  codigoInterno?: string
+  codigoCliente?: string
+  nombre?: string
+  tipo?: string
+  estado?: string
+  dimensiones?: {
+    ancho: number
+    alto: number
+    area: number
+  }
+  imagenes?: string[]
+  descripcion?: string
+  ubicacion?: string
+  ciudad?: string
+  pais?: string
+  precio?: number
+  impactosDiarios?: number
+  partner?: {
+    id: string
+    name: string
+    companyName?: string
+    email: string
+  }
+  owner?: string
+  iluminacion?: boolean
+  destacado?: boolean
+  createdAt: Date
+  updatedAt: Date
+}
 
 export default function NuevoSoportePage() {
   const router = useRouter()
@@ -71,25 +118,22 @@ export default function NuevoSoportePage() {
     dailyImpressions: "",
     lighting: false,
     owner: "",
+    featured: false,
     imageUrl: "",
-    images: [] as string[], // Array de URLs de imágenes
+    images: [] as string[],
     googleMapsLink: "",
     description: "",
     city: "",
     country: "",
-    priceMonth: ""
+    priceMonth: "",
+    available: true,
+    latitud: 0,
+    longitud: 0
   })
 
   const handleChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
-
-  const handleCountryChange = (country: string) => {
-    handleChange('country', country);
-    handleChange('city', '');
-  }
-
-  const availableCities = formData.country ? CITIES_BY_COUNTRY[formData.country] || [] : []
 
   // Handler para inputs numéricos normales
   const handleNumericChange = (field: string, value: string) => {
@@ -102,479 +146,421 @@ export default function NuevoSoportePage() {
   };
 
   // Función para manejar la subida de múltiples imágenes
-  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files || []);
-    const validFiles: File[] = [];
-    const errors: string[] = [];
-
-    // Verificar límite de 5 imágenes
-    const currentImageCount = formData.images.length;
-    const remainingSlots = 5 - currentImageCount;
-
-    if (files.length > remainingSlots) {
-      errors.push(`Solo puedes subir ${remainingSlots} imagen(es) más. Máximo 5 imágenes.`);
-    }
-
-    files.slice(0, remainingSlots).forEach(file => {
-      // Validar tamaño (máximo 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        errors.push(`${file.name} es demasiado grande (máximo 5MB)`);
-        return;
-      }
-
-      // Validar tipo de archivo
-      if (!file.type.startsWith('image/')) {
-        errors.push(`${file.name} no es una imagen válida`);
-        return;
-      }
-
-      validFiles.push(file);
-    });
-
-    if (errors.length > 0) {
-      toast({
-        title: "Error en archivos",
-        description: errors.join(', '),
-        variant: "destructive",
-      });
-    }
-
-    // Subir archivos válidos
-    for (const file of validFiles) {
+  const handleImageUpload = async (files: FileList) => {
+    const uploadPromises = Array.from(files).map(async (file) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      
       try {
-        const fd = new FormData();
-        fd.append('file', file);
-        fd.append('filename', file.name);
-        const response = await fetch('/api/uploads', { method: 'POST', body: fd });
-        const { url } = await response.json();
+        const response = await fetch('/api/uploads', {
+          method: 'POST',
+          body: formData,
+        });
         
-        setFormData(prev => ({
-          ...prev,
-          images: [...prev.images, url]
-        }));
+        if (!response.ok) {
+          throw new Error('Error al subir imagen');
+        }
+        
+        const data = await response.json();
+        return data.url;
       } catch (error) {
         console.error('Error uploading image:', error);
-        toast({
-          title: "Error",
-          description: `Error al subir ${file.name}`,
-          variant: "destructive",
-        });
+        return null;
       }
-    }
+    });
 
-    // Limpiar el input
-    event.target.value = '';
-  };
-
-  // Función para eliminar una imagen
-  const removeImage = (index: number) => {
+    const uploadedUrls = await Promise.all(uploadPromises);
+    const validUrls = uploadedUrls.filter(url => url !== null);
+    
     setFormData(prev => ({
       ...prev,
-      images: prev.images.filter((_, i) => i !== index)
+      images: [...prev.images, ...validUrls]
     }));
   };
 
   const handleSave = async () => {
-    if (!formData.title) {
-      toast.error("Título es requerido")
-      return
-    }
-
-    setSaving(true)
     try {
-      const dataToSend = {
-        code: formData.internalCode,
-        title: formData.title,
-        type: formData.type,
-        status: formData.status,
-        widthM: formData.widthM ? parseFloat(formData.widthM) : null,
-        heightM: formData.heightM ? parseFloat(formData.heightM) : null,
-        dailyImpressions: formData.dailyImpressions,
-        lighting: formData.lighting,
-        owner: formData.owner,
-        imageUrl: formData.imageUrl,
-        images: JSON.stringify(formData.images), // Convertir array a JSON string
-        description: formData.description,
-        city: formData.city,
-        country: formData.country,
-        priceMonth: formData.priceMonth ? parseFloat(formData.priceMonth) : null
+      setSaving(true)
+      
+      // Mapear los datos del formulario al formato de Airtable
+      const airtableData = {
+        'Título del soporte': formData.title,
+        'Descripción': formData.description,
+        'Tipo de soporte': formData.type,
+        'Estado del soporte': formData.status,
+        'Precio por mes': formData.priceMonth ? parseFloat(formData.priceMonth) : null,
+        dimensiones: {
+          ancho: formData.widthM ? parseFloat(formData.widthM) : null,
+          alto: formData.heightM ? parseFloat(formData.heightM) : null,
+          area: formData.widthM && formData.heightM ? 
+            parseFloat(formData.widthM) * parseFloat(formData.heightM) : null
+        },
+        imagenes: formData.images,
+        ubicacion: `${formData.city}, ${formData.country}`,
+        ciudad: formData.city,
+        pais: formData.country,
+        'Código interno': formData.internalCode,
+        'Código cliente': formData.userCode,
+        'Impactos diarios': formData.dailyImpressions ? parseInt(formData.dailyImpressions) : null,
+        'Enlace de Google Maps': formData.googleMapsLink,
+        'Propietario': formData.owner,
+        'Iluminación': formData.lighting,
+        'Destacado': formData.featured
       }
-
-      console.log("Datos a enviar para crear:", dataToSend)
-
-      const response = await fetch('/api/soportes', {
+      
+      console.log('💾 Enviando datos a Airtable:', airtableData)
+      
+      const response = await fetch(`/api/soportes`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(dataToSend)
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(airtableData),
       })
-
-      console.log("Respuesta del servidor:", response.status, response.statusText)
-
-      if (response.ok) {
-        const created = await response.json()
-        console.log("Soporte creado:", created)
-        toast.success('Soporte creado correctamente')
-        router.push(`/panel/soportes/${created.id}`)
-      } else {
-        const error = await response.json()
-        console.error("Error del servidor:", error)
-        toast.error(error.error || 'Error al crear el soporte')
+      
+      console.log('📡 Response status:', response.status)
+      console.log('📡 Response ok:', response.ok)
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error('❌ Error response:', errorData)
+        throw new Error(errorData.error || 'Error al crear el soporte')
       }
-    } catch (e) {
-      console.error("Error de conexión:", e)
-      toast.error('Error de conexión')
+      
+      const result = await response.json()
+      console.log('✅ Soporte creado exitosamente:', result)
+      
+      toast.success("Soporte creado exitosamente")
+      router.push('/panel/soportes')
+      
+    } catch (error) {
+      console.error('❌ Error creating support:', error)
+      toast.error("Error al crear el soporte")
     } finally {
       setSaving(false)
     }
   }
 
+  const formatPrice = (price: number | null) => {
+    if (!price) return "N/A"
+    return new Intl.NumberFormat("es-ES", {
+      style: "currency",
+      currency: "EUR"
+    }).format(price)
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center">
-            <Link href="/panel/soportes" className="text-gray-600 hover:text-gray-800 mr-4">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Soportes
-            </Link>
-            <div className="text-xl font-bold text-slate-800">Nuevo Soporte</div>
+    <Sidebar>
+      <div className="min-h-screen bg-gray-50">
+        {/* Header */}
+        <header className="bg-white border-b border-gray-200 px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <Link href="/panel/soportes" className="text-[#e94446] hover:text-[#d63d3f] font-medium mr-8">
+                Soportes
+              </Link>
+            </div>
+            <div className="flex items-center gap-4">
+              <span className="text-gray-600">Buscar</span>
+              <span className="text-gray-800 font-medium">admin</span>
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      {/* Main Content */}
-      <main className="container mx-auto px-6 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-800 mb-2">Crear Nuevo Soporte</h1>
-          <p className="text-gray-600">Añade un nuevo soporte publicitario al sistema</p>
-        </div>
+        {/* Main Content */}
+        <main className="container mx-auto px-6 py-8">
+          <div className="mb-8 flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-slate-800 mb-2">
+                Nuevo Soporte
+              </h1>
+              <p className="text-gray-600">
+                Crear un nuevo soporte publicitario
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => router.push('/panel/soportes')}
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleSave}
+                disabled={saving}
+                className="bg-[#e94446] hover:bg-[#d63d3f] text-white"
+              >
+                <Save className="w-4 h-4 mr-2" />
+                {saving ? "Guardando..." : "Guardar"}
+              </Button>
+            </div>
+          </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Información Básica */}
+          {/* Soporte Details */}
           <Card>
             <CardHeader>
-              <CardTitle>Información Básica</CardTitle>
-              <CardDescription>Datos principales del soporte</CardDescription>
+              <CardTitle>
+                Información del Soporte
+              </CardTitle>
+              <CardDescription>
+                Detalles principales del soporte publicitario
+              </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="internalCode">Código interno</Label>
-                  <div className="relative">
-                    <Hash className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="internalCode">Código Interno</Label>
                     <Input
                       id="internalCode"
                       value={formData.internalCode}
-                      onChange={(e) => handleChange('internalCode', e.target.value)}
-                      className="bg-neutral-100 border-neutral-200 text-gray-900 font-mono pl-10"
-                      placeholder="Se genera automáticamente (SM-0001, SM-0002...)"
+                      onChange={(e) => setFormData({...formData, internalCode: e.target.value})}
                     />
                   </div>
-                  <p className="text-xs text-gray-500">Deja vacío para generar automáticamente</p>
-                </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="userCode">Código del usuario</Label>
-                  <div className="relative">
-                    <Hash className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <div>
+                    <Label htmlFor="userCode">Código Cliente</Label>
                     <Input
                       id="userCode"
                       value={formData.userCode}
-                      onChange={(e) => handleChange('userCode', e.target.value)}
-                      className="pl-10"
-                      placeholder="Ej: VLL-001, MUP-A23"
+                      onChange={(e) => setFormData({...formData, userCode: e.target.value})}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="title">Título del Soporte</Label>
+                    <Input
+                      id="title"
+                      value={formData.title}
+                      onChange={(e) => setFormData({...formData, title: e.target.value})}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="type">Tipo</Label>
+                    <Select value={formData.type} onValueChange={(value) => setFormData({...formData, type: value})}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar tipo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {TYPE_OPTIONS.map((type) => (
+                          <SelectItem key={type} value={type}>
+                            {type}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="status">Estado</Label>
+                      <Select value={formData.status} onValueChange={(value) => setFormData({...formData, status: value as keyof typeof STATUS_META})}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar estado" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.entries(STATUS_META).map(([key, value]) => (
+                            <SelectItem key={key} value={key}>
+                              {value.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="partner">Partner</Label>
+                      <Input
+                        id="partner"
+                        value={formData.owner}
+                        onChange={(e) => setFormData({...formData, owner: e.target.value})}
+                        placeholder="Nombre del partner"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="widthM">Ancho (m)</Label>
+                    <Input
+                      id="widthM"
+                      type="number"
+                      value={formData.widthM}
+                      onChange={(e) => setFormData({...formData, widthM: e.target.value})}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="heightM">Alto (m)</Label>
+                    <Input
+                      id="heightM"
+                      type="number"
+                      value={formData.heightM}
+                      onChange={(e) => setFormData({...formData, heightM: e.target.value})}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="dailyImpressions">Impresiones Diarias</Label>
+                    <Input
+                      id="dailyImpressions"
+                      type="number"
+                      value={formData.dailyImpressions}
+                      onChange={(e) => setFormData({...formData, dailyImpressions: e.target.value})}
+                    />
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="lighting"
+                      checked={formData.lighting}
+                      onCheckedChange={(checked) => setFormData({...formData, lighting: checked})}
+                      className="data-[state=checked]:bg-[#e94446] data-[state=checked]:border-[#e94446]"
+                    />
+                    <Label htmlFor="lighting">Iluminación</Label>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="featured"
+                      checked={formData.featured}
+                      onCheckedChange={(checked) => setFormData({...formData, featured: checked})}
+                      className="data-[state=checked]:bg-[#e94446] data-[state=checked]:border-[#e94446]"
+                    />
+                    <Label htmlFor="featured">Destacado</Label>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="priceMonth">Precio por Mes (€)</Label>
+                    <Input
+                      id="priceMonth"
+                      type="number"
+                      value={formData.priceMonth}
+                      onChange={(e) => setFormData({...formData, priceMonth: e.target.value})}
                     />
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="title">Título del soporte *</Label>
-                <Input
-                  id="title"
-                  value={formData.title}
-                  onChange={(e) => handleChange('title', e.target.value)}
-                  required
-                />
-              </div>
+              <Separator />
 
-              <div className="space-y-2">
-                <Label htmlFor="description">Descripción (máximo 500 caracteres)</Label>
+              <div>
+                <Label htmlFor="description">Descripción</Label>
                 <Textarea
                   id="description"
                   value={formData.description}
-                  onChange={(e) => handleChange('description', e.target.value)}
-                  rows={3}
-                  maxLength={500}
+                  onChange={(e) => setFormData({...formData, description: e.target.value})}
+                  rows={4}
                 />
-                <p className="text-sm text-gray-500 mt-1">{formData.description.length}/500 caracteres</p>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="status">Estado *</Label>
-                <Select value={formData.status} onValueChange={(value) => handleChange('status', value as keyof typeof STATUS_META)}>
-                  <SelectTrigger className="bg-white dark:bg-white text-gray-900 border border-gray-200">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white border border-gray-200 shadow-md">
-                    {Object.entries(STATUS_META).map(([key, meta]) => (
-                      <SelectItem key={key} value={key}>
-                        <div className="flex items-center gap-2">
-                          <span className={`inline-block w-3 h-3 rounded-full ${meta.className}`}></span>
-                          {meta.label}
+              {/* Images */}
+              <div>
+                <Label>Imágenes</Label>
+                <div className="mt-2">
+                  {formData.images && formData.images.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {formData.images.filter(image => image && typeof image === 'string').map((image, index) => (
+                        <div key={index} className="relative">
+                          <SupportImage 
+                            src={image} 
+                            alt={`Imagen ${index + 1}`}
+                            className="w-full h-32 object-cover rounded-lg border"
+                          />
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            className="absolute top-2 right-2 h-6 w-6 p-0"
+                            onClick={() => {
+                              const newImages = formData.images.filter((_, i) => i !== index)
+                              setFormData({...formData, images: newImages})
+                            }}
+                          >
+                            ×
+                          </Button>
                         </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                      <Upload className="w-8 h-8 mx-auto text-gray-400 mb-2" />
+                      <p className="text-sm text-gray-600 mb-2">Arrastra imágenes aquí o</p>
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        onChange={(e) => e.target.files && handleImageUpload(e.target.files)}
+                        className="hidden"
+                        id="image-upload"
+                      />
+                      <Button
+                        variant="outline"
+                        onClick={() => document.getElementById('image-upload')?.click()}
+                      >
+                        Seleccionar archivos
+                      </Button>
+                    </div>
+                  )}
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="owner">Propietario</Label>
-                <Input
-                  id="owner"
-                  value={formData.owner}
-                  onChange={(e) => handleChange('owner', e.target.value)}
-                  placeholder="Propietario del soporte"
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <PhotonAutocomplete
+                  label="Ciudad"
+                  placeholder="Buscar ciudad..."
+                  value={formData.city}
+                  onChange={(value) => setFormData({...formData, city: value})}
+                  type="city"
+                />
+
+                <PhotonAutocomplete
+                  label="País"
+                  placeholder="Buscar país..."
+                  value={formData.country}
+                  onChange={(value) => setFormData({...formData, country: value})}
+                  type="country"
                 />
               </div>
 
-            </CardContent>
-          </Card>
-
-          {/* Características Técnicas */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Características Técnicas</CardTitle>
-              <CardDescription>Especificaciones técnicas del soporte</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="type">Tipo de soporte *</Label>
-                <Select value={formData.type} onValueChange={(value) => handleChange('type', value)}>
-                  <SelectTrigger className="bg-white dark:bg-white text-gray-900 border border-gray-200">
-                    <SelectValue placeholder="Seleccionar" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white border border-gray-200 shadow-md">
-                    {TYPE_OPTIONS.map((type) => (
-                      <SelectItem key={type} value={type}>
-                        {type}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="widthM">Ancho (m)</Label>
-                  <Input
-                    id="widthM"
-                    type="number"
-                    step="0.1"
-                    value={formData.widthM}
-                    onChange={(e) => handleNumericChange('widthM', e.target.value)}
-                    placeholder="10.0"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="heightM">Alto (m)</Label>
-                  <Input
-                    id="heightM"
-                    type="number"
-                    step="0.1"
-                    value={formData.heightM}
-                    onChange={(e) => handleNumericChange('heightM', e.target.value)}
-                    placeholder="4.0"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="dailyImpressions">Impactos Diarios</Label>
-                <Input
-                  id="dailyImpressions"
-                  type="number"
-                  value={formData.dailyImpressions}
-                  onChange={(e) => handleChange('dailyImpressions', e.target.value)}
-                  placeholder="65000"
-                />
-              </div>
-
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-medium text-gray-700">Iluminación</span>
-                <button
-                  type="button"
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#D7514C] ${formData.lighting ? 'bg-[#D7514C]' : 'bg-gray-300'}`}
-                  onClick={() => handleChange('lighting', !formData.lighting)}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${formData.lighting ? 'translate-x-6' : 'translate-x-1'}`}
-                  />
-                </button>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="images">Imágenes del soporte</Label>
-                  <span className="text-sm text-gray-500">
-                    {formData.images.length}/5 imágenes
-                  </span>
-                </div>
-                
-                <div className="relative">
-                  <Upload className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <input 
-                    type="file" 
-                    accept="image/*"
-                    multiple
-                    className="pl-10 w-full"
-                    onChange={handleImageUpload}
-                    disabled={formData.images.length >= 5}
-                  />
-                </div>
-                
-                <p className="text-sm text-gray-500">
-                  Máximo 5 imágenes, 5MB por imagen. Formatos: JPG, PNG, GIF, WebP
-                </p>
-
-                {formData.images.length > 0 && (
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
-                    {formData.images.map((imageUrl, index) => (
-                      <div key={index} className="relative">
-                        <SupportImage
-                          src={imageUrl}
-                          alt={`Preview ${index + 1}`}
-                          className="w-full h-32 object-cover rounded-lg border"
-                        />
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          size="sm"
-                          className="absolute top-2 right-2"
-                          onClick={() => removeImage(index)}
-                        >
-                          ×
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Ubicación */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Ubicación</CardTitle>
-              <CardDescription>Información de localización</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="country">País *</Label>
-                  <Select value={formData.country} onValueChange={handleCountryChange}>
-                    <SelectTrigger className="bg-white">
-                      <SelectValue placeholder="Seleccionar" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white">
-                      {COUNTRIES.map((country) => (
-                        <SelectItem key={country} value={country}>
-                          {country}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="city">Ciudad *</Label>
-                  <Select 
-                    value={formData.city} 
-                    onValueChange={(value) => handleChange('city', value)}
-                    disabled={!formData.country}
-                  >
-                    <SelectTrigger className="bg-white">
-                      <SelectValue placeholder={formData.country ? "Seleccionar" : "Primero selecciona un país"} />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white">
-                      {availableCities.map((city) => (
-                        <SelectItem key={city} value={city}>
-                          {city}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              
-              <div className="space-y-2">
+              <div>
                 <Label htmlFor="googleMapsLink">Enlace de Google Maps</Label>
-                <div className="relative">
-                  <LinkIcon className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="googleMapsLink"
-                    type="url"
-                    value={formData.googleMapsLink}
-                    onChange={(e) => handleChange('googleMapsLink', e.target.value)}
-                    placeholder="https://maps.google.com/..."
-                    className="pl-10"
+                <Input
+                  id="googleMapsLink"
+                  value={formData.googleMapsLink}
+                  onChange={(e) => setFormData({...formData, googleMapsLink: e.target.value})}
+                />
+              </div>
+
+              {/* Mapa interactivo */}
+              <div>
+                <Label>Ubicación en el Mapa</Label>
+                <div className="mt-2">
+                  <LeafletHybridMap
+                    points={formData.latitud && formData.longitud ? [{
+                      id: '1',
+                      lat: formData.latitud,
+                      lng: formData.longitud,
+                      title: formData.title || 'Nuevo Soporte',
+                      type: 'billboard' as const,
+                      dimensions: formData.widthM && formData.heightM ? `${formData.widthM}m × ${formData.heightM}m` : undefined,
+                      image: formData.imageUrl || formData.images?.[0],
+                      monthlyPrice: formData.priceMonth ? parseFloat(formData.priceMonth) : undefined,
+                      city: formData.city,
+                      format: formData.type
+                    }] : []}
+                    height={400}
+                    center={formData.latitud && formData.longitud ? [formData.latitud, formData.longitud] : [40.4168, -3.7038]}
+                    zoom={15}
                   />
                 </div>
               </div>
-
-              {/* Placeholder para mapa futuro */}
-              <div className="aspect-[16/9] bg-muted rounded-lg flex items-center justify-center text-muted-foreground">
-                <div className="text-center">
-                  <MapPin className="w-8 h-8 mx-auto mb-2" />
-                  <p className="text-sm">Mapa de ubicación</p>
-                  <p className="text-xs">Integración con Google Maps próximamente</p>
-                </div>
-              </div>
             </CardContent>
           </Card>
 
-          {/* Precios */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Precios</CardTitle>
-              <CardDescription>Información de tarifas</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="priceMonth">Precio por Mes (€)</Label>
-                <Input
-                  id="priceMonth"
-                  type="number"
-                  step="0.01"
-                  value={formData.priceMonth}
-                  onChange={(e) => handleNumericChange('priceMonth', e.target.value)}
-                  placeholder="150.00"
-                />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Actions */}
-        <div className="mt-8 flex gap-4 justify-end">
-          <Link href="/panel/soportes">
-            <Button variant="outline">Cancelar</Button>
-          </Link>
-          <Button 
-            onClick={handleSave}
-            className="bg-[#D54644] hover:bg-[#B03A38]"
-            disabled={saving}
-          >
-            <Save className="w-4 h-4 mr-2" />
-            {saving ? 'Creando...' : 'Crear Soporte'}
-          </Button>
-        </div>
-      </main>
-    </div>
+        </main>
+      </div>
+    </Sidebar>
   )
 }

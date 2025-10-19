@@ -6,9 +6,10 @@ import { RedSlider } from "@/components/ui/red-slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuerySync } from '@/hooks/useQuerySync';
 import { useCategories } from '@/hooks/useCategories';
-import SearchBar from '@/components/SearchBar';
+import { useSoportes, Soporte } from '@/hooks/useSoportes';
+import SearchBarGooglePlaces from '@/components/SearchBarGooglePlaces';
 import { Lightbulb, Printer, Building, Car, Ruler, MapPin, Star, Eye } from 'lucide-react';
-import LeafletHybridMap, { SupportPoint } from '@/components/maps/LeafletHybridMap';
+import MapViewerGoogleMaps from '@/components/MapViewerGoogleMaps';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -22,207 +23,86 @@ export default function BuscarEspacioPage() {
   const [printing, setPrinting] = useState(false);
   const [centerZone, setCenterZone] = useState(false);
   const [mobile, setMobile] = useState(false);
-  const [mapPoints, setMapPoints] = useState<SupportPoint[]>([]);
-  const [supports, setSupports] = useState<any[]>([]);
+  const [searchLocation, setSearchLocation] = useState<{ lat: number; lng: number; label?: string } | null>(null);
+
+  // Debug effect to see when searchLocation changes
+  useEffect(() => {
+    console.log('SearchLocation state changed:', searchLocation);
+  }, [searchLocation]);
   
   const category = searchParams.get('category') || '';
   const priceMin = searchParams.get('priceMin') || '0';
   const priceMax = searchParams.get('priceMax') || '5000';
+  const search = searchParams.get('q') || '';
 
-  // Datos de ejemplo para el mapa y soportes
+  // Cargar soportes reales desde el ERP
+  const { soportes, loading: soportesLoading, error: soportesError } = useSoportes({
+    search: search || undefined,
+    categoria: category || undefined,
+    estado: 'Disponible', // Usar el estado exacto de Airtable
+    limit: 50
+  });
+
+  // Effect to handle search location from SearchBar
   useEffect(() => {
-    const samplePoints: SupportPoint[] = [
-      {
-        id: '1',
-        lat: -16.5000,
-        lng: -68.1500,
-        title: 'Valla Principal La Paz',
-        type: 'billboard',
-        dimensions: '6m x 3m',
-        monthlyPrice: 2500,
-        city: 'La Paz',
-        format: 'Valla Digital'
-      },
-      {
-        id: '2',
-        lat: -16.5200,
-        lng: -68.1700,
-        title: 'Edificio Corporativo',
-        type: 'building',
-        dimensions: '8m x 4m',
-        monthlyPrice: 3500,
-        city: 'La Paz',
-        format: 'Fachada'
-      },
-      {
-        id: '3',
-        lat: -16.4800,
-        lng: -68.1300,
-        title: 'Valla Centro Comercial',
-        type: 'billboard',
-        dimensions: '4m x 2.5m',
-        monthlyPrice: 1800,
-        city: 'La Paz',
-        format: 'Valla Tradicional'
-      }
-    ];
-    setMapPoints(samplePoints);
+    const handleLocationSelected = (event: CustomEvent) => {
+      const location = event.detail;
+      console.log('Location selected from SearchBar:', location);
+      setSearchLocation({
+        lat: location.lat,
+        lng: location.lng,
+        label: location.label
+      });
+    };
 
-    // Datos de ejemplo para el listado de soportes
-    const sampleSupports = [
-      {
-        id: '1',
-        name: 'Valla Principal La Paz',
-        dimensions: '6m x 3m',
-        monthlyPrice: 2500,
-        city: 'La Paz',
-        format: 'Valla Digital',
-        available: true,
-        rating: 4.8,
-        reviewsCount: 24,
-        images: ['/placeholder.svg'],
-        featured: true,
-        lighting: true,
-        type: 'billboard'
-      },
-      {
-        id: '2',
-        name: 'Edificio Corporativo',
-        dimensions: '8m x 4m',
-        monthlyPrice: 3500,
-        city: 'La Paz',
-        format: 'Fachada',
-        available: true,
-        rating: 4.9,
-        reviewsCount: 18,
-        images: ['/placeholder.svg'],
-        featured: false,
-        lighting: false,
-        type: 'building'
-      },
-      {
-        id: '3',
-        name: 'Valla Centro Comercial',
-        dimensions: '4m x 2.5m',
-        monthlyPrice: 1800,
-        city: 'La Paz',
-        format: 'Valla Tradicional',
-        available: false,
-        rating: 4.6,
-        reviewsCount: 12,
-        images: ['/placeholder.svg'],
-        featured: false,
-        lighting: true,
-        type: 'billboard'
-      },
-      {
-        id: '4',
-        name: 'Pantalla LED Plaza',
-        dimensions: '5m x 3m',
-        monthlyPrice: 4200,
-        city: 'La Paz',
-        format: 'Pantalla LED',
-        available: true,
-        rating: 4.7,
-        reviewsCount: 31,
-        images: ['/placeholder.svg'],
-        featured: true,
-        lighting: true,
-        type: 'billboard'
-      },
-      {
-        id: '5',
-        name: 'Valla Avenida Principal',
-        dimensions: '7m x 4m',
-        monthlyPrice: 3200,
-        city: 'La Paz',
-        format: 'Valla Digital',
-        available: true,
-        rating: 4.5,
-        reviewsCount: 15,
-        images: ['/placeholder.svg'],
-        featured: false,
-        lighting: true,
-        type: 'billboard'
-      },
-      {
-        id: '6',
-        name: 'Mural Artístico',
-        dimensions: '10m x 6m',
-        monthlyPrice: 2800,
-        city: 'La Paz',
-        format: 'Mural',
-        available: true,
-        rating: 4.9,
-        reviewsCount: 22,
-        images: ['/placeholder.svg'],
-        featured: true,
-        lighting: false,
-        type: 'building'
-      },
-      {
-        id: '7',
-        name: 'Valla Zona Norte',
-        dimensions: '3m x 2m',
-        monthlyPrice: 1500,
-        city: 'La Paz',
-        format: 'Valla Tradicional',
-        available: true,
-        rating: 4.3,
-        reviewsCount: 8,
-        images: ['/placeholder.svg'],
-        featured: false,
-        lighting: false,
-        type: 'billboard'
-      },
-      {
-        id: '8',
-        name: 'Edificio Residencial',
-        dimensions: '6m x 5m',
-        monthlyPrice: 2900,
-        city: 'La Paz',
-        format: 'Fachada',
-        available: false,
-        rating: 4.4,
-        reviewsCount: 19,
-        images: ['/placeholder.svg'],
-        featured: false,
-        lighting: true,
-        type: 'building'
-      },
-      {
-        id: '9',
-        name: 'Valla Estación de Servicio',
-        dimensions: '4m x 3m',
-        monthlyPrice: 2100,
-        city: 'La Paz',
-        format: 'Valla Digital',
-        available: true,
-        rating: 4.6,
-        reviewsCount: 14,
-        images: ['/placeholder.svg'],
-        featured: false,
-        lighting: true,
-        type: 'billboard'
-      },
-      {
-        id: '10',
-        name: 'Pantalla LED Centro',
-        dimensions: '8m x 5m',
-        monthlyPrice: 5500,
-        city: 'La Paz',
-        format: 'Pantalla LED',
-        available: true,
-        rating: 4.8,
-        reviewsCount: 27,
-        images: ['/placeholder.svg'],
-        featured: true,
-        lighting: true,
-        type: 'billboard'
+    const handleStorageChange = () => {
+      const storedLocation = sessionStorage.getItem('selectedLocation');
+      if (storedLocation) {
+        try {
+          const location = JSON.parse(storedLocation);
+          setSearchLocation({
+            lat: location.lat,
+            lng: location.lng,
+            label: location.label
+          });
+          // Clear the stored location after using it
+          sessionStorage.removeItem('selectedLocation');
+        } catch (error) {
+          console.error('Error parsing stored location:', error);
+        }
       }
-    ];
-    setSupports(sampleSupports);
+    };
+
+    // Check for stored location on mount
+    handleStorageChange();
+
+    // Listen for custom event (immediate update)
+    window.addEventListener('locationSelected', handleLocationSelected as EventListener);
+    
+    // Listen for storage changes (fallback)
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Also check periodically in case the same tab updates storage
+    const interval = setInterval(handleStorageChange, 1000);
+
+    return () => {
+      window.removeEventListener('locationSelected', handleLocationSelected as EventListener);
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
   }, []);
+
+  // Convertir soportes reales a puntos del mapa para Google Maps
+  const mapPoints = soportes
+    .filter(soporte => soporte.latitud && soporte.longitud)
+    .map(soporte => ({
+      id: soporte.id,
+      lat: soporte.latitud,
+      lng: soporte.longitud,
+      title: soporte.nombre,
+      description: `${soporte.tipo} - ${soporte.dimensiones.ancho}m x ${soporte.dimensiones.alto}m - $${soporte.precio.toLocaleString()}/mes`,
+      type: soporte.tipo.toLowerCase().includes('valla') ? 'billboard' : 'building'
+    }));
 
   const handlePriceChange = (values: number[]) => {
     setPriceRange(values);
@@ -247,7 +127,7 @@ export default function BuscarEspacioPage() {
 
         {/* Search Bar */}
         <div className="mb-8">
-          <SearchBar />
+          <SearchBarGooglePlaces />
         </div>
 
         {/* Filters and Map Section - Side by side */}
@@ -376,11 +256,21 @@ export default function BuscarEspacioPage() {
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 h-[600px]">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Ubicaciones en el mapa</h2>
               <div className="h-[540px]">
-                <LeafletHybridMap 
+                <MapViewerGoogleMaps 
                   points={mapPoints}
                   height={540}
-                  center={[-16.5000, -68.1500]}
+                  lat={-16.5000}
+                  lng={-68.1500}
                   zoom={13}
+                  style="streets"
+                  showControls={true}
+                  onMarkerClick={(point) => {
+                    console.log('Marcador clickeado:', point);
+                    // Aquí puedes agregar lógica para mostrar detalles del soporte
+                  }}
+                  onMapClick={(lat, lng) => {
+                    console.log('Mapa clickeado:', lat, lng);
+                  }}
                 />
               </div>
             </div>
@@ -392,7 +282,9 @@ export default function BuscarEspacioPage() {
           <div className="flex items-center justify-between mb-6">
             <div>
               <h2 className="text-2xl font-bold text-gray-900 mb-2">Soportes Disponibles</h2>
-              <p className="text-gray-600">{supports.length} soportes encontrados</p>
+              <p className="text-gray-600">
+                {soportesLoading ? 'Cargando...' : soportesError ? 'Error al cargar soportes' : `${soportes.length} soportes encontrados`}
+              </p>
             </div>
             <div className="flex items-center space-x-2">
               <span className="text-sm text-gray-600">Ordenar por:</span>
@@ -412,42 +304,67 @@ export default function BuscarEspacioPage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-            {supports.map((support) => (
+            {soportesLoading ? (
+              // Loading skeleton
+              Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden animate-pulse">
+                  <div className="h-48 bg-gray-200"></div>
+                  <div className="p-4">
+                    <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                    <div className="h-3 bg-gray-200 rounded mb-4"></div>
+                    <div className="flex justify-between items-center">
+                      <div className="h-6 bg-gray-200 rounded w-20"></div>
+                      <div className="h-8 bg-gray-200 rounded w-16"></div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : soportesError ? (
+              <div className="col-span-full text-center py-8">
+                <p className="text-red-600">Error al cargar los soportes: {soportesError}</p>
+              </div>
+            ) : soportes.length === 0 ? (
+              <div className="col-span-full text-center py-8">
+                <p className="text-gray-500">No se encontraron soportes disponibles</p>
+              </div>
+            ) : (
+              soportes.map((soporte) => (
               <div
-                key={support.id}
+                key={soporte.id}
                 className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
               >
                 <div className="relative">
                   <Image
-                    src={support.images?.[0] || '/placeholder.svg'}
-                    alt={support.name}
+                    src={soporte.imagenes?.[0] && soporte.imagenes[0].trim() ? soporte.imagenes[0] : '/placeholder.svg'}
+                    alt={soporte.nombre}
                     width={300}
                     height={200}
                     className="w-full h-48 object-cover"
                   />
                   <div className="absolute top-3 left-3 flex flex-col gap-2">
-                    {support.featured && (
+                    {soporte.destacado && (
                       <span className="bg-[#e94446] text-white text-xs font-medium px-2 py-1 rounded-full">
                         Destacado
                       </span>
                     )}
                     <span className={`text-xs font-medium px-2 py-1 rounded-full ${
-                      support.available 
+                      soporte.estado === 'disponible' 
                         ? 'bg-green-500 text-white' 
                         : 'bg-gray-500 text-white'
                     }`}>
-                      {support.available ? 'Disponible' : 'No disponible'}
+                      {soporte.estado === 'disponible' ? 'Disponible' : 'No disponible'}
                     </span>
                   </div>
-                  <div className="absolute bottom-3 right-3 flex items-center space-x-1 bg-black/70 text-white text-xs px-2 py-1 rounded-full">
-                    <Star className="w-3 h-3 text-yellow-400 fill-current" />
-                    <span>{support.rating}</span>
-                    <span>({support.reviewsCount})</span>
-                  </div>
+                  {soporte.impactosDiarios && (
+                    <div className="absolute bottom-3 right-3 flex items-center space-x-1 bg-black/70 text-white text-xs px-2 py-1 rounded-full">
+                      <Eye className="w-3 h-3" />
+                      <span>{soporte.impactosDiarios.toLocaleString()}/día</span>
+                    </div>
+                  )}
                 </div>
                 
                 <div className="p-4">
-                  <h3 className="font-semibold text-gray-900 mb-2 text-lg line-clamp-2">{support.name}</h3>
+                  <h3 className="font-semibold text-gray-900 mb-2 text-lg line-clamp-2">{soporte.nombre}</h3>
                   
                   {/* Características con iconos - 2 columnas */}
                   <div className="grid grid-cols-2 gap-2 mb-4">
@@ -458,18 +375,18 @@ export default function BuscarEspacioPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs text-gray-500 truncate">Tipo</p>
-                        <p className="text-xs font-medium text-gray-900 truncate">{support.format}</p>
+                        <p className="text-xs font-medium text-gray-900 truncate">{soporte.tipo}</p>
                       </div>
                     </div>
                     
                     {/* Iluminación */}
                     <div className="flex items-center space-x-1.5">
                       <div className="w-3 h-3 flex items-center justify-center flex-shrink-0">
-                        <Lightbulb className={`w-2.5 h-2.5 ${support.lighting ? 'text-yellow-500' : 'text-gray-400'}`} />
+                        <Lightbulb className={`w-2.5 h-2.5 ${soporte.iluminacion ? 'text-yellow-500' : 'text-gray-400'}`} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs text-gray-500 truncate">Iluminación</p>
-                        <p className="text-xs font-medium text-gray-900 truncate">{support.lighting ? 'Sí' : 'No'}</p>
+                        <p className="text-xs font-medium text-gray-900 truncate">{soporte.iluminacion ? 'Sí' : 'No'}</p>
                       </div>
                     </div>
                     
@@ -480,7 +397,7 @@ export default function BuscarEspacioPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs text-gray-500 truncate">Medidas</p>
-                        <p className="text-xs font-medium text-gray-900 truncate">{support.dimensions}</p>
+                        <p className="text-xs font-medium text-gray-900 truncate">{soporte.dimensiones.ancho}m x {soporte.dimensiones.alto}m</p>
                       </div>
                     </div>
                     
@@ -491,24 +408,25 @@ export default function BuscarEspacioPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs text-gray-500 truncate">Ciudad</p>
-                        <p className="text-xs font-medium text-gray-900 truncate">{support.city}</p>
+                        <p className="text-xs font-medium text-gray-900 truncate">{soporte.ciudad || soporte.ubicacion}</p>
                       </div>
                     </div>
                   </div>
                 
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className="text-lg font-bold text-[#e94446]">${support.monthlyPrice.toLocaleString()}</span>
+                      <span className="text-lg font-bold text-[#e94446]">${soporte.precio.toLocaleString()}</span>
                       <span className="text-gray-600 text-xs"> / mes</span>
                     </div>
-                    <Link href={`/product/${support.id}`} className="flex items-center px-3 py-1.5 rounded-lg text-sm bg-[#e94446] text-white font-medium hover:bg-[#D7514C] transition-colors">
+                    <Link href={`/product/${soporte.id}`} className="flex items-center px-3 py-1.5 rounded-lg text-sm bg-[#e94446] text-white font-medium hover:bg-[#D7514C] transition-colors">
                       <Eye className="w-3 h-3 mr-1" />
                       Ver
                     </Link>
                   </div>
                 </div>
               </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       </main>

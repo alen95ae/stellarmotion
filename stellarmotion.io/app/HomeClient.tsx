@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { PartnersSection } from "@/components/PartnersSection"
-import SearchBar from "@/components/SearchBar"
+import SearchBarGooglePlaces from "@/components/SearchBarGooglePlaces"
 import { CATEGORIES } from "@/lib/categories"
 import CategoryIcon from "@/components/CategoryIcon"
 // Los productos destacados se cargarán dinámicamente desde la API
@@ -113,7 +113,7 @@ export default function HomeClient() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 mt-2">
         {/* Search Section */}
         <div className="mb-16">
-          <SearchBar />
+          <SearchBarGooglePlaces />
         </div>
 
         {/* Categories Section */}

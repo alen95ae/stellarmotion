@@ -13,10 +13,13 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   }
   
   try {
-    // Construir la URL base correctamente
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3001';
-    const response = await fetch(`${baseUrl}/api/products/${slug}`, {
-      cache: 'no-store'
+    // Construir la URL del ERP correctamente
+    const erpUrl = process.env.NEXT_PUBLIC_ERP_API_URL || 'http://127.0.0.1:3000';
+    const response = await fetch(`${erpUrl}/api/soportes/${slug}`, {
+      cache: 'no-store',
+      headers: {
+        'Content-Type': 'application/json',
+      }
     });
     
     if (!response.ok) return {
@@ -24,21 +27,21 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       description: 'El producto solicitado no existe'
     };
     
-    const product = await response.json();
-    if (!product) return {
+    const soporte = await response.json();
+    if (!soporte) return {
       title: 'Producto no encontrado | StellarMotion',
       description: 'El producto solicitado no existe'
     };
     
     return {
-      title: `${product.title} | StellarMotion`,
-      description: product.shortDescription ?? product.title,
+      title: `${soporte.nombre} | StellarMotion`,
+      description: soporte.descripcion ?? soporte.nombre,
       openGraph: { 
-        title: `${product.title} | StellarMotion`, 
-        description: product.shortDescription ?? product.title, 
-        images: Array.isArray(product.images) && product.images.length > 0 ? [product.images[0]] : []
+        title: `${soporte.nombre} | StellarMotion`, 
+        description: soporte.descripcion ?? soporte.nombre, 
+        images: Array.isArray(soporte.imagenes) && soporte.imagenes.length > 0 ? [soporte.imagenes[0]] : []
       },
-      alternates: { canonical: `https://stellarmotion.com/product/${product.slug}` },
+      alternates: { canonical: `https://stellarmotion.com/product/${soporte.id}` },
     };
   } catch (error) {
     console.error('Error generating metadata:', error);
@@ -57,21 +60,6 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
     return notFound();
   }
   
-  try {
-    // Construir la URL base correctamente
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3001';
-    const response = await fetch(`${baseUrl}/api/products/${slug}`, {
-      cache: 'no-store'
-    });
-    
-    if (!response.ok) return notFound();
-    
-    const product = await response.json();
-    if (!product) return notFound();
-    
-    return <ProductClient product={product} />;
-  } catch (error) {
-    console.error('Error fetching product:', error);
-    return notFound();
-  }
+  // El slug es el ID del soporte
+  return <ProductClient productId={slug} />;
 }

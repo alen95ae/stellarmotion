@@ -5,6 +5,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { MapPin, Search, Crosshair } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { searchPlacesWeb, searchPlacesByCoordinates, PhotonResult } from "@/lib/geocoding";
 
 type Props = {
   defaultKeywords?: string;
@@ -66,13 +67,13 @@ export default function SearchBar({ defaultKeywords = "", defaultLocation = "", 
   }, [suggestions, showSuggestions]);
 
   const fetchSuggestions = async (query: string) => {
-    // Rate limiting: ensure at least 1 second between requests
+    // Rate limiting: ensure at least 500ms between requests
     const now = Date.now();
     const timeSinceLastRequest = now - lastRequestTime.current;
     
-    if (timeSinceLastRequest < 1000) {
+    if (timeSinceLastRequest < 500) {
       // Wait for the remaining time
-      const waitTime = 1000 - timeSinceLastRequest;
+      const waitTime = 500 - timeSinceLastRequest;
       await new Promise(resolve => setTimeout(resolve, waitTime));
     }
     
@@ -80,24 +81,21 @@ export default function SearchBar({ defaultKeywords = "", defaultLocation = "", 
     lastRequestTime.current = Date.now();
     
     try {
-      // Usar backend que integra Google Places
-      const response = await fetch(`/api/places?q=${encodeURIComponent(query)}`);
-      if (response.ok) {
-        const data = await response.json();
-        const suggestions = (Array.isArray(data) ? data : []).map((item: any) => ({
-          placeId: item.placeId,
-          label: item.label ?? item.displayName,
-          lat: typeof item.lat === 'number' ? item.lat : undefined,
-          lng: typeof item.lng === 'number' ? item.lng : undefined,
-          displayName: item.label ?? item.displayName
-        }));
-        setSuggestions(suggestions);
-        setShowSuggestions(true);
-      } else {
-        setSuggestions([]);
-        setShowSuggestions(false);
-      }
+      // Usar Photon directamente para mejor búsqueda de ciudades españolas
+      const results = await searchPlacesWeb(query);
+      
+      const suggestions: PlaceSuggestion[] = results.map((result: PhotonResult) => ({
+        placeId: `${result.lat},${result.lon}`,
+        label: result.displayName,
+        lat: result.lat,
+        lng: result.lon,
+        displayName: result.displayName
+      }));
+      
+      setSuggestions(suggestions);
+      setShowSuggestions(suggestions.length > 0);
     } catch (error) {
+      console.error('Error fetching suggestions:', error);
       setSuggestions([]);
       setShowSuggestions(false);
     } finally {
@@ -145,22 +143,28 @@ export default function SearchBar({ defaultKeywords = "", defaultLocation = "", 
       }
       lastRequestTime.current = Date.now();
 
-      // Usar backend que integra Google Geocoding
-      const response = await fetch(`/api/places?lat=${position.coords.latitude}&lng=${position.coords.longitude}`);
+      // Usar Photon para reverse geocoding
+      const result = await searchPlacesByCoordinates(position.coords.latitude, position.coords.longitude);
       
-      if (response.ok) {
-        const data = await response.json();
-        const label = data?.label ?? 'Ubicación';
+      if (result) {
+        const label = result.displayName;
         setLocation(label);
         setShowSuggestions(false);
         setSuggestions([]);
         
         // Store coordinates for the map to use
         if (typeof window !== 'undefined') {
-          sessionStorage.setItem('selectedLocation', JSON.stringify({
-          label,
-          lat: position.coords.latitude,
-          lng: position.coords.longitude
+          const locationData = {
+            label,
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          };
+          sessionStorage.setItem('selectedLocation', JSON.stringify(locationData));
+          
+          // Dispatch custom event for immediate update
+          console.log('Dispatching locationSelected event (my location):', locationData);
+          window.dispatchEvent(new CustomEvent('locationSelected', { 
+            detail: locationData 
           }));
         }
         
@@ -188,7 +192,26 @@ export default function SearchBar({ defaultKeywords = "", defaultLocation = "", 
           router.push(searchUrl);
         }
       } else {
-        alert("No se pudo obtener la ubicación. Intenta de nuevo.");
+        // Fallback: usar coordenadas si no se encuentra nombre
+        const label = `Ubicación (${position.coords.latitude.toFixed(4)}, ${position.coords.longitude.toFixed(4)})`;
+        setLocation(label);
+        setShowSuggestions(false);
+        setSuggestions([]);
+        
+        // Store coordinates for the map to use
+        if (typeof window !== 'undefined') {
+          const locationData = {
+            label,
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          };
+          sessionStorage.setItem('selectedLocation', JSON.stringify(locationData));
+          
+          // Dispatch custom event for immediate update
+          window.dispatchEvent(new CustomEvent('locationSelected', { 
+            detail: locationData 
+          }));
+        }
       }
     } catch (error) {
       console.error("Error getting location:", error);
@@ -206,10 +229,17 @@ export default function SearchBar({ defaultKeywords = "", defaultLocation = "", 
     // Store coordinates for the map to use
     if (suggestion.lat && suggestion.lng) {
       if (typeof window !== 'undefined') {
-        sessionStorage.setItem('selectedLocation', JSON.stringify({
+        const locationData = {
           label: suggestion.displayName,
           lat: suggestion.lat,
           lng: suggestion.lng
+        };
+        sessionStorage.setItem('selectedLocation', JSON.stringify(locationData));
+        
+        // Dispatch custom event for immediate update
+        console.log('Dispatching locationSelected event:', locationData);
+        window.dispatchEvent(new CustomEvent('locationSelected', { 
+          detail: locationData 
         }));
       }
     }
@@ -318,6 +348,13 @@ export default function SearchBar({ defaultKeywords = "", defaultLocation = "", 
                   </li>
                 ))}
               </ul>
+            )}
+            
+            {/* No results message */}
+            {showSuggestions && suggestions.length === 0 && !isLoadingSuggestions && location.length > 2 && (
+              <div className="absolute z-50 mt-1 w-full bg-white border rounded-xl shadow-lg p-3 text-sm text-gray-500">
+                No se encontraron coincidencias
+              </div>
             )}
           </div>
 

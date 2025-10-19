@@ -112,35 +112,67 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     }
 
     // Validación básica
-    if (!data.nombre) {
+    if (!data['Título del soporte']) {
       return withCors(NextResponse.json(
-        { error: "Nombre es requerido" },
+        { error: "Título del soporte es requerido" },
         { status: 400 }
       ));
     }
     
     // Mapear datos al formato de Airtable
     const updateData = {
-      nombre: data.nombre || existingSupport.nombre,
-      descripcion: data.descripcion || existingSupport.descripcion,
+      'Título del soporte': data['Título del soporte'] || existingSupport.nombre,
+      'Descripción': data['Descripción'] || existingSupport.descripcion,
       ubicacion: data.ubicacion || existingSupport.ubicacion,
+      ciudad: data.ciudad || existingSupport.ciudad,
+      pais: data.pais || existingSupport.pais,
       latitud: data.latitud || existingSupport.latitud,
       longitud: data.longitud || existingSupport.longitud,
-      tipo: data.tipo || existingSupport.tipo,
-      estado: data.estado || existingSupport.estado,
-      precio: data.precio || existingSupport.precio,
+      'Tipo de soporte': data['Tipo de soporte'] || existingSupport.tipo,
+      'Estado del soporte': data['Estado del soporte'] || existingSupport.estado,
+      'Precio por mes': data['Precio por mes'] || existingSupport.precio,
       dimensiones: data.dimensiones || existingSupport.dimensiones,
       imagenes: data.imagenes || existingSupport.imagenes,
-      categoria: data.categoria || existingSupport.categoria
+      categoria: data.categoria || existingSupport.categoria,
+      'Código interno': data['Código interno'] || existingSupport.codigoInterno,
+      'Código cliente': data['Código cliente'] || existingSupport.codigoCliente,
+      'Impactos diarios': data['Impactos diarios'] || existingSupport.impactosDiarios,
+      'Enlace de Google Maps': data['Enlace de Google Maps'] || existingSupport.googleMapsLink,
+      'Propietario': data['Propietario'] || existingSupport.owner,
+      'Iluminación': data['Iluminación'] !== undefined ? data['Iluminación'] : existingSupport.iluminacion,
+      'Destacado': data['Destacado'] !== undefined ? data['Destacado'] : existingSupport.destacado
     }
+    
+    console.log('📤 Datos que se enviarán a Airtable:', updateData);
     
     const updated = await AirtableService.updateSoporte(id, updateData);
     
-    return withCors(NextResponse.json(updated, { status: 200 }))
+    if (!updated) {
+      console.error('❌ Error: AirtableService.updateSoporte returned null');
+      return withCors(NextResponse.json(
+        { 
+          success: false,
+          error: "Error al actualizar en Airtable",
+          details: "El servicio de Airtable no pudo actualizar el registro"
+        },
+        { status: 500 }
+      ));
+    }
+    
+    console.log('✅ Soporte actualizado exitosamente:', updated);
+    return withCors(NextResponse.json({
+      success: true,
+      data: updated,
+      message: "Soporte actualizado correctamente"
+    }, { status: 200 }))
   } catch (error) {
     console.error("Error updating support:", error)
     return withCors(NextResponse.json(
-      { error: "Error interno del servidor" },
+      { 
+        success: false,
+        error: "Error interno del servidor",
+        details: error instanceof Error ? error.message : "Error desconocido"
+      },
       { status: 500 }
     ))
   }

@@ -6,6 +6,7 @@ import { MapPin, Heart, Eye, Ruler, Building, Globe, Lightbulb, Star, Calendar, 
 import { Button } from '@/components/ui/button';
 import { IconBox } from '@/components/ui/IconBox';
 import { FEATURE_ICONS } from '@/lib/icons';
+import { useSoporte } from '@/hooks/useSoporte';
 import dynamic from 'next/dynamic';
 import LeafletHybridMap, { SupportPoint } from '@/components/maps/LeafletHybridMap';
 
@@ -38,10 +39,11 @@ interface Product {
 }
 
 interface ProductClientProps {
-  product: Product;
+  productId: string;
 }
 
-export default function ProductClient({ product }: ProductClientProps) {
+export default function ProductClient({ productId }: ProductClientProps) {
+  const { soporte, loading, error } = useSoporte(productId);
   const [selectedImage, setSelectedImage] = useState(0);
   const [isFavorite, setIsFavorite] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
@@ -57,24 +59,55 @@ export default function ProductClient({ product }: ProductClientProps) {
   });
   const router = useRouter();
 
-  // Asegurar que images y tags sean arrays
-  const safeImages = Array.isArray(product.images) ? product.images : [];
+  // Mostrar loading
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#e94446] mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando soporte...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Mostrar error
+  if (error || !soporte) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Soporte no encontrado</h1>
+          <p className="text-gray-600 mb-6">{error || 'El soporte solicitado no existe'}</p>
+          <Button onClick={() => router.back()} variant="outline">
+            Volver
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Asegurar que images sean array
+  const safeImages = Array.isArray(soporte.imagenes) ? soporte.imagenes : [];
   const displayedImages = safeImages.length > 0
     ? safeImages
     : ['/placeholder.svg?height=400&width=600'];
   const clampedSelectedIndex = Math.min(selectedImage, Math.max(displayedImages.length - 1, 0));
   const mainImage = displayedImages[clampedSelectedIndex] || '/placeholder.svg?height=400&width=600';
-  const safeTags = Array.isArray(product.tags) ? product.tags : [];
   
-  // Asegurar que category tenga valores por defecto
-  const safeCategory = product.category || { slug: 'unknown', label: 'Sin categoría', iconKey: 'unknown' };
+  // Crear tags basados en las características del soporte
+  const safeTags = [
+    soporte.tipo,
+    soporte.iluminacion ? 'Iluminado' : 'Sin iluminación',
+    soporte.destacado ? 'Destacado' : null,
+    soporte.ciudad || soporte.ubicacion
+  ].filter(Boolean);
 
   const formatPrice = (price: number) => {
     // Si el precio es NaN o no válido, mostrar un precio por defecto
     const validPrice = isNaN(price) || price <= 0 ? 350 : price;
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('es-BO', {
       style: 'currency',
-      currency: 'USD',
+      currency: 'BOB',
       minimumFractionDigits: 0,
     }).format(validPrice);
   };
@@ -84,19 +117,27 @@ export default function ProductClient({ product }: ProductClientProps) {
   };
 
   // Función para obtener el estado de disponibilidad
-  const getAvailabilityStatus = (status: string, available: boolean) => {
-    if (!available) {
-      return {
-        text: 'No disponible',
-        className: 'bg-gray-500 text-white'
-      };
-    }
-
-    switch (status?.toUpperCase()) {
-      case 'DISPONIBLE':
+  const getAvailabilityStatus = (estado: string) => {
+    switch (estado?.toLowerCase()) {
+      case 'disponible':
         return {
           text: 'Disponible',
           className: 'bg-green-500 text-white'
+        };
+      case 'ocupado':
+        return {
+          text: 'Ocupado',
+          className: 'bg-red-500 text-white'
+        };
+      case 'reservado':
+        return {
+          text: 'Reservado',
+          className: 'bg-yellow-500 text-white'
+        };
+      case 'mantenimiento':
+        return {
+          text: 'En mantenimiento',
+          className: 'bg-orange-500 text-white'
         };
       case 'RESERVADO':
         return {
@@ -127,7 +168,7 @@ export default function ProductClient({ product }: ProductClientProps) {
 
   // Calcular total
   const calculateTotal = () => {
-    const basePrice = isNaN(product.pricePerMonth) || product.pricePerMonth <= 0 ? 350 : product.pricePerMonth;
+    const basePrice = isNaN(soporte?.precio) || soporte?.precio <= 0 ? 350 : soporte.precio;
     const months = selectedDates.months || 0;
     const rentalTotal = basePrice * months;
     
@@ -144,7 +185,7 @@ export default function ProductClient({ product }: ProductClientProps) {
 
   // Calcular subtotal (sin comisión)
   const calculateSubtotal = () => {
-    const basePrice = isNaN(product.pricePerMonth) || product.pricePerMonth <= 0 ? 350 : product.pricePerMonth;
+    const basePrice = isNaN(soporte?.precio) || soporte?.precio <= 0 ? 350 : soporte.precio;
     const months = selectedDates.months || 0;
     const rentalTotal = basePrice * months;
     
@@ -158,7 +199,7 @@ export default function ProductClient({ product }: ProductClientProps) {
 
   // Calcular pago inicial (primer mes + servicios + comisión)
   const calculateInitialPayment = () => {
-    const basePrice = isNaN(product.pricePerMonth) || product.pricePerMonth <= 0 ? 350 : product.pricePerMonth;
+    const basePrice = isNaN(soporte?.precio) || soporte?.precio <= 0 ? 350 : soporte.precio;
     
     let servicesTotal = 0;
     if (selectedServices.printing) servicesTotal += servicePrices.printing;
@@ -181,7 +222,7 @@ export default function ProductClient({ product }: ProductClientProps) {
             <li>/</li>
             <li><a href="/buscar-un-espacio" className="hover:text-gray-700">Buscar</a></li>
             <li>/</li>
-            <li className="text-gray-900">{product.title}</li>
+            <li className="text-gray-900">{soporte?.nombre}</li>
           </ol>
         </nav>
 
@@ -194,7 +235,7 @@ export default function ProductClient({ product }: ProductClientProps) {
                 <div className="aspect-[4/3] w-full">
                   <img
                     src={displayedImages[0] || '/placeholder.svg?height=400&width=600'}
-                    alt={product.title}
+                    alt={soporte?.nombre || 'Soporte'}
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -210,7 +251,7 @@ export default function ProductClient({ product }: ProductClientProps) {
                     <div className="aspect-[4/3] w-full">
                       <img
                         src={mainImage}
-                        alt={product.title}
+                        alt={soporte?.nombre || 'Soporte'}
                         className="w-full h-full object-cover"
                       />
                     </div>
@@ -220,7 +261,7 @@ export default function ProductClient({ product }: ProductClientProps) {
                 {/* Thumbnail Grid */}
                 <div className="grid grid-cols-2 gap-2">
                   {displayedImages.slice(0, 4).map((image, index) => {
-                    const thumbKey = `${product.id}-${image}-${index}`;
+                    const thumbKey = `${soporte?.id}-${image}-${index}`;
                     const isSelected = clampedSelectedIndex === index;
                     return (
                     <button
@@ -232,7 +273,7 @@ export default function ProductClient({ product }: ProductClientProps) {
                     >
                       <img
                         src={image}
-                        alt={`${product.title} ${index + 1}`}
+                        alt={`${soporte?.nombre} ${index + 1}`}
                         className="w-full h-full object-cover"
                       />
                     </button>
@@ -265,7 +306,7 @@ export default function ProductClient({ product }: ProductClientProps) {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => router.push(`/panel/soportes/${product.id}/editar`)}
+                    onClick={() => router.push(`/panel/soportes/${soporte?.id}/editar`)}
                     className="border-[#D7514C] text-[#D7514C] hover:bg-[#D7514C] hover:text-white"
                   >
                     <Edit className="w-4 h-4 mr-2" />
@@ -283,18 +324,18 @@ export default function ProductClient({ product }: ProductClientProps) {
               </div>
               
               <h1 className="text-3xl font-bold text-gray-900 mb-2 break-words">
-                {product.title}
+                {soporte?.nombre}
               </h1>
               
               <div className="flex items-center space-x-4 text-sm text-gray-600 mb-4">
                 <div className="flex items-center space-x-1">
                   <MapPin className="w-4 h-4" />
-                  <span>{product.city}, {product.country}</span>
+                  <span>{soporte?.ciudad}, {soporte?.pais}</span>
                 </div>
                 <div className="flex items-center space-x-1">
                   <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                  <span>{product.rating}</span>
-                  <span>({product.reviewsCount} reseñas)</span>
+                  <span>4.5</span>
+                  <span>(12 reseñas)</span>
                 </div>
               </div>
 
@@ -320,7 +361,7 @@ export default function ProductClient({ product }: ProductClientProps) {
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Dimensión</p>
-                    <p className="font-medium">{product.dimensions}</p>
+                    <p className="font-medium">{soporte?.dimensiones?.ancho}m x {soporte?.dimensiones?.alto}m</p>
                   </div>
                 </div>
                 
@@ -330,7 +371,7 @@ export default function ProductClient({ product }: ProductClientProps) {
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Impactos diarios</p>
-                    <p className="font-medium">{formatImpressions(product.dailyImpressions)}</p>
+                    <p className="font-medium">{formatImpressions(soporte?.impactosDiarios || 0)}</p>
                   </div>
                 </div>
                 
@@ -340,7 +381,7 @@ export default function ProductClient({ product }: ProductClientProps) {
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Tipo</p>
-                    <p className="font-medium">{product.type}</p>
+                    <p className="font-medium">{soporte?.tipo}</p>
                   </div>
                 </div>
                 
@@ -350,18 +391,18 @@ export default function ProductClient({ product }: ProductClientProps) {
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Iluminación</p>
-                    <p className="font-medium">{product.lighting ? 'Sí' : 'No'}</p>
+                    <p className="font-medium">{soporte?.iluminacion ? 'Sí' : 'No'}</p>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Description */}
-            {product.description && (
+            {soporte?.descripcion && (
               <div className="bg-white rounded-2xl p-6 border border-gray-200">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Descripción</h3>
                 <p className="text-gray-600 leading-relaxed break-words">
-                  {product.description}
+                  {soporte?.descripcion}
                 </p>
               </div>
             )}
@@ -371,18 +412,18 @@ export default function ProductClient({ product }: ProductClientProps) {
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Ubicación</h3>
               <LeafletHybridMap
                 points={[{
-                  id: product.id,
-                  lat: product.lat,
-                  lng: product.lng,
-                  title: product.title,
-                  type: product.type === 'building' ? 'building' : 'billboard',
-                  dimensions: product.dimensions,
-                  monthlyPrice: product.pricePerMonth,
-                  city: product.city,
-                  format: product.type
+                  id: soporte?.id || '',
+                  lat: soporte?.latitud || 0,
+                  lng: soporte?.longitud || 0,
+                  title: soporte?.nombre || '',
+                  type: soporte?.tipo === 'building' ? 'building' : 'billboard',
+                  dimensions: `${soporte?.dimensiones?.ancho}m x ${soporte?.dimensiones?.alto}m`,
+                  monthlyPrice: soporte?.precio || 0,
+                  city: soporte?.ciudad || '',
+                  format: soporte?.tipo || ''
                 }]}
                 height={400}
-                center={[product.lat, product.lng]}
+                center={[soporte?.latitud || 0, soporte?.longitud || 0]}
                 zoom={15}
               />
             </div>
@@ -443,14 +484,14 @@ export default function ProductClient({ product }: ProductClientProps) {
               <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-lg">
                 <div className="flex items-baseline space-x-2 mb-4">
                   <span className="text-3xl font-bold text-[#D7514C]">
-                    {formatPrice(product.pricePerMonth)}
+                    {formatPrice(soporte?.precio || 0)}
                   </span>
                   <span className="text-gray-600">/ mes</span>
                 </div>
                 
-                {product.printingCost > 0 && (
+                {false && (
                   <p className="text-gray-600 mb-4 text-sm">
-                    Costo de impresión: {formatPrice(product.printingCost)}
+                    Costo de impresión: {formatPrice(0)}
                   </p>
                 )}
                 
@@ -599,7 +640,7 @@ export default function ProductClient({ product }: ProductClientProps) {
                           </span>
                         </div>
                         <div className="text-sm opacity-90 mb-4">
-                          <p>Alquiler ({selectedDates.months} {selectedDates.months === 1 ? 'mes' : 'meses'}): {formatPrice((isNaN(product.pricePerMonth) || product.pricePerMonth <= 0 ? 350 : product.pricePerMonth) * selectedDates.months)}</p>
+                          <p>Alquiler ({selectedDates.months} {selectedDates.months === 1 ? 'mes' : 'meses'}): {formatPrice((isNaN(soporte?.precio) || soporte?.precio <= 0 ? 350 : soporte.precio) * selectedDates.months)}</p>
                           {(selectedServices.printing || selectedServices.installation || selectedServices.graphicDesign) && (
                             <p>Servicios: {formatPrice(
                               (selectedServices.printing ? servicePrices.printing : 0) +
@@ -642,7 +683,7 @@ export default function ProductClient({ product }: ProductClientProps) {
                             <p className="text-xs text-gray-500">Alquiler mensual</p>
                           </div>
                           <span className="text-lg font-bold text-gray-900">
-                            {formatPrice(isNaN(product.pricePerMonth) || product.pricePerMonth <= 0 ? 350 : product.pricePerMonth)}
+                            {formatPrice(isNaN(soporte?.precio) || soporte?.precio <= 0 ? 350 : soporte.precio)}
                           </span>
                         </div>
                       </div>

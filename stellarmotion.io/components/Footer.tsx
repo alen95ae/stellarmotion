@@ -54,6 +54,11 @@ export default function Footer() {
                     Insights del mercado
                   </Link>
                 </li>
+                <li>
+                  <Link href="/mapa-test" className="text-gray-600 hover:text-gray-900 transition-colors text-sm">
+                    Mapa Test
+                  </Link>
+                </li>
               </ul>
             </div>
 

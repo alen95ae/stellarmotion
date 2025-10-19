@@ -20,13 +20,14 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { toast } from "sonner"
 import EditableField from "@/components/EditableField"
 import BulkActions from "@/components/BulkActions"
+import Sidebar from "@/components/dashboard/Sidebar"
 
 // Constantes para colores de estado
 const STATUS_META = {
-  DISPONIBLE:   { label: 'Disponible',    className: 'bg-emerald-600 text-white' },
-  RESERVADO:    { label: 'Reservado',     className: 'bg-amber-500 text-black' },
-  OCUPADO:      { label: 'Ocupado',       className: 'bg-red-600 text-white' },
-  NO_DISPONIBLE:{ label: 'No disponible', className: 'bg-neutral-900 text-white' },
+  DISPONIBLE:   { label: 'Disponible',    className: 'bg-green-100 text-green-800 border-green-200' },
+  RESERVADO:    { label: 'Reservado',     className: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
+  OCUPADO:      { label: 'Ocupado',       className: 'bg-red-100 text-red-800 border-red-200' },
+  MANTENIMIENTO:{ label: 'Mantenimiento', className: 'bg-gray-100 text-gray-800 border-gray-200' },
 } as const
 
 // Opciones de tipo
@@ -88,7 +89,7 @@ interface Support {
   code: string  // Código interno (SM-0001, SM-0002, etc.)
   title: string
   type: string
-  status: keyof typeof STATUS_META
+  status: 'DISPONIBLE' | 'RESERVADO' | 'OCUPADO' | 'MANTENIMIENTO'
   widthM: number | null
   heightM: number | null
   city: string
@@ -193,35 +194,37 @@ export default function SoportesPage() {
         // La API devuelve { soportes: [...], pagination: {...} }
         const soportes = data.soportes || data || []
         
+        // Debug: ver qué datos se están cargando
+        console.log('📊 Datos cargados:', soportes.length, 'soportes')
+        console.log('📋 Primer soporte:', soportes[0])
+        
         // Mapear datos de Airtable a la interfaz Support
         const mappedSupports = soportes.map((soporte: any) => ({
           id: soporte.id,
-          code: soporte.id, // Usar ID como código interno
+          code: soporte.codigoInterno || soporte.id, // Usar código interno de Airtable
           title: soporte.nombre, // Título del soporte
           type: soporte.tipo, // Tipo de soporte
-          status: soporte.estado === 'disponible' ? 'DISPONIBLE' : 
-                  soporte.estado === 'ocupado' ? 'OCUPADO' : 
-                  soporte.estado === 'mantenimiento' ? 'NO_DISPONIBLE' : 'DISPONIBLE',
+          status: soporte.estado || 'disponible',
           widthM: soporte.dimensiones?.ancho || null,
           heightM: soporte.dimensiones?.alto || null,
-          city: soporte.ubicacion?.split(',')[0]?.trim() || 'N/A', // Ciudad
-          country: soporte.ubicacion?.split(',')[1]?.trim() || 'Bolivia', // País
+          city: soporte.ciudad || soporte.ubicacion?.split(',')[0]?.trim() || 'N/A', // Ciudad desde Airtable
+          country: soporte.pais || soporte.ubicacion?.split(',')[1]?.trim() || 'N/A', // País desde Airtable
           priceMonth: soporte.precio || null, // Precio por mes
           available: soporte.estado === 'disponible',
           areaM2: soporte.dimensiones?.area || null,
           pricePerM2: null,
           productionCost: null,
           partnerId: soporte.partnerId || null,
-          partner: soporte.partner ? {
-            id: soporte.partner.id,
-            name: soporte.partner.name,
-            companyName: soporte.partner.companyName,
-            email: soporte.partner.email
-          } : null,
-          owner: soporte.partner?.name || soporte.partner?.companyName || 'N/A',
+          partner: soporte.partner || null,
+          owner: soporte.owner || soporte.partner?.name || null,
           imageUrl: soporte.imagenes?.[0] || null,
           company: { name: soporte.categoria || 'N/A' }
         }))
+        
+        // Debug: ver los datos mapeados
+        console.log('🎯 Datos mapeados:', mappedSupports.length, 'supports')
+        console.log('🔍 Primer support mapeado:', mappedSupports[0])
+        console.log('📊 Status del primer support:', mappedSupports[0]?.status)
         
         setSupports(mappedSupports)
       } else {
@@ -369,15 +372,15 @@ export default function SoportesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-6 py-4">
+    <Sidebar>
+      <div className="min-h-screen bg-gray-50">
+        {/* Header */}
+        <header className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
-            <Link href="/dashboard" className="text-gray-600 hover:text-gray-800 mr-4">
-              ← Dashboard
+            <Link href="/panel/soportes" className="text-[#e94446] hover:text-[#d63d3f] font-medium mr-8">
+              Soportes
             </Link>
-            <div className="text-xl font-bold text-slate-800">Soportes</div>
           </div>
           <div className="flex items-center gap-4">
             <span className="text-gray-600">Buscar</span>
@@ -387,7 +390,7 @@ export default function SoportesPage() {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-6 py-8">
+      <main className="w-full px-6 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-slate-800 mb-2">Gestión de Soportes</h1>
           <p className="text-gray-600">Administra los soportes publicitarios disponibles</p>
@@ -506,7 +509,7 @@ export default function SoportesPage() {
                 </Button>
                 
                 <Link href="/panel/soportes/nuevo">
-                  <Button className="bg-red-600 hover:bg-red-700">
+                  <Button className="bg-[#e94446] hover:bg-[#d63e3f] text-white">
                     <Plus className="w-4 h-4 mr-2" />
                     Nuevo Soporte
                   </Button>
@@ -553,10 +556,10 @@ export default function SoportesPage() {
                     <TableHead>Título</TableHead>
                     <TableHead>Tipo</TableHead>
                     <TableHead>Ubicación</TableHead>
-                    <TableHead>Dimensiones</TableHead>
-                    <TableHead>Precio/Mes</TableHead>
+                    <TableHead>Dimensiones (m)</TableHead>
+                    <TableHead>Precio por Mes</TableHead>
                     <TableHead>Estado</TableHead>
-                    <TableHead>Propietario</TableHead>
+                    <TableHead>Partner</TableHead>
                     <TableHead>Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -619,10 +622,6 @@ export default function SoportesPage() {
                             <span className="font-medium">
                               {support.widthM || 'N/A'} × {support.heightM || 'N/A'}
                             </span>
-                            <span className="text-gray-500">m</span>
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            {support.areaM2 ? `${support.areaM2} m²` : 'N/A'}
                           </div>
                         </div>
                       </TableCell>
@@ -650,33 +649,22 @@ export default function SoportesPage() {
                         />
                       </TableCell>
                       <TableCell>
-                        {support.partner ? (
-                          <div className="text-sm">
-                            <div className="font-medium text-blue-600">
-                              {support.partner.companyName || support.partner.name}
-                            </div>
-                            <div className="text-gray-500 text-xs">
-                              Partner: {support.partner.email}
-                            </div>
-                          </div>
-                        ) : (
-                          <EditableField 
-                            support={support} 
-                            field="owner" 
-                            value={support.owner}
-                            type="text"
-                            className="truncate max-w-[20ch]"
-                            title={support.owner || ''}
-                            onSave={handleFieldSave}
-                          />
-                        )}
+                        <EditableField 
+                          support={support} 
+                          field="owner" 
+                          value={support.owner}
+                          type="text"
+                          className="truncate max-w-[20ch]"
+                          title={support.owner || ''}
+                          onSave={handleFieldSave}
+                        />
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2">
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => router.push(`/panel/soportes/${support.id}`)}
+                            onClick={() => router.push(`/panel/soportes/${support.id}?mode=view`)}
                             title="Ver"
                           >
                             <Eye className="w-3 h-3" />
@@ -684,7 +672,7 @@ export default function SoportesPage() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => router.push(`/panel/soportes/${support.id}`)}
+                            onClick={() => router.push(`/panel/soportes/${support.id}?mode=edit`)}
                             title="Editar"
                           >
                             <Edit className="w-3 h-3" />
@@ -708,6 +696,7 @@ export default function SoportesPage() {
           </CardContent>
         </Card>
       </main>
-    </div>
+      </div>
+    </Sidebar>
   )
 }

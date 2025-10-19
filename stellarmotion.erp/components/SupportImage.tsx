@@ -25,7 +25,7 @@ export default function SupportImage({
   priority = false
 }: SupportImageProps) {
   const initial = useMemo(() => {
-    if (src && src.trim() !== '' && !src.includes('placeholder')) return src
+    if (src && typeof src === 'string' && src.trim() !== '' && !src.includes('placeholder')) return src
     return fallbackSrc
   }, [src, fallbackSrc])
 

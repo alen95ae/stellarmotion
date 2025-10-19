@@ -28,11 +28,11 @@ export default withAuth(
     const requiresAdmin = adminRoutes.some(route => pathname.startsWith(route))
     const requiresPartner = partnerRoutes.some(route => pathname.startsWith(route))
 
-    if (requiresAdmin && token?.role !== 'ADMIN') {
+    if (requiresAdmin && token?.role !== 'admin') {
       return NextResponse.redirect(new URL('/dashboard', req.url))
     }
 
-    if (requiresPartner && token?.role !== 'PARTNER') {
+    if (requiresPartner && token?.role !== 'partner') {
       return NextResponse.redirect(new URL('/dashboard', req.url))
     }
 

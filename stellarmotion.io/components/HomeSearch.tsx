@@ -6,6 +6,7 @@ import { MapPin, Crosshair } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
+import { PhotonAutocomplete } from "./PhotonAutocomplete"
 
 type Place = { label: string; placeId?: string; lat: number; lng: number }
 
@@ -14,42 +15,11 @@ export default function HomeSearch() {
   const [keywords, setKeywords] = useState("")
   const [locText, setLocText] = useState("")
   const [coords, setCoords] = useState<{ lat: number | null; lng: number | null }>({ lat: null, lng: null })
-  const [suggestions, setSuggestions] = useState<Place[]>([])
-  const [open, setOpen] = useState(false)
-  const abortRef = useRef<AbortController | null>(null)
-  const timer = useRef<any>(null)
 
-  useEffect(() => {
-    if (!locText) {
-      setSuggestions([])
-      setOpen(false)
-      return
+  const handleLocationSelect = (result: any) => {
+    if (result.lat && result.lon) {
+      setCoords({ lat: result.lat, lng: result.lon })
     }
-    clearTimeout(timer.current)
-    timer.current = setTimeout(async () => {
-      abortRef.current?.abort()
-      const ctrl = new AbortController()
-      abortRef.current = ctrl
-      try {
-        const res = await fetch(`/api/places?q=${encodeURIComponent(locText)}`, { signal: ctrl.signal })
-        if (!res.ok) return
-        const data = await res.json()
-        setSuggestions(data)
-        setOpen(true)
-      } catch (error) {
-        // Ignore aborted requests
-        if (error instanceof Error && error.name !== "AbortError") {
-          console.error("Search error:", error)
-        }
-      }
-    }, 300)
-    return () => clearTimeout(timer.current)
-  }, [locText])
-
-  const pick = (p: Place) => {
-    setLocText(p.label)
-    setCoords({ lat: p.lat, lng: p.lng })
-    setOpen(false)
   }
 
   const useMyLocation = async () => {
@@ -62,11 +32,36 @@ export default function HomeSearch() {
       async (pos) => {
         const { latitude, longitude } = pos.coords
         try {
-          const res = await fetch(`/api/places?lat=${latitude}&lng=${longitude}`)
+          // Usar Photon para reverse geocoding
+          const res = await fetch(`https://photon.komoot.io/reverse?lat=${latitude}&lon=${longitude}&lang=es`)
           const data = await res.json()
-          setLocText(data.label || "Mi ubicación")
-          setCoords({ lat: data.lat, lng: data.lng })
-          setOpen(false)
+          
+          if (data && data.features && data.features.length > 0) {
+            const feature = data.features[0]
+            const name = feature.properties.name || ''
+            const country = feature.properties.country || ''
+            const state = feature.properties.state || ''
+            
+            // Construir nombre más descriptivo
+            let displayName = name
+            if (state && country) {
+              displayName = `${name}, ${state}, ${country}`
+            } else if (country) {
+              displayName = `${name}, ${country}`
+            } else if (state) {
+              displayName = `${name}, ${state}`
+            }
+            
+            if (!displayName) {
+              displayName = "Mi ubicación"
+            }
+            
+            setLocText(displayName)
+            setCoords({ lat: latitude, lng: longitude })
+          } else {
+            setLocText("Mi ubicación")
+            setCoords({ lat: latitude, lng: longitude })
+          }
         } catch (error) {
           console.error("Reverse geocoding error:", error)
           setLocText("Mi ubicación")
@@ -105,47 +100,23 @@ export default function HomeSearch() {
           className="h-12"
         />
         <div className="relative flex-1">
-          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-          <Input
-            placeholder="Ubicación (ciudad o país)"
-            value={locText}
-            onChange={(e) => setLocText(e.target.value)}
-            onFocus={() => suggestions.length && setOpen(true)}
-            className="h-12 pl-10 pr-12"
-            aria-autocomplete="list"
-            aria-expanded={open}
-            aria-controls="loc-listbox"
-          />
-          <button
-            type="button"
-            onClick={useMyLocation}
-            className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-gray-500 hover:text-gray-700 transition-colors"
-            aria-label="Usar mi ubicación"
-          >
-            <Crosshair className="w-5 h-5" />
-          </button>
-
-          {open && suggestions.length > 0 && (
-            <ul
-              id="loc-listbox"
-              role="listbox"
-              className="absolute z-50 mt-1 w-full bg-white border rounded-xl shadow-lg max-h-64 overflow-auto"
+          <div className="relative">
+            <PhotonAutocomplete
+              placeholder="Ubicación (ciudad o país)"
+              value={locText}
+              onChange={setLocText}
+              onSelect={handleLocationSelect}
+              className="w-full"
+            />
+            <button
+              type="button"
+              onClick={useMyLocation}
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-gray-500 hover:text-gray-700 transition-colors z-20"
+              aria-label="Usar mi ubicación"
             >
-              {suggestions.map((s, i) => (
-                <li
-                  key={s.placeId ?? `${s.lat},${s.lng},${i}`}
-                  role="option"
-                  tabIndex={0}
-                  onClick={() => pick(s)}
-                  onKeyDown={(e) => e.key === "Enter" && pick(s)}
-                  className="px-3 py-2 hover:bg-gray-50 cursor-pointer text-sm border-b border-gray-100 last:border-b-0"
-                >
-                  <MapPin className="inline w-4 h-4 mr-2 text-gray-400" />
-                  {s.label}
-                </li>
-              ))}
-            </ul>
-          )}
+              <Crosshair className="w-5 h-5" />
+            </button>
+          </div>
         </div>
         <Button type="submit" className="h-12 rounded-full bg-[#D54644] hover:bg-[#c13e3c] px-8">
           Buscar
