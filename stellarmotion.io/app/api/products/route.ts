@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { API_ENDPOINTS, fetchFromERP, API_BASE_URL } from "@/lib/api-config";
-// Subida de imágenes: delegamos al backend ERP /api/upload (Supabase Storage)
+// Subida de imágenes: delegamos al backend ERP /api/upload
 
 // Función para extraer coordenadas del enlace de Google Maps
 const extractCoordinatesFromGoogleMapsLink = (link: string): { lat: number | null, lng: number | null } => {
@@ -237,7 +237,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Subir imágenes a Supabase Storage a través del backend ERP
+    // Subir imágenes a través del backend ERP
     for (const imageFile of imageFiles) {
       if (imageFile.size > 0) {
         // Validar tamaño de archivo (máximo 5MB)

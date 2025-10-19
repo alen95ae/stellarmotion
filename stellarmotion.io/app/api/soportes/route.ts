@@ -395,7 +395,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Subir imágenes a Supabase Storage a través del backend ERP
+    // Subir imágenes a través del backend ERP
     for (const imageFile of imageFiles) {
       if (imageFile.size > 0) {
         // Validar tamaño de archivo (máximo 5MB)

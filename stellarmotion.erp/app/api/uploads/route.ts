@@ -1,20 +1,12 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { writeFile, mkdir } from 'fs/promises'
+import { join } from 'path'
 
 export async function POST(req: Request) {
   try {
     const form = await req.formData()
     const file = form.get('file') as File | null
     if (!file) return NextResponse.json({ error: 'Archivo requerido' }, { status: 400 })
-
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-    if (!url || !serviceKey) {
-      return NextResponse.json({ 
-        error: 'Configuración de Supabase faltante. Verifica NEXT_PUBLIC_SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY' 
-      }, { status: 500 })
-    }
 
     // Validar tipo de archivo
     if (!file.type.startsWith('image/')) {
@@ -28,25 +20,20 @@ export async function POST(req: Request) {
 
     const ext = (file.name.split('.').pop() || 'jpg').toLowerCase()
     const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
-    const objectPath = `uploads/${Date.now()}-${safeName}`
-
-    const supabase = createClient(url, serviceKey)
+    const fileName = `${Date.now()}-${safeName}`
+    
+    // Crear directorio de uploads si no existe
+    const uploadsDir = join(process.cwd(), 'public', 'uploads')
+    await mkdir(uploadsDir, { recursive: true })
+    
+    // Guardar archivo localmente
+    const filePath = join(uploadsDir, fileName)
     const arrayBuffer = await file.arrayBuffer()
+    await writeFile(filePath, Buffer.from(arrayBuffer))
 
-    const { error: uploadError } = await supabase.storage
-      .from('soportes')
-      .upload(objectPath, arrayBuffer, {
-        contentType: file.type,
-        upsert: false,
-      })
-
-    if (uploadError) {
-      console.error('Supabase upload error:', uploadError)
-      return NextResponse.json({ error: uploadError.message }, { status: 500 })
-    }
-
-    const { data: pub } = supabase.storage.from('soportes').getPublicUrl(objectPath)
-    return NextResponse.json({ url: pub.publicUrl })
+    // Devolver URL pública
+    const publicUrl = `/uploads/${fileName}`
+    return NextResponse.json({ url: publicUrl })
   } catch (error) {
     console.error('Error uploading file:', error)
     return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 })
