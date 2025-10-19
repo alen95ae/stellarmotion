@@ -82,6 +82,8 @@ const makeAbsoluteUrl = (value?: string | null) => {
 export default function SoportesPage() {
   const [supports, setSupports] = useState<Support[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  console.log('🚀 Componente SoportesPage inicializado - loading:', loading);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; support: Support | null }>({
@@ -99,22 +101,31 @@ export default function SoportesPage() {
 
   const fetchSupports = async () => {
     try {
+      console.log('🔄 Iniciando fetchSupports...');
       setLoading(true);
+      
+      console.log('📡 Haciendo petición a partner API...');
       const partnerResponse = await fetch(`/api/soportes?partnerId=${partnerId}`);
+      console.log('📡 Respuesta partner:', partnerResponse.status, partnerResponse.ok);
+      
       if (!partnerResponse.ok) {
         throw new Error(`Failed partner fetch: ${partnerResponse.status}`);
       }
 
-      let data: Support[] = await partnerResponse.json();
+      const partnerData = await partnerResponse.json();
+      console.log('📊 Datos del partner:', partnerData);
+      let data: Support[] = partnerData.soportes || partnerData || [];
+      console.log('📋 Datos extraídos:', data.length, 'soportes');
 
       // Si no hay soportes asociados al partner, traer todos para mostrarlos
       if (!Array.isArray(data) || data.length === 0) {
+        console.log('🔄 No hay soportes del partner, buscando todos...');
         const generalResponse = await fetch('/api/soportes');
         if (generalResponse.ok) {
           const generalData = await generalResponse.json();
-          if (Array.isArray(generalData) && generalData.length) {
-            data = generalData;
-          }
+          console.log('📊 Datos generales:', generalData);
+          data = generalData.soportes || generalData || [];
+          console.log('📋 Datos generales extraídos:', data.length, 'soportes');
         }
       }
 
@@ -152,11 +163,14 @@ export default function SoportesPage() {
         } as Support;
       });
 
+      console.log('✅ Soportes normalizados:', normalizedSupports.length);
       setSupports(normalizedSupports);
+      console.log('✅ Estado actualizado, loading = false');
     } catch (error) {
-      console.error('Error fetching supports:', error);
+      console.error('❌ Error fetching supports:', error);
     } finally {
       setLoading(false);
+      console.log('🏁 fetchSupports completado, loading = false');
     }
   };
 
@@ -203,7 +217,10 @@ export default function SoportesPage() {
     }).format(price);
   };
 
+  console.log('🔍 Estado actual - loading:', loading, 'supports:', supports.length);
+  
   if (loading) {
+    console.log('⏳ Mostrando estado de carga...');
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">

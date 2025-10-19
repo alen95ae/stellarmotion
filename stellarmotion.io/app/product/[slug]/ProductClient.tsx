@@ -256,7 +256,7 @@ export default function ProductClient({ productId }: ProductClientProps) {
     }
   };
 
-  const availabilityStatus = getAvailabilityStatus('available', true);
+  const availabilityStatus = getAvailabilityStatus(soporte?.estado || 'disponible');
 
   // Precios de servicios adicionales
   const servicePrices = {

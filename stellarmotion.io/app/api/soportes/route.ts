@@ -290,12 +290,42 @@ const normalizeSupport = async (support: any) => {
   };
 };
 
+// Mapeo de categorías plurales a tipos singulares
+const CATEGORY_TO_TYPE_MAPPING: Record<string, string> = {
+  'vallas': 'Valla',
+  'pantallas': 'Pantalla', 
+  'murales': 'Mural',
+  'mupis': 'Mupi',
+  'paradas': 'Parada de bus',
+  'displays': 'Display',
+  'letreros': 'Letrero',
+  'carteleras': 'Cartelera'
+};
+
 // GET - Obtener soportes del ERP (proxy)
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     
     console.log('IO API: Proxying request to ERP at', ERP_BASE_URL);
+    
+    // Mapear categoría a tipo si es necesario
+    const categoria = searchParams.get('categoria');
+    let tipo = searchParams.get('tipo');
+    
+    console.log('IO API: Original params - categoria:', categoria, 'tipo:', tipo);
+    
+    if (categoria && !tipo) {
+      // Si hay categoría pero no tipo, mapear categoría a tipo
+      const mappedType = CATEGORY_TO_TYPE_MAPPING[categoria.toLowerCase()];
+      if (mappedType) {
+        searchParams.set('tipo', mappedType);
+        searchParams.delete('categoria'); // Eliminar el parámetro categoria ya que mapeamos a tipo
+        console.log('IO API: Mapped categoria', categoria, 'to tipo', mappedType);
+      } else {
+        console.log('IO API: No mapping found for categoria:', categoria);
+      }
+    }
     
     // Construir la URL del ERP con todos los parámetros
     const erpUrl = `${ERP_BASE_URL}/api/soportes?${searchParams.toString()}`;

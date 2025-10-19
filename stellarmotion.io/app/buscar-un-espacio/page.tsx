@@ -95,7 +95,7 @@ export default function BuscarEspacioPage() {
   const { soportes, loading: soportesLoading, error: soportesError } = useSoportes({
     search: search || undefined,
     categoria: category || undefined,
-    estado: 'Disponible', // Usar el estado exacto de Airtable
+    // Removido el filtro de estado para mostrar todos los soportes
     limit: 50
   });
 
@@ -434,30 +434,54 @@ export default function BuscarEspacioPage() {
                   <Image
                     src={soporte.images?.[0] && soporte.images[0].trim() ? soporte.images[0] : '/placeholder.svg'}
                     alt={soporte.title}
-                    width={300}
-                    height={200}
-                    className="w-full h-48 object-cover"
+                    width={250}
+                    height={150}
+                    className="w-full h-[150px] object-cover"
                   />
                   <div className="absolute top-3 left-3 flex flex-col gap-2">
-                    {soporte.featured && (
-                      <span className="bg-[#e94446] text-white text-xs font-medium px-2 py-1 rounded-full">
-                        Destacado
-                      </span>
-                    )}
-                    <span className={`text-xs font-medium px-2 py-1 rounded-full ${
-                      soporte.status === 'Disponible' 
-                        ? 'bg-green-500 text-white' 
-                        : 'bg-gray-500 text-white'
-                    }`}>
-                      {soporte.status === 'Disponible' ? 'Disponible' : 'No disponible'}
-                    </span>
+                    {(() => {
+                      // Función para obtener el color y texto del estado
+                      const getStatusConfig = (status: string) => {
+                        const normalizedStatus = status?.toLowerCase() || '';
+                        
+                        switch (normalizedStatus) {
+                          case 'disponible':
+                            return {
+                              label: 'Disponible',
+                              className: 'bg-green-500 text-white'
+                            };
+                          case 'reservado':
+                            return {
+                              label: 'Reservado',
+                              className: 'bg-yellow-500 text-white'
+                            };
+                          case 'ocupado':
+                            return {
+                              label: 'Ocupado',
+                              className: 'bg-red-500 text-white'
+                            };
+                          case 'mantenimiento':
+                            return {
+                              label: 'Mantenimiento',
+                              className: 'bg-orange-500 text-white'
+                            };
+                          default:
+                            return {
+                              label: status || 'Desconocido',
+                              className: 'bg-gray-500 text-white'
+                            };
+                        }
+                      };
+                      
+                      const statusConfig = getStatusConfig(soporte.status);
+                      
+                      return (
+                        <span className={`text-xs font-medium px-2 py-1 rounded-full ${statusConfig.className}`}>
+                          {statusConfig.label}
+                        </span>
+                      );
+                    })()}
                   </div>
-                  {soporte.dailyImpressions && (
-                    <div className="absolute bottom-3 right-3 flex items-center space-x-1 bg-black/70 text-white text-xs px-2 py-1 rounded-full">
-                      <Eye className="w-3 h-3" />
-                      <span>{soporte.dailyImpressions.toLocaleString()}/día</span>
-                    </div>
-                  )}
                 </div>
                 
                 <div className="p-4">
