@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { API_ENDPOINTS, fetchFromERP } from '@/lib/api-config';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
 
 const ERP_BASE_URL = process.env.NEXT_PUBLIC_ERP_API_URL || 'http://localhost:3000';
 const PLACEHOLDER_PATTERN = /placeholder(\.(svg|png|jpe?g))?/i;

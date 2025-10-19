@@ -6,7 +6,7 @@ import { MapPin, Crosshair } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
-import { PhotonAutocomplete } from "./PhotonAutocomplete"
+import SearchBarGooglePlaces from "./SearchBarGooglePlaces"
 
 type Place = { label: string; placeId?: string; lat: number; lng: number }
 
@@ -32,38 +32,19 @@ export default function HomeSearch() {
       async (pos) => {
         const { latitude, longitude } = pos.coords
         try {
-          // Usar Photon para reverse geocoding
-          const res = await fetch(`https://photon.komoot.io/reverse?lat=${latitude}&lon=${longitude}&lang=es`)
+          // Usar Google Maps para reverse geocoding
+          const res = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&language=es`)
           const data = await res.json()
           
-          if (data && data.features && data.features.length > 0) {
-            const feature = data.features[0]
-            const name = feature.properties.name || ''
-            const country = feature.properties.country || ''
-            const state = feature.properties.state || ''
-            
-            // Construir nombre más descriptivo
-            let displayName = name
-            if (state && country) {
-              displayName = `${name}, ${state}, ${country}`
-            } else if (country) {
-              displayName = `${name}, ${country}`
-            } else if (state) {
-              displayName = `${name}, ${state}`
-            }
-            
-            if (!displayName) {
-              displayName = "Mi ubicación"
-            }
-            
-            setLocText(displayName)
+          if (data.results && data.results.length > 0) {
+            const result = data.results[0]
+            setLocText(result.formatted_address)
             setCoords({ lat: latitude, lng: longitude })
           } else {
             setLocText("Mi ubicación")
             setCoords({ lat: latitude, lng: longitude })
           }
         } catch (error) {
-          console.error("Reverse geocoding error:", error)
           setLocText("Mi ubicación")
           setCoords({ lat: latitude, lng: longitude })
         }
@@ -101,7 +82,7 @@ export default function HomeSearch() {
         />
         <div className="relative flex-1">
           <div className="relative">
-            <PhotonAutocomplete
+            <SearchBarGooglePlaces
               placeholder="Ubicación (ciudad o país)"
               value={locText}
               onChange={setLocText}
