@@ -76,13 +76,11 @@ export default function ProductClient({ productId }: ProductClientProps) {
           const coords = await getSoporteCoordinates(soporte);
           if (coords) {
             setSoporteCoords(coords);
-            console.log('Coordenadas procesadas para', soporte.nombre, ':', coords);
           } else {
             // Usar coordenadas por defecto si no se pueden extraer
             setSoporteCoords({ lat: 40.4637, lng: -3.7492 });
           }
         } catch (error) {
-          console.error('Error procesando coordenadas:', error);
           setSoporteCoords({ lat: 40.4637, lng: -3.7492 });
         }
       };
@@ -97,7 +95,6 @@ export default function ProductClient({ productId }: ProductClientProps) {
       return;
     }
     
-    console.log('Soporte loaded:', soporte);
     
     // Usar coordenadas específicas por ID de soporte (las que ya se están extrayendo en el backend)
     const soporteCoordinates: Record<string, {lat: number, lng: number}> = {
@@ -110,14 +107,12 @@ export default function ProductClient({ productId }: ProductClientProps) {
     
     const coords = soporteCoordinates[soporte.id];
     if (coords) {
-      console.log(`✅ Using coordinates for soporte ${soporte.id} (${soporte.nombre}):`, coords);
       setSearchLocation({
         lat: coords.lat,
         lng: coords.lng,
         label: soporte.nombre || 'Ubicación del soporte'
       });
     } else {
-      console.log(`❌ No coordinates found for soporte ${soporte.id}`);
       // Fallback a coordenadas por defecto
       setSearchLocation({
         lat: 40.4168,
@@ -127,36 +122,7 @@ export default function ProductClient({ productId }: ProductClientProps) {
     }
   }, [soporte]);
 
-  // Debug log
-  console.log('ProductClient - searchLocation:', searchLocation);
-  console.log('ProductClient - soporte data:', { 
-    latitud: soporte?.latitud, 
-    longitud: soporte?.longitud, 
-    nombre: soporte?.nombre,
-    ciudad: soporte?.ciudad,
-    googleMapsLink: soporte?.googleMapsLink
-  });
 
-  // Test de patrones de Google Maps (solo en desarrollo)
-  if (process.env.NODE_ENV === 'development' && soporte?.googleMapsLink) {
-    console.log('Testing Google Maps link patterns...');
-    const testLink = soporte.googleMapsLink;
-    console.log('Test link:', testLink);
-    
-    // Test manual de algunos patrones comunes
-    const testPatterns = [
-      { name: '@lat,lng', pattern: /@(-?\d+\.\d+),(-?\d+\.\d+)/ },
-      { name: '!3dlat!4dlng', pattern: /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/ },
-      { name: 'll=lat,lng', pattern: /ll=(-?\d+\.\d+),(-?\d+\.\d+)/ },
-      { name: 'q=lat,lng', pattern: /q=(-?\d+\.\d+),(-?\d+\.\d+)/ },
-      { name: 'coords general', pattern: /(-?\d+\.\d+),(-?\d+\.\d+)/ }
-    ];
-    
-    testPatterns.forEach(({ name, pattern }) => {
-      const match = testLink.match(pattern);
-      console.log(`Pattern ${name}:`, match ? `Found: ${match[1]}, ${match[2]}` : 'No match');
-    });
-  }
 
   // Mostrar loading
   if (loading) {
@@ -526,10 +492,10 @@ export default function ProductClient({ productId }: ProductClientProps) {
                 showControls={true}
                 searchLocation={searchLocation}
                 onMarkerClick={(point) => {
-                  console.log('Marcador del soporte clickeado:', point);
+                  // Marcador clickeado
                 }}
                 onMapClick={(lat, lng) => {
-                  console.log('Mapa clickeado:', lat, lng);
+                  // Mapa clickeado
                 }}
               />
             </div>

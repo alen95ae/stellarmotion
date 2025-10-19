@@ -307,13 +307,9 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     
-    console.log('IO API: Proxying request to ERP at', ERP_BASE_URL);
-    
     // Mapear categoría a tipo si es necesario
     const categoria = searchParams.get('categoria');
     let tipo = searchParams.get('tipo');
-    
-    console.log('IO API: Original params - categoria:', categoria, 'tipo:', tipo);
     
     if (categoria && !tipo) {
       // Si hay categoría pero no tipo, mapear categoría a tipo
@@ -321,16 +317,12 @@ export async function GET(req: NextRequest) {
       if (mappedType) {
         searchParams.set('tipo', mappedType);
         searchParams.delete('categoria'); // Eliminar el parámetro categoria ya que mapeamos a tipo
-        console.log('IO API: Mapped categoria', categoria, 'to tipo', mappedType);
-      } else {
-        console.log('IO API: No mapping found for categoria:', categoria);
       }
     }
     
     // Construir la URL del ERP con todos los parámetros
     const erpUrl = `${ERP_BASE_URL}/api/soportes?${searchParams.toString()}`;
     
-    console.log('IO API: Fetching from ERP:', erpUrl);
     
     // Hacer petición al ERP
     const response = await fetch(erpUrl, {
@@ -347,13 +339,10 @@ export async function GET(req: NextRequest) {
     }
     
     const data = await response.json();
-    console.log('IO API: Received from ERP:', data);
     
     // El ERP devuelve un objeto con soportes y pagination
     const soportes = data.soportes || [];
     const pagination = data.pagination || null;
-    
-    console.log('IO API: Found', soportes.length, 'soportes');
     
     // Transformar datos para compatibilidad con el frontend
     const transformedSupports = await Promise.all(soportes.map(normalizeSupport));

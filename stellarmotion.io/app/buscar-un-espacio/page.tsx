@@ -8,7 +8,7 @@ import { useQuerySync } from '@/hooks/useQuerySync';
 import { useCategories } from '@/hooks/useCategories';
 import { useSoportes, Soporte } from '@/hooks/useSoportes';
 import SearchBarGooglePlaces from '@/components/SearchBarGooglePlaces';
-import { Lightbulb, Printer, Building, Car, Ruler, MapPin, Star, Eye, EyeOff } from 'lucide-react';
+import { Ruler, MapPin, Eye, EyeOff } from 'lucide-react';
 import MapViewerGoogleMaps from '@/components/MapViewerGoogleMaps';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -29,10 +29,6 @@ export default function BuscarEspacioPage() {
   const locationType = searchParams.get('locationType');
   
   const [priceRange, setPriceRange] = useState([0, 5000]);
-  const [lighting, setLighting] = useState(false);
-  const [printing, setPrinting] = useState(false);
-  const [centerZone, setCenterZone] = useState(false);
-  const [mobile, setMobile] = useState(false);
   const [searchLocation, setSearchLocation] = useState<{ lat: number; lng: number; label?: string; types?: string[] } | null>(null);
   const [showMap, setShowMap] = useState(true);
   const [mapConfig, setMapConfig] = useState({
@@ -86,10 +82,6 @@ export default function BuscarEspacioPage() {
     }
   }, [searchLat, searchLng, locationType]);
 
-  // Debug effect to see when searchLocation changes
-  useEffect(() => {
-    console.log('SearchLocation state changed:', searchLocation);
-  }, [searchLocation]);
 
   // Cargar soportes reales desde el ERP
   const { soportes, loading: soportesLoading, error: soportesError } = useSoportes({
@@ -105,7 +97,6 @@ export default function BuscarEspacioPage() {
       const lat = parseFloat(searchLat);
       const lng = parseFloat(searchLng);
       if (!isNaN(lat) && !isNaN(lng)) {
-        console.log('Setting search location from URL:', { lat, lng, label: searchLocationText, locationType });
         setSearchLocation({
           lat,
           lng,
@@ -120,7 +111,6 @@ export default function BuscarEspacioPage() {
   useEffect(() => {
     const handleLocationSelected = (event: CustomEvent) => {
       const location = event.detail;
-      console.log('Location selected from SearchBar:', location);
       setSearchLocation({
         lat: location.lat,
         lng: location.lng,
@@ -143,7 +133,7 @@ export default function BuscarEspacioPage() {
           // Clear the stored location after using it
           sessionStorage.removeItem('selectedLocation');
         } catch (error) {
-          console.error('Error parsing stored location:', error);
+          // Error parsing stored location
         }
       }
     };
@@ -255,68 +245,11 @@ export default function BuscarEspacioPage() {
                 </div>
               </div>
 
-              {/* Filter Icons */}
-              <div className="mb-6">
-                <h3 className="text-sm font-medium text-gray-700 mb-3">Filtros adicionales</h3>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    onClick={() => setLighting(!lighting)}
-                    className={`flex items-center justify-center p-3 rounded-lg border-2 transition-all hover:scale-105 ${
-                      lighting 
-                        ? 'border-red-500 bg-red-50 text-red-600' 
-                        : 'border-gray-200 bg-white text-gray-400 hover:border-gray-300'
-                    }`}
-                    title="Iluminación"
-                  >
-                    <Lightbulb className="w-5 h-5" />
-                  </button>
-                  
-                  <button
-                    onClick={() => setPrinting(!printing)}
-                    className={`flex items-center justify-center p-3 rounded-lg border-2 transition-all hover:scale-105 ${
-                      printing 
-                        ? 'border-red-500 bg-red-50 text-red-600' 
-                        : 'border-gray-200 bg-white text-gray-400 hover:border-gray-300'
-                    }`}
-                    title="Incluye impresión"
-                  >
-                    <Printer className="w-5 h-5" />
-                  </button>
-                  
-                  <button
-                    onClick={() => setCenterZone(!centerZone)}
-                    className={`flex items-center justify-center p-3 rounded-lg border-2 transition-all hover:scale-105 ${
-                      centerZone 
-                        ? 'border-red-500 bg-red-50 text-red-600' 
-                        : 'border-gray-200 bg-white text-gray-400 hover:border-gray-300'
-                    }`}
-                    title="Zona centro"
-                  >
-                    <Building className="w-5 h-5" />
-                  </button>
-                  
-                  <button
-                    onClick={() => setMobile(!mobile)}
-                    className={`flex items-center justify-center p-3 rounded-lg border-2 transition-all hover:scale-105 ${
-                      mobile 
-                        ? 'border-red-500 bg-red-50 text-red-600' 
-                        : 'border-gray-200 bg-white text-gray-400 hover:border-gray-300'
-                    }`}
-                    title="Móvil"
-                  >
-                    <Car className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
 
               {/* Clear Filters */}
               <button
                 onClick={() => {
                   setQuery({ category: null, q: null, priceMin: null, priceMax: null, city: null });
-                  setLighting(false);
-                  setPrinting(false);
-                  setCenterZone(false);
-                  setMobile(false);
                   setPriceRange([0, 5000]);
                 }}
                 className="w-full px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
@@ -341,11 +274,10 @@ export default function BuscarEspacioPage() {
                   showControls={true}
                   searchLocation={searchLocation}
                   onMarkerClick={(point) => {
-                    console.log('Marcador clickeado:', point);
-                    // Aquí puedes agregar lógica para mostrar detalles del soporte
+                    // Marcador clickeado
                   }}
                   onMapClick={(lat, lng) => {
-                    console.log('Mapa clickeado:', lat, lng);
+                    // Mapa clickeado
                   }}
                 />
               </div>
