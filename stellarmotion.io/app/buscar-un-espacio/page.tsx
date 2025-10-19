@@ -8,7 +8,7 @@ import { useQuerySync } from '@/hooks/useQuerySync';
 import { useCategories } from '@/hooks/useCategories';
 import { useSoportes, Soporte } from '@/hooks/useSoportes';
 import SearchBarGooglePlaces from '@/components/SearchBarGooglePlaces';
-import { Lightbulb, Printer, Building, Car, Ruler, MapPin, Star, Eye } from 'lucide-react';
+import { Lightbulb, Printer, Building, Car, Ruler, MapPin, Star, Eye, EyeOff } from 'lucide-react';
 import MapViewerGoogleMaps from '@/components/MapViewerGoogleMaps';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -24,6 +24,7 @@ export default function BuscarEspacioPage() {
   const [centerZone, setCenterZone] = useState(false);
   const [mobile, setMobile] = useState(false);
   const [searchLocation, setSearchLocation] = useState<{ lat: number; lng: number; label?: string } | null>(null);
+  const [showMap, setShowMap] = useState(true);
 
   // Debug effect to see when searchLocation changes
   useEffect(() => {
@@ -34,6 +35,9 @@ export default function BuscarEspacioPage() {
   const priceMin = searchParams.get('priceMin') || '0';
   const priceMax = searchParams.get('priceMax') || '5000';
   const search = searchParams.get('q') || '';
+  const searchLat = searchParams.get('lat');
+  const searchLng = searchParams.get('lng');
+  const searchLocationText = searchParams.get('loc') || searchParams.get('location');
 
   // Cargar soportes reales desde el ERP
   const { soportes, loading: soportesLoading, error: soportesError } = useSoportes({
@@ -42,6 +46,22 @@ export default function BuscarEspacioPage() {
     estado: 'Disponible', // Usar el estado exacto de Airtable
     limit: 50
   });
+
+  // Effect to handle search location from URL parameters
+  useEffect(() => {
+    if (searchLat && searchLng) {
+      const lat = parseFloat(searchLat);
+      const lng = parseFloat(searchLng);
+      if (!isNaN(lat) && !isNaN(lng)) {
+        console.log('Setting search location from URL:', { lat, lng, label: searchLocationText });
+        setSearchLocation({
+          lat,
+          lng,
+          label: searchLocationText || 'Ubicación de búsqueda'
+        });
+      }
+    }
+  }, [searchLat, searchLng, searchLocationText]);
 
   // Effect to handle search location from SearchBar
   useEffect(() => {
@@ -131,10 +151,10 @@ export default function BuscarEspacioPage() {
         </div>
 
         {/* Filters and Map Section - Side by side */}
-        <div className="flex gap-6 mb-8">
+        <div className={`flex gap-6 mb-8 ${!showMap ? 'hidden' : ''}`}>
           {/* Filters Sidebar - 1/4 width */}
           <div className="w-1/4 flex-shrink-0">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 h-[600px]">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 h-[500px]">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Filtros</h2>
               
               {/* Categories - Dropdown */}
@@ -253,17 +273,18 @@ export default function BuscarEspacioPage() {
 
           {/* Map Section - 3/4 width */}
           <div className="w-3/4">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 h-[600px]">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 h-[500px]">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Ubicaciones en el mapa</h2>
-              <div className="h-[540px]">
+              <div className="h-[440px]">
                 <MapViewerGoogleMaps 
                   points={mapPoints}
-                  height={540}
+                  height={440}
                   lat={-16.5000}
                   lng={-68.1500}
                   zoom={13}
                   style="streets"
                   showControls={true}
+                  searchLocation={searchLocation}
                   onMarkerClick={(point) => {
                     console.log('Marcador clickeado:', point);
                     // Aquí puedes agregar lógica para mostrar detalles del soporte
@@ -279,13 +300,34 @@ export default function BuscarEspacioPage() {
 
         {/* Supports Grid Section */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
+          <div className="relative flex items-center justify-between mb-6">
             <div>
               <h2 className="text-2xl font-bold text-gray-900 mb-2">Soportes Disponibles</h2>
               <p className="text-gray-600">
                 {soportesLoading ? 'Cargando...' : soportesError ? 'Error al cargar soportes' : `${soportes.length} soportes encontrados`}
               </p>
             </div>
+            
+            {/* Toggle Map Button - Centered horizontally, same height as Order by */}
+            <div className="absolute left-1/2 transform -translate-x-1/2">
+              <button
+                onClick={() => setShowMap(!showMap)}
+                className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
+              >
+                {showMap ? (
+                  <>
+                    <EyeOff className="w-4 h-4" />
+                    Ocultar mapa
+                  </>
+                ) : (
+                  <>
+                    <Eye className="w-4 h-4" />
+                    Mostrar mapa
+                  </>
+                )}
+              </button>
+            </div>
+            
             <div className="flex items-center space-x-2">
               <span className="text-sm text-gray-600">Ordenar por:</span>
               <Select defaultValue="featured">

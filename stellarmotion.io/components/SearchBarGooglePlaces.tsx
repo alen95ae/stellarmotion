@@ -237,6 +237,20 @@ export default function SearchBarGooglePlaces({
     if (keywords.trim()) qs.set("keywords", keywords.trim());
     if (location.trim()) qs.set("location", location.trim());
     
+    // Check if we have stored coordinates from location selection
+    const storedLocation = sessionStorage.getItem('selectedLocation');
+    if (storedLocation) {
+      try {
+        const locationData = JSON.parse(storedLocation);
+        if (locationData.lat && locationData.lng) {
+          qs.set("lat", String(locationData.lat));
+          qs.set("lng", String(locationData.lng));
+        }
+      } catch (error) {
+        console.error('Error parsing stored location for URL:', error);
+      }
+    }
+    
     const queryString = qs.toString();
     const url = queryString ? `/buscar-un-espacio?${queryString}` : "/buscar-un-espacio";
     

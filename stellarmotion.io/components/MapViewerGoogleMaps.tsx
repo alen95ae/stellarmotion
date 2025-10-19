@@ -26,6 +26,7 @@ export interface MapViewerGoogleMapsProps {
   enableClustering?: boolean;
   onMarkerClick?: (point: MapPoint) => void;
   onMapClick?: (lat: number, lng: number) => void;
+  searchLocation?: { lat: number; lng: number; label?: string } | null;
 }
 
 declare global {
@@ -48,6 +49,7 @@ export default function MapViewerGoogleMaps({
   enableClustering = false,
   onMarkerClick,
   onMapClick,
+  searchLocation = null,
 }: MapViewerGoogleMapsProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<any>(null);
@@ -158,6 +160,17 @@ export default function MapViewerGoogleMaps({
       markers.current.push(marker);
     });
   }, [points, isMapReady, onMarkerClick]);
+
+  // Centrar el mapa cuando cambie la ubicación de búsqueda
+  useEffect(() => {
+    if (!map.current || !searchLocation) return;
+    
+    console.log('Centering map to search location:', searchLocation);
+    map.current.setCenter({ lat: searchLocation.lat, lng: searchLocation.lng });
+    map.current.setZoom(13); // Zoom apropiado para mostrar la ubicación
+    
+    // Solo centrar el mapa, sin agregar marcador
+  }, [searchLocation]);
 
   // Cambiar estilo del mapa
   const handleStyleChange = (newStyle: "streets" | "satellite" | "hybrid") => {
