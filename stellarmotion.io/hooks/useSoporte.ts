@@ -18,7 +18,7 @@ export function useSoporte(id: string): UseSoporteReturn {
         setLoading(true);
         setError(null);
 
-        const url = `http://127.0.0.1:3000/api/soportes/${id}`;
+        const url = `/api/soportes/${id}`;
         console.log('Fetching soporte from:', url);
 
         const response = await fetch(url);

@@ -37,9 +37,9 @@ declare global {
 }
 
 export default function MapViewerGoogleMaps({
-  lat = -16.5000,
-  lng = -68.1500,
-  zoom = 13,
+  lat = 40.4637,
+  lng = -3.7492,
+  zoom = 6,
   points = [],
   height = "500px",
   width = "100%",
@@ -106,6 +106,7 @@ export default function MapViewerGoogleMaps({
       });
 
       window.google.maps.event.addListener(map.current, 'tilesloaded', () => {
+        console.log('MapViewerGoogleMaps - Map tiles loaded, map is ready');
         setIsMapReady(true);
       });
     };
@@ -163,11 +164,15 @@ export default function MapViewerGoogleMaps({
 
   // Centrar el mapa cuando cambie la ubicación de búsqueda
   useEffect(() => {
-    if (!map.current || !searchLocation) return;
+    console.log('MapViewerGoogleMaps - searchLocation effect triggered:', { searchLocation, mapReady: !!map.current });
+    if (!map.current || !searchLocation) {
+      console.log('MapViewerGoogleMaps - Skipping centering:', { hasMap: !!map.current, hasSearchLocation: !!searchLocation });
+      return;
+    }
     
     console.log('Centering map to search location:', searchLocation);
     map.current.setCenter({ lat: searchLocation.lat, lng: searchLocation.lng });
-    map.current.setZoom(13); // Zoom apropiado para mostrar la ubicación
+    map.current.setZoom(15); // Zoom apropiado para mostrar la ubicación
     
     // Solo centrar el mapa, sin agregar marcador
   }, [searchLocation]);

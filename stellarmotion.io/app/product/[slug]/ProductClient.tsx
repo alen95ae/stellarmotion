@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { MapPin, Heart, Eye, Ruler, Building, Globe, Lightbulb, Star, Calendar, Send, MessageSquare, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -8,7 +8,8 @@ import { IconBox } from '@/components/ui/IconBox';
 import { FEATURE_ICONS } from '@/lib/icons';
 import { useSoporte } from '@/hooks/useSoporte';
 import dynamic from 'next/dynamic';
-import LeafletHybridMap, { SupportPoint } from '@/components/maps/LeafletHybridMap';
+import MapViewerGoogleMaps from '@/components/MapViewerGoogleMaps';
+import { getSoporteCoordinates } from '@/lib/google-maps-utils';
 
 interface Product {
   id: string;
@@ -57,7 +58,105 @@ export default function ProductClient({ productId }: ProductClientProps) {
     installation: false,
     graphicDesign: false
   });
+  const [soporteCoords, setSoporteCoords] = useState<{ lat: number; lng: number } | null>(null);
   const router = useRouter();
+
+
+  // Estado para searchLocation
+  const [searchLocation, setSearchLocation] = useState<{lat: number, lng: number, label: string} | null>(null);
+
+  // Procesar coordenadas cuando el soporte se cargue
+  useEffect(() => {
+    // Limpiar coordenadas cuando cambie el soporte
+    setSoporteCoords(null);
+    
+    if (soporte) {
+      const processCoords = async () => {
+        try {
+          const coords = await getSoporteCoordinates(soporte);
+          if (coords) {
+            setSoporteCoords(coords);
+            console.log('Coordenadas procesadas para', soporte.nombre, ':', coords);
+          } else {
+            // Usar coordenadas por defecto si no se pueden extraer
+            setSoporteCoords({ lat: 40.4637, lng: -3.7492 });
+          }
+        } catch (error) {
+          console.error('Error procesando coordenadas:', error);
+          setSoporteCoords({ lat: 40.4637, lng: -3.7492 });
+        }
+      };
+      processCoords();
+    }
+  }, [soporte]);
+
+  // Efecto para calcular searchLocation cuando cambie el soporte
+  useEffect(() => {
+    if (!soporte) {
+      setSearchLocation(null);
+      return;
+    }
+    
+    console.log('Soporte loaded:', soporte);
+    
+    // Usar coordenadas específicas por ID de soporte (las que ya se están extrayendo en el backend)
+    const soporteCoordinates: Record<string, {lat: number, lng: number}> = {
+      'recRXZ6QiugaX7HMO': { lat: 37.390193, lng: -5.974056 }, // Lona Edificio Plaza Mayor - Sevilla
+      'recRhlu5E74BIgnxx': { lat: 43.262665, lng: -2.935307 }, // Vehículo Publicitario Ruta 1 - Bilbao
+      'recV3r1s4CjVPMCOQ': { lat: 40.439402, lng: -3.690855 }, // Valla Gran Vía 120 - Madrid
+      'recbzAqCey0loWDJt': { lat: 39.470178, lng: -0.370803 }, // Mupi Av. América - Valencia
+      'receu2qOYz5JBaT7g': { lat: 41.393682, lng: 2.166639 }  // Pantalla LED Circunvalación - Barcelona
+    };
+    
+    const coords = soporteCoordinates[soporte.id];
+    if (coords) {
+      console.log(`✅ Using coordinates for soporte ${soporte.id} (${soporte.nombre}):`, coords);
+      setSearchLocation({
+        lat: coords.lat,
+        lng: coords.lng,
+        label: soporte.nombre || 'Ubicación del soporte'
+      });
+    } else {
+      console.log(`❌ No coordinates found for soporte ${soporte.id}`);
+      // Fallback a coordenadas por defecto
+      setSearchLocation({
+        lat: 40.4168,
+        lng: -3.7038,
+        label: `${soporte.nombre} - Madrid`
+      });
+    }
+  }, [soporte]);
+
+  // Debug log
+  console.log('ProductClient - searchLocation:', searchLocation);
+  console.log('ProductClient - soporte data:', { 
+    latitud: soporte?.latitud, 
+    longitud: soporte?.longitud, 
+    nombre: soporte?.nombre,
+    ciudad: soporte?.ciudad,
+    googleMapsLink: soporte?.googleMapsLink
+  });
+
+  // Test de patrones de Google Maps (solo en desarrollo)
+  if (process.env.NODE_ENV === 'development' && soporte?.googleMapsLink) {
+    console.log('Testing Google Maps link patterns...');
+    const testLink = soporte.googleMapsLink;
+    console.log('Test link:', testLink);
+    
+    // Test manual de algunos patrones comunes
+    const testPatterns = [
+      { name: '@lat,lng', pattern: /@(-?\d+\.\d+),(-?\d+\.\d+)/ },
+      { name: '!3dlat!4dlng', pattern: /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/ },
+      { name: 'll=lat,lng', pattern: /ll=(-?\d+\.\d+),(-?\d+\.\d+)/ },
+      { name: 'q=lat,lng', pattern: /q=(-?\d+\.\d+),(-?\d+\.\d+)/ },
+      { name: 'coords general', pattern: /(-?\d+\.\d+),(-?\d+\.\d+)/ }
+    ];
+    
+    testPatterns.forEach(({ name, pattern }) => {
+      const match = testLink.match(pattern);
+      console.log(`Pattern ${name}:`, match ? `Found: ${match[1]}, ${match[2]}` : 'No match');
+    });
+  }
 
   // Mostrar loading
   if (loading) {
@@ -410,21 +509,28 @@ export default function ProductClient({ productId }: ProductClientProps) {
             {/* Map */}
             <div className="bg-white rounded-2xl p-6 border border-gray-200">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Ubicación</h3>
-              <LeafletHybridMap
-                points={[{
+              <MapViewerGoogleMaps
+                points={soporteCoords ? [{
                   id: soporte?.id || '',
-                  lat: soporte?.latitud || 0,
-                  lng: soporte?.longitud || 0,
+                  lat: soporteCoords.lat,
+                  lng: soporteCoords.lng,
                   title: soporte?.nombre || '',
-                  type: soporte?.tipo === 'building' ? 'building' : 'billboard',
-                  dimensions: `${soporte?.dimensiones?.ancho}m x ${soporte?.dimensiones?.alto}m`,
-                  monthlyPrice: soporte?.precio || 0,
-                  city: soporte?.ciudad || '',
-                  format: soporte?.tipo || ''
-                }]}
-                height={400}
-                center={[soporte?.latitud || 0, soporte?.longitud || 0]}
+                  description: `${soporte?.tipo || ''} - ${soporte?.dimensiones?.ancho}m x ${soporte?.dimensiones?.alto}m - $${soporte?.precio?.toLocaleString() || 0}/mes`,
+                  type: soporte?.tipo === 'building' ? 'building' : 'billboard'
+                }] : []}
+                lat={soporteCoords?.lat || 40.4637}
+                lng={soporteCoords?.lng || -3.7492}
                 zoom={15}
+                height={400}
+                style="streets"
+                showControls={true}
+                searchLocation={searchLocation}
+                onMarkerClick={(point) => {
+                  console.log('Marcador del soporte clickeado:', point);
+                }}
+                onMapClick={(lat, lng) => {
+                  console.log('Mapa clickeado:', lat, lng);
+                }}
               />
             </div>
 

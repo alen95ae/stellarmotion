@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchFromERP, API_BASE_URL } from '@/lib/api-config';
+import { getSoporteCoordinates } from '@/lib/google-maps-utils';
 
 // GET - Obtener un soporte específico por ID
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -25,36 +26,73 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       );
     }
     
+    // Procesar coordenadas del googleMapsLink si está disponible
+    const coords = await getSoporteCoordinates(support);
+    const finalLat = coords?.lat || support.latitude || 0;
+    const finalLng = coords?.lng || support.longitude || 0;
+    
+    console.log('ProductClient - soporte data:', {
+      latitud: finalLat,
+      longitud: finalLng,
+      nombre: support.title,
+      ciudad: support.city,
+      googleMapsLink: support.googleMapsLink
+    });
+
     // Transformar datos para compatibilidad con el frontend
     const transformedSupport = {
       id: support.id,
-      slug: support.slug,
-      title: support.title,
-      city: support.city,
-      country: support.country,
-      dimensions: support.dimensions || `${support.widthM || 0}x${support.heightM || 0}m`,
-      dailyImpressions: support.dailyImpressions || 0,
-      type: support.type,
-      lighting: support.lighting,
-      tags: support.tags,
-      images: support.images,
-      shortDescription: support.shortDescription,
-      description: support.description,
-      featured: support.featured,
-      lat: support.latitude,
-      lng: support.longitude,
-      pricePerMonth: support.priceMonth,
-      printingCost: support.printingCost,
-      rating: support.rating,
-      reviewsCount: support.reviewsCount,
-      categoryId: support.categoryId,
-      status: support.status,
-      available: support.available,
-      address: support.address,
-      googleMapsLink: support.googleMapsLink, // Incluir el enlace de Google Maps
+      slug: support.id, // Usar ID como slug
+      title: support.nombre,
+      city: support.ciudad,
+      country: support.pais,
+      dimensions: support.dimensiones ? `${support.dimensiones.ancho || 0}x${support.dimensiones.alto || 0}m` : '0x0m',
+      dailyImpressions: support.impactosDiarios || 0,
+      type: support.tipo,
+      lighting: support.iluminacion,
+      tags: [],
+      images: support.imagenes || [],
+      shortDescription: support.descripcion,
+      description: support.descripcion,
+      featured: support.destacado,
+      lat: finalLat,
+      lng: finalLng,
+      pricePerMonth: support.precio,
+      printingCost: 0,
+      rating: 0,
+      reviewsCount: 0,
+      categoryId: support.categoria,
+      status: support.estado,
+      available: support.estado === 'Disponible',
+      address: support.ubicacion,
+      googleMapsLink: support.googleMapsLink,
       createdAt: support.createdAt,
       updatedAt: support.updatedAt,
-      code: support.code
+      code: support.codigoInterno,
+      // Campos adicionales para el frontend
+      nombre: support.nombre,
+      descripcion: support.descripcion,
+      ubicacion: support.ubicacion,
+      latitud: finalLat,
+      longitud: finalLng,
+      tipo: support.tipo,
+      estado: support.estado,
+      precio: support.precio,
+      dimensiones: support.dimensiones,
+      imagenes: support.imagenes,
+      categoria: support.categoria,
+      codigoInterno: support.codigoInterno,
+      codigoCliente: support.codigoCliente,
+      pais: support.pais,
+      ciudad: support.ciudad,
+      impactosDiarios: support.impactosDiarios,
+      impactosDiariosPorM2: support.impactosDiariosPorM2,
+      resumenAutomatico: support.resumenAutomatico,
+      partnerId: support.partnerId,
+      partner: support.partner,
+      owner: support.owner,
+      iluminacion: support.iluminacion,
+      destacado: support.destacado
     };
     
     return NextResponse.json(transformedSupport);

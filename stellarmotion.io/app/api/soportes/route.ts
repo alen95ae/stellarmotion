@@ -4,7 +4,7 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-const ERP_BASE_URL = process.env.NEXT_PUBLIC_ERP_API_URL || 'http://localhost:3002';
+const ERP_BASE_URL = process.env.NEXT_PUBLIC_ERP_API_URL || 'http://localhost:3000';
 const PLACEHOLDER_PATTERN = /placeholder(\.(svg|png|jpe?g))?/i;
 
 const toNumber = (value: unknown): number | null => {
@@ -96,8 +96,9 @@ const buildDimensions = (support: any): string => {
     return support.dimensions;
   }
 
-  const width = toNumber(support?.widthM);
-  const height = toNumber(support?.heightM);
+  // Usar los campos de dimensiones de Airtable
+  const width = toNumber(support?.dimensiones?.ancho ?? support?.ancho);
+  const height = toNumber(support?.dimensiones?.alto ?? support?.alto);
 
   if (width && height) {
     return `${width}×${height} m`;
@@ -106,37 +107,168 @@ const buildDimensions = (support: any): string => {
   return '';
 };
 
-const normalizeSupport = (support: any) => {
-  const latitude = toNumber(support?.latitude ?? support?.lat);
-  const longitude = toNumber(support?.longitude ?? support?.lng);
+// Función para extraer coordenadas de enlaces de Google Maps
+const extractCoordinatesFromGoogleMaps = async (googleMapsLink: string): Promise<{ lat: number; lng: number } | null> => {
+  if (!googleMapsLink) return null;
+  
+  try {
+    // Para enlaces acortados de Google Maps, necesitamos hacer una petición para obtener la URL real
+    if (googleMapsLink.includes('maps.app.goo.gl') || googleMapsLink.includes('goo.gl')) {
+      console.log('IO API: Extracting coordinates from shortened link:', googleMapsLink);
+      
+      const response = await fetch(googleMapsLink, { 
+        method: 'HEAD',
+        redirect: 'follow',
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
+      });
+      
+      const finalUrl = response.url;
+      console.log('IO API: Resolved URL:', finalUrl);
+      
+      // Formato: /search/lat,lng o /search/lat,+lng
+      const searchMatch = finalUrl.match(/\/search\/([^?]+)/);
+      if (searchMatch) {
+        const coordString = searchMatch[1].replace(/\+/g, '').trim();
+        const coords = coordString.split(',').map(c => c.trim());
+        
+        if (coords.length >= 2) {
+          const lat = parseFloat(coords[0]);
+          const lng = parseFloat(coords[1]);
+          if (!isNaN(lat) && !isNaN(lng)) {
+            console.log('IO API: Extracted coordinates:', { lat, lng });
+            return { lat, lng };
+          }
+        }
+      }
+      
+      // Formato: /place/name/@lat,lng
+      const placeMatch = finalUrl.match(/\/@([^?]+)/);
+      if (placeMatch) {
+        const coordString = placeMatch[1].split(',');
+        if (coordString.length >= 2) {
+          const lat = parseFloat(coordString[0]);
+          const lng = parseFloat(coordString[1]);
+          if (!isNaN(lat) && !isNaN(lng)) {
+            console.log('IO API: Extracted coordinates from place:', { lat, lng });
+            return { lat, lng };
+          }
+        }
+      }
+      
+      // Formato: ?q=lat,lng
+      const qMatch = finalUrl.match(/[?&]q=([^&]+)/);
+      if (qMatch) {
+        const coordString = qMatch[1].replace(/\+/g, '').trim();
+        const coords = coordString.split(',').map(c => c.trim());
+        
+        if (coords.length >= 2) {
+          const lat = parseFloat(coords[0]);
+          const lng = parseFloat(coords[1]);
+          if (!isNaN(lat) && !isNaN(lng)) {
+            console.log('IO API: Extracted coordinates from q param:', { lat, lng });
+            return { lat, lng };
+          }
+        }
+      }
+      
+      // Formato: ?ll=lat,lng
+      const llMatch = finalUrl.match(/[?&]ll=([^&]+)/);
+      if (llMatch) {
+        const coordString = llMatch[1].replace(/\+/g, '').trim();
+        const coords = coordString.split(',').map(c => c.trim());
+        
+        if (coords.length >= 2) {
+          const lat = parseFloat(coords[0]);
+          const lng = parseFloat(coords[1]);
+          if (!isNaN(lat) && !isNaN(lng)) {
+            console.log('IO API: Extracted coordinates from ll param:', { lat, lng });
+            return { lat, lng };
+          }
+        }
+      }
+      
+      console.warn('IO API: Could not extract coordinates from URL:', finalUrl);
+    }
+    
+    // Para enlaces directos de Google Maps (sin acortar)
+    // Formato: /search/lat,lng
+    const searchMatch = googleMapsLink.match(/\/search\/([^?]+)/);
+    if (searchMatch) {
+      const coordString = searchMatch[1].replace(/\+/g, '').trim();
+      const coords = coordString.split(',').map(c => c.trim());
+      
+      if (coords.length >= 2) {
+        const lat = parseFloat(coords[0]);
+        const lng = parseFloat(coords[1]);
+        if (!isNaN(lat) && !isNaN(lng)) {
+          return { lat, lng };
+        }
+      }
+    }
+    
+    // Formato: ?q=lat,lng
+    const qMatch = googleMapsLink.match(/[?&]q=([^&]+)/);
+    if (qMatch) {
+      const coordString = qMatch[1].replace(/\+/g, '').trim();
+      const coords = coordString.split(',').map(c => c.trim());
+      
+      if (coords.length >= 2) {
+        const lat = parseFloat(coords[0]);
+        const lng = parseFloat(coords[1]);
+        if (!isNaN(lat) && !isNaN(lng)) {
+          return { lat, lng };
+        }
+      }
+    }
+  } catch (error) {
+    console.error('IO API: Error extracting coordinates from Google Maps link:', googleMapsLink, error);
+  }
+  
+  return null;
+};
+
+const normalizeSupport = async (support: any) => {
+  let latitude = toNumber(support?.latitud ?? support?.latitude ?? support?.lat);
+  let longitude = toNumber(support?.longitud ?? support?.longitude ?? support?.lng);
+  
+  // Si las coordenadas están en 0, intentar extraer de Google Maps
+  if (latitude === 0 && longitude === 0 && support?.googleMapsLink) {
+    const coords = await extractCoordinatesFromGoogleMaps(support.googleMapsLink);
+    if (coords) {
+      latitude = coords.lat;
+      longitude = coords.lng;
+    }
+  }
   const tags = parseTags(support?.tags);
   const images = parseImages(support);
-  const pricePerMonth = toNumber(support?.pricePerMonth ?? support?.priceMonth) ?? 0;
+  const pricePerMonth = toNumber(support?.precio ?? support?.pricePerMonth ?? support?.priceMonth) ?? 0;
   const printingCost = toNumber(support?.printingCost) ?? 0;
   const rating = toNumber(support?.rating) ?? 0;
   const available = typeof support?.available === 'boolean'
     ? support.available
-    : String(support?.status || '').toUpperCase() === 'DISPONIBLE';
+    : String(support?.estado || support?.status || '').toUpperCase() === 'DISPONIBLE';
 
-  const category = support?.category ?? null;
+  const category = support?.categoria ?? support?.category ?? null;
   const ownerName = support?.owner || support?.company?.name || support?.partner?.name || '';
 
   return {
     id: support?.id,
-    code: support?.code ?? '',
+    code: support?.codigoInterno ?? support?.code ?? '',
     slug: support?.slug ?? `support-${support?.id}`,
-    title: support?.title ?? '',
-    city: support?.city ?? '',
-    country: support?.country ?? '',
+    title: support?.nombre ?? support?.title ?? '',
+    city: support?.ciudad ?? support?.city ?? '',
+    country: support?.pais ?? support?.country ?? '',
     dimensions: buildDimensions(support),
-    dailyImpressions: toInteger(support?.dailyImpressions),
-    type: support?.type ?? '',
-    lighting: Boolean(support?.lighting),
+    dailyImpressions: toInteger(support?.impactosDiarios ?? support?.dailyImpressions),
+    type: support?.tipo ?? support?.type ?? '',
+    lighting: Boolean(support?.iluminacion ?? support?.lighting),
     tags,
     images,
     shortDescription: support?.shortDescription ?? '',
-    description: support?.description ?? '',
-    featured: Boolean(support?.featured),
+    description: support?.descripcion ?? support?.description ?? '',
+    featured: Boolean(support?.destacado ?? support?.featured),
     latitude,
     longitude,
     lat: latitude,
@@ -147,9 +279,9 @@ const normalizeSupport = (support: any) => {
     reviewsCount: toInteger(support?.reviewsCount),
     categoryId: support?.categoryId ?? category?.id ?? null,
     category,
-    status: support?.status ?? 'DISPONIBLE',
+    status: support?.estado ?? support?.status ?? 'DISPONIBLE',
     available,
-    address: support?.address ?? '',
+    address: support?.ubicacion ?? support?.address ?? '',
     googleMapsLink: support?.googleMapsLink ?? '',
     ownerName,
     partnerId: support?.partnerId ?? support?.partner?.id ?? null,
@@ -185,18 +317,21 @@ export async function GET(req: NextRequest) {
     }
     
     const data = await response.json();
-    console.log('IO API: Received from ERP:', Array.isArray(data) ? `${data.length} items` : typeof data);
+    console.log('IO API: Received from ERP:', data);
     
-    // Verificar que la respuesta sea un array
-    if (!Array.isArray(data)) {
-      console.warn('IO API: ERP response is not an array:', data);
-      return NextResponse.json([], { status: 200 });
-    }
+    // El ERP devuelve un objeto con soportes y pagination
+    const soportes = data.soportes || [];
+    const pagination = data.pagination || null;
+    
+    console.log('IO API: Found', soportes.length, 'soportes');
     
     // Transformar datos para compatibilidad con el frontend
-    const transformedSupports = data.map(normalizeSupport);
+    const transformedSupports = await Promise.all(soportes.map(normalizeSupport));
     
-    return NextResponse.json(transformedSupports);
+    return NextResponse.json({
+      soportes: transformedSupports,
+      pagination: pagination
+    });
   } catch (error) {
     console.error('Error fetching supports:', error);
     return NextResponse.json([], { status: 200 }); // Devolver array vacío en caso de error

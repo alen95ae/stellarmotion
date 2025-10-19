@@ -114,14 +114,14 @@ export default function BuscarEspacioPage() {
 
   // Convertir soportes reales a puntos del mapa para Google Maps
   const mapPoints = soportes
-    .filter(soporte => soporte.latitud && soporte.longitud)
+    .filter(soporte => soporte.latitude !== null && soporte.longitude !== null && soporte.latitude !== 0 && soporte.longitude !== 0)
     .map(soporte => ({
       id: soporte.id,
-      lat: soporte.latitud,
-      lng: soporte.longitud,
-      title: soporte.nombre,
-      description: `${soporte.tipo} - ${soporte.dimensiones.ancho}m x ${soporte.dimensiones.alto}m - $${soporte.precio.toLocaleString()}/mes`,
-      type: soporte.tipo.toLowerCase().includes('valla') ? 'billboard' : 'building'
+      lat: soporte.latitude,
+      lng: soporte.longitude,
+      title: soporte.title,
+      description: `${soporte.type} - ${soporte.dimensions} - $${soporte.pricePerMonth.toLocaleString()}/mes`,
+      type: soporte.type.toLowerCase().includes('valla') ? 'billboard' : 'building'
     }));
 
   const handlePriceChange = (values: number[]) => {
@@ -279,9 +279,9 @@ export default function BuscarEspacioPage() {
                 <MapViewerGoogleMaps 
                   points={mapPoints}
                   height={440}
-                  lat={-16.5000}
-                  lng={-68.1500}
-                  zoom={13}
+                  lat={40.4637}
+                  lng={-3.7492}
+                  zoom={6}
                   style="streets"
                   showControls={true}
                   searchLocation={searchLocation}
@@ -377,36 +377,36 @@ export default function BuscarEspacioPage() {
               >
                 <div className="relative">
                   <Image
-                    src={soporte.imagenes?.[0] && soporte.imagenes[0].trim() ? soporte.imagenes[0] : '/placeholder.svg'}
-                    alt={soporte.nombre}
+                    src={soporte.images?.[0] && soporte.images[0].trim() ? soporte.images[0] : '/placeholder.svg'}
+                    alt={soporte.title}
                     width={300}
                     height={200}
                     className="w-full h-48 object-cover"
                   />
                   <div className="absolute top-3 left-3 flex flex-col gap-2">
-                    {soporte.destacado && (
+                    {soporte.featured && (
                       <span className="bg-[#e94446] text-white text-xs font-medium px-2 py-1 rounded-full">
                         Destacado
                       </span>
                     )}
                     <span className={`text-xs font-medium px-2 py-1 rounded-full ${
-                      soporte.estado === 'disponible' 
+                      soporte.status === 'Disponible' 
                         ? 'bg-green-500 text-white' 
                         : 'bg-gray-500 text-white'
                     }`}>
-                      {soporte.estado === 'disponible' ? 'Disponible' : 'No disponible'}
+                      {soporte.status === 'Disponible' ? 'Disponible' : 'No disponible'}
                     </span>
                   </div>
-                  {soporte.impactosDiarios && (
+                  {soporte.dailyImpressions && (
                     <div className="absolute bottom-3 right-3 flex items-center space-x-1 bg-black/70 text-white text-xs px-2 py-1 rounded-full">
                       <Eye className="w-3 h-3" />
-                      <span>{soporte.impactosDiarios.toLocaleString()}/día</span>
+                      <span>{soporte.dailyImpressions.toLocaleString()}/día</span>
                     </div>
                   )}
                 </div>
                 
                 <div className="p-4">
-                  <h3 className="font-semibold text-gray-900 mb-2 text-lg line-clamp-2">{soporte.nombre}</h3>
+                  <h3 className="font-semibold text-gray-900 mb-2 text-lg line-clamp-2">{soporte.title}</h3>
                   
                   {/* Características con iconos - 2 columnas */}
                   <div className="grid grid-cols-2 gap-2 mb-4">
@@ -417,18 +417,18 @@ export default function BuscarEspacioPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs text-gray-500 truncate">Tipo</p>
-                        <p className="text-xs font-medium text-gray-900 truncate">{soporte.tipo}</p>
+                        <p className="text-xs font-medium text-gray-900 truncate">{soporte.type}</p>
                       </div>
                     </div>
                     
                     {/* Iluminación */}
                     <div className="flex items-center space-x-1.5">
                       <div className="w-3 h-3 flex items-center justify-center flex-shrink-0">
-                        <Lightbulb className={`w-2.5 h-2.5 ${soporte.iluminacion ? 'text-yellow-500' : 'text-gray-400'}`} />
+                        <Lightbulb className={`w-2.5 h-2.5 ${soporte.lighting ? 'text-yellow-500' : 'text-gray-400'}`} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs text-gray-500 truncate">Iluminación</p>
-                        <p className="text-xs font-medium text-gray-900 truncate">{soporte.iluminacion ? 'Sí' : 'No'}</p>
+                        <p className="text-xs font-medium text-gray-900 truncate">{soporte.lighting ? 'Sí' : 'No'}</p>
                       </div>
                     </div>
                     
@@ -439,7 +439,7 @@ export default function BuscarEspacioPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs text-gray-500 truncate">Medidas</p>
-                        <p className="text-xs font-medium text-gray-900 truncate">{soporte.dimensiones.ancho}m x {soporte.dimensiones.alto}m</p>
+                        <p className="text-xs font-medium text-gray-900 truncate">{soporte.dimensions}</p>
                       </div>
                     </div>
                     
@@ -450,14 +450,14 @@ export default function BuscarEspacioPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs text-gray-500 truncate">Ciudad</p>
-                        <p className="text-xs font-medium text-gray-900 truncate">{soporte.ciudad || soporte.ubicacion}</p>
+                        <p className="text-xs font-medium text-gray-900 truncate">{soporte.city || soporte.address}</p>
                       </div>
                     </div>
                   </div>
                 
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className="text-lg font-bold text-[#e94446]">${soporte.precio.toLocaleString()}</span>
+                      <span className="text-lg font-bold text-[#e94446]">${soporte.pricePerMonth.toLocaleString()}</span>
                       <span className="text-gray-600 text-xs"> / mes</span>
                     </div>
                     <Link href={`/product/${soporte.id}`} className="flex items-center px-3 py-1.5 rounded-lg text-sm bg-[#e94446] text-white font-medium hover:bg-[#D7514C] transition-colors">
