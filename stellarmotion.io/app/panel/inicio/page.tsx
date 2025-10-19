@@ -124,7 +124,8 @@ export default function DashboardPage() {
       
       // Obtener soportes del partner actual
       const supportsResponse = await fetch(`/api/soportes?partnerId=${partnerId}`);
-      const supports = supportsResponse.ok ? await supportsResponse.json() : [];
+      const supportsData = supportsResponse.ok ? await supportsResponse.json() : { soportes: [] };
+      const supports = supportsData.soportes || [];
       
       // Calcular estadísticas
       const totalSupports = supports.length;
