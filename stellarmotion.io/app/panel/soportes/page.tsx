@@ -91,9 +91,9 @@ export default function SoportesPage() {
     support: null
   });
 
-  // ID del partner - en producción esto vendría de la sesión autenticada
-  // Por ahora usamos el ID del partner creado en el seed
-  const partnerId = 'cmfskhuda0004sj2w46q3g7rc'; // ID del partner "Publicidad Vial Imagen SRL"
+  // ID del owner - en producción esto vendría de la sesión autenticada
+  // Por ahora usamos el ID del owner creado en el seed
+  const ownerId = 'cmfskhuda0004sj2w46q3g7rc'; // ID del owner "Publicidad Vial Imagen SRL"
 
   useEffect(() => {
     fetchSupports();
@@ -104,22 +104,22 @@ export default function SoportesPage() {
       console.log('🔄 Iniciando fetchSupports...');
       setLoading(true);
       
-      console.log('📡 Haciendo petición a partner API...');
-      const partnerResponse = await fetch(`/api/soportes?partnerId=${partnerId}`);
-      console.log('📡 Respuesta partner:', partnerResponse.status, partnerResponse.ok);
+      console.log('📡 Haciendo petición a owner API...');
+      const ownerResponse = await fetch(`/api/soportes?ownerId=${ownerId}`);
+      console.log('📡 Respuesta owner:', ownerResponse.status, ownerResponse.ok);
       
-      if (!partnerResponse.ok) {
-        throw new Error(`Failed partner fetch: ${partnerResponse.status}`);
+      if (!ownerResponse.ok) {
+        throw new Error(`Failed owner fetch: ${ownerResponse.status}`);
       }
 
-      const partnerData = await partnerResponse.json();
-      console.log('📊 Datos del partner:', partnerData);
-      let data: Support[] = partnerData.soportes || partnerData || [];
+      const ownerData = await ownerResponse.json();
+      console.log('📊 Datos del owner:', ownerData);
+      let data: Support[] = ownerData.soportes || ownerData || [];
       console.log('📋 Datos extraídos:', data.length, 'soportes');
 
-      // Si no hay soportes asociados al partner, traer todos para mostrarlos
+      // Si no hay soportes asociados al owner, traer todos para mostrarlos
       if (!Array.isArray(data) || data.length === 0) {
-        console.log('🔄 No hay soportes del partner, buscando todos...');
+        console.log('🔄 No hay soportes del owner, buscando todos...');
         const generalResponse = await fetch('/api/soportes');
         if (generalResponse.ok) {
           const generalData = await generalResponse.json();

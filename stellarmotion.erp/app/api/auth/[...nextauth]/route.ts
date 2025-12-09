@@ -8,7 +8,7 @@ const mockUser = {
   name: "Administrador",
   password: "admin123",
   role: "admin",
-  partnerId: null
+  ownerId: null
 }
 
 export const authOptions: NextAuthOptions = {
@@ -40,7 +40,7 @@ export const authOptions: NextAuthOptions = {
             email: mockUser.email, 
             name: mockUser.name, 
             role: mockUser.role,
-            partnerId: mockUser.partnerId 
+            ownerId: mockUser.ownerId 
           }
         }
         
@@ -53,14 +53,14 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.role = user.role
-        token.partnerId = user.partnerId
+        token.ownerId = user.ownerId
       }
       return token
     },
     async session({ session, token }) {
       if (token?.sub) session.user.id = token.sub
       if (token?.role) session.user.role = token.role
-      if (token?.partnerId) session.user.partnerId = token.partnerId
+      if (token?.ownerId) session.user.ownerId = token.ownerId
       return session
     }
   }

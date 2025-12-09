@@ -76,7 +76,7 @@ interface Support {
     name: string
   }
   createdTime?: string
-  // Campos adicionales de Airtable
+  // Campos adicionales
   codigoInterno?: string
   codigoCliente?: string
   nombre?: string
@@ -94,7 +94,7 @@ interface Support {
   pais?: string
   precio?: number
   impactosDiarios?: number
-  partner?: {
+  owner?: {
     id: string
     name: string
     companyName?: string
@@ -194,7 +194,7 @@ export default function SoporteDetailPage() {
           if (typeof iluminacionValue === 'number') return iluminacionValue > 0;
           return Boolean(iluminacionValue);
         })(),
-        owner: support.owner || support.partner?.name || "",
+        owner: support.owner?.name || support.owner || "",
         featured: (() => {
           const supportAny = support as any;
           const destacadoValue = supportAny.destacado || support.featured || supportAny.Destacado || false;
@@ -225,14 +225,14 @@ export default function SoporteDetailPage() {
       const response = await fetch(`/api/soportes/${id}`)
       if (response.ok) {
         const data = await response.json()
-        console.log('📊 Datos cargados desde Airtable:', data)
-        console.log('🔍 Estado desde Airtable:', {
+        console.log('📊 Datos cargados desde la API:', data)
+        console.log('🔍 Estado desde la API:', {
           estado: data.estado,
           status: data.status,
           'Estado del soporte': data['Estado del soporte'],
           'Estado': data.Estado
         })
-        console.log('💡 Iluminación desde Airtable:', {
+        console.log('💡 Iluminación desde la API:', {
           iluminacion: data.iluminacion,
           lighting: data.lighting,
           'Iluminación': data['Iluminación'],
@@ -241,14 +241,14 @@ export default function SoporteDetailPage() {
         
         setSupport(data)
         
-        // Mapear todos los campos de Airtable al formulario
+        // Mapear todos los campos de la API al formulario
         setFormData({
           internalCode: data.codigoInterno || data['Código interno'] || data.internalCode || "",
           userCode: data.codigoCliente || data['Código cliente'] || data.userCode || "",
           title: data.nombre || data['Título del soporte'] || data.title || "",
           type: data.tipo || data['Tipo de soporte'] || data.type || "",
           status: (() => {
-            // Intentar diferentes campos de estado desde Airtable
+            // Intentar diferentes campos de estado desde la API
             const estadoValue = data['Estado del soporte'] || data.estado || data.status || data.Estado || data.estado;
             console.log('🎯 Estado encontrado:', estadoValue);
             
@@ -257,7 +257,7 @@ export default function SoporteDetailPage() {
             
             const estadoNormalizado = estadoValue.toString().toUpperCase();
             
-            // Mapear valores comunes de Airtable a nuestros valores
+            // Mapear valores comunes de la API a nuestros valores
             const estadoMap: Record<string, keyof typeof STATUS_META> = {
               'DISPONIBLE': 'DISPONIBLE',
               'DISPONIBLES': 'DISPONIBLE',
@@ -279,7 +279,7 @@ export default function SoporteDetailPage() {
           heightM: data.dimensiones?.alto?.toString() || data.Alto?.toString() || data.heightM || "",
           dailyImpressions: data.impactosDiarios?.toString() || data['Impactos diarios']?.toString() || data.dailyImpressions || "",
           lighting: (() => {
-            // Intentar diferentes campos de iluminación desde Airtable
+            // Intentar diferentes campos de iluminación desde la API
             const iluminacionValue = data['Iluminación'] || data.iluminacion || data.lighting || data.Iluminacion || data.iluminacion;
             console.log('💡 Iluminación encontrada:', iluminacionValue);
             
@@ -296,7 +296,7 @@ export default function SoporteDetailPage() {
             console.log('✅ Iluminación final mapeada:', iluminacionFinal);
             return iluminacionFinal;
           })(),
-          owner: data['Propietario'] || data.owner || data.partner?.name || "",
+          owner: data['Propietario'] || data.owner?.name || data.owner || "",
           featured: data['Destacado'] || data.featured || false,
           imageUrl: data.imagenes?.[0] || data.imageUrl || "",
           images: data.imagenes || data.images || [],
@@ -338,8 +338,8 @@ export default function SoporteDetailPage() {
     try {
       setSaving(true)
       
-      // Mapear los datos del formulario al formato de Airtable
-      const airtableData = {
+      // Mapear los datos del formulario al formato de la API
+      const apiData = {
         'Título del soporte': formData.title,
         'Descripción': formData.description,
         'Tipo de soporte': formData.type,
@@ -364,14 +364,14 @@ export default function SoporteDetailPage() {
         'Destacado': formData.featured
       }
       
-      console.log('💾 Enviando datos a Airtable:', airtableData)
+      console.log('💾 Enviando datos a la API:', apiData)
       
       const response = await fetch(`/api/soportes/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(airtableData),
+        body: JSON.stringify(apiData),
       })
       
       console.log('📡 Response status:', response.status)
@@ -449,24 +449,34 @@ export default function SoporteDetailPage() {
 
   // Función para manejar la subida de múltiples imágenes
   const handleImageUpload = async (files: FileList) => {
+    if (!id) {
+      toast.error('No se puede subir imágenes sin un ID de soporte');
+      return;
+    }
+
     const uploadPromises = Array.from(files).map(async (file) => {
       const formData = new FormData();
       formData.append('file', file);
+      formData.append('soporteId', id);
       
       try {
-        const response = await fetch('/api/uploads', {
+        toast.loading(`Subiendo ${file.name}...`);
+        const response = await fetch('/api/soportes/upload', {
           method: 'POST',
           body: formData,
         });
         
         if (!response.ok) {
-          throw new Error('Error al subir imagen');
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Error al subir imagen');
         }
         
         const data = await response.json();
-        return data.url;
-      } catch (error) {
+        toast.success(`Imagen ${file.name} subida exitosamente`);
+        return data.publicUrl || data.path;
+      } catch (error: any) {
         console.error('Error uploading image:', error);
+        toast.error(`Error al subir ${file.name}: ${error.message}`);
         return null;
       }
     });
@@ -474,10 +484,47 @@ export default function SoporteDetailPage() {
     const uploadedUrls = await Promise.all(uploadPromises);
     const validUrls = uploadedUrls.filter(url => url !== null);
     
-    setFormData(prev => ({
-      ...prev,
-      images: [...prev.images, ...validUrls]
-    }));
+    if (validUrls.length > 0) {
+      // Recargar el soporte para obtener las imágenes actualizadas
+      await fetchSupport();
+    }
+  };
+
+  const handleImageDelete = async (imagePath: string, index: number) => {
+    if (!id) {
+      toast.error('No se puede eliminar imágenes sin un ID de soporte');
+      return;
+    }
+
+    try {
+      toast.loading('Eliminando imagen...');
+      
+      // Extraer el path relativo si es una URL completa
+      let pathToDelete = imagePath;
+      if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+        const match = imagePath.match(/\/storage\/v1\/object\/public\/soportes\/(.+)$/);
+        if (match) {
+          pathToDelete = match[1];
+        }
+      }
+
+      const response = await fetch(`/api/soportes/upload?soporteId=${id}&path=${encodeURIComponent(pathToDelete)}`, {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al eliminar imagen');
+      }
+
+      toast.success('Imagen eliminada exitosamente');
+      
+      // Recargar el soporte para obtener las imágenes actualizadas
+      await fetchSupport();
+    } catch (error: any) {
+      console.error('Error deleting image:', error);
+      toast.error(`Error al eliminar imagen: ${error.message}`);
+    }
   };
 
   const formatPrice = (price: number | null) => {
@@ -713,18 +760,18 @@ export default function SoporteDetailPage() {
                   </div>
                   
                   <div>
-                    <Label htmlFor="partner">Partner</Label>
+                    <Label htmlFor="owner">Owner</Label>
                     {editing ? (
                       <Input
-                        id="partner"
+                        id="owner"
                         value={formData.owner}
                         onChange={(e) => setFormData({...formData, owner: e.target.value})}
-                        placeholder="Nombre del partner"
+                        placeholder="Nombre del owner"
                       />
                     ) : (
                       <div className="mt-1">
                         <Badge className="bg-blue-100 text-blue-800 border-blue-200">
-                          {formData.owner || support?.partner?.name || support?.owner || "N/A"}
+                          {formData.owner || support?.owner?.name || support?.owner || "N/A"}
                         </Badge>
                       </div>
                     )}
@@ -849,10 +896,7 @@ export default function SoporteDetailPage() {
                             size="sm"
                             variant="destructive"
                             className="absolute top-2 right-2 h-6 w-6 p-0"
-                            onClick={() => {
-                              const newImages = formData.images.filter((_, i) => i !== index)
-                              setFormData({...formData, images: newImages})
-                            }}
+                            onClick={() => handleImageDelete(image, index)}
                           >
                             ×
                           </Button>

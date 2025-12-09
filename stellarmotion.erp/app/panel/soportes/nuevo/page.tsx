@@ -73,7 +73,7 @@ interface Support {
     name: string
   }
   createdTime?: string
-  // Campos adicionales de Airtable
+  // Campos adicionales
   codigoInterno?: string
   codigoCliente?: string
   nombre?: string
@@ -91,13 +91,12 @@ interface Support {
   pais?: string
   precio?: number
   impactosDiarios?: number
-  partner?: {
+  owner?: {
     id: string
     name: string
     companyName?: string
     email: string
   }
-  owner?: string
   iluminacion?: boolean
   destacado?: boolean
   createdAt: Date
@@ -182,8 +181,8 @@ export default function NuevoSoportePage() {
     try {
       setSaving(true)
       
-      // Mapear los datos del formulario al formato de Airtable
-      const airtableData = {
+      // Mapear los datos del formulario al formato de la API
+      const apiData = {
         'Título del soporte': formData.title,
         'Descripción': formData.description,
         'Tipo de soporte': formData.type,
@@ -208,14 +207,14 @@ export default function NuevoSoportePage() {
         'Destacado': formData.featured
       }
       
-      console.log('💾 Enviando datos a Airtable:', airtableData)
+      console.log('💾 Enviando datos a la API:', apiData)
       
       const response = await fetch(`/api/soportes`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(airtableData),
+        body: JSON.stringify(apiData),
       })
       
       console.log('📡 Response status:', response.status)
@@ -370,12 +369,12 @@ export default function NuevoSoportePage() {
                     </div>
                     
                     <div>
-                      <Label htmlFor="partner">Partner</Label>
+                      <Label htmlFor="owner">Owner</Label>
                       <Input
-                        id="partner"
+                        id="owner"
                         value={formData.owner}
                         onChange={(e) => setFormData({...formData, owner: e.target.value})}
-                        placeholder="Nombre del partner"
+                        placeholder="Nombre del owner"
                       />
                     </div>
                   </div>

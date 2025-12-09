@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { AirtableService } from "@/lib/airtable"
+import { SupabaseService } from "@/lib/supabase-service"
 
 function withCors(response: NextResponse) {
   response.headers.set("Access-Control-Allow-Origin", "*")
@@ -20,7 +20,7 @@ export async function GET(request: Request) {
     const page = parseInt(searchParams.get("page") || "1")
     const limit = parseInt(searchParams.get("limit") || "10")
 
-    let clientes = await AirtableService.getClientes()
+    let clientes = await SupabaseService.getClientes()
 
     // Aplicar filtros
     if (search) {
@@ -67,9 +67,12 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    // LOG TEMPORAL: Verificar que estamos usando service role
+    console.log("🔐 Using service role:", process.env.SUPABASE_SERVICE_ROLE_KEY?.slice(0, 8));
+    
     const data = await request.json()
     
-    const newCliente = await AirtableService.createCliente({
+    const newCliente = await SupabaseService.createCliente({
       nombre: data.nombre,
       email: data.email,
       telefono: data.telefono,

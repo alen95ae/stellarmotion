@@ -418,19 +418,24 @@ export default function BuscarEspacioPage() {
                 <p className="text-gray-500">No se encontraron soportes disponibles</p>
               </div>
             ) : (
-              soportes.map((soporte) => (
-              <div
-                key={soporte.id}
-                className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
-              >
-                <div className="relative">
-                  <Image
-                    src={soporte.images?.[0] && soporte.images[0].trim() ? soporte.images[0] : '/placeholder.svg'}
-                    alt={soporte.title}
-                    width={250}
-                    height={150}
-                    className="w-full h-[150px] object-cover"
-                  />
+              soportes.map((soporte) => {
+                const handleCardClick = () => {
+                  window.location.href = `/product/${soporte.id}`;
+                };
+
+                return (
+                  <div
+                    key={soporte.id}
+                    className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
+                  >
+                    <div className="relative cursor-pointer" onClick={handleCardClick}>
+                      <Image
+                        src={soporte.images?.[0] && soporte.images[0].trim() ? soporte.images[0] : '/placeholder.svg'}
+                        alt={soporte.title}
+                        width={250}
+                        height={150}
+                        className="w-full h-[150px] object-cover"
+                      />
                   <div className="absolute top-3 left-3 flex flex-col gap-2">
                     {(() => {
                       // Función para obtener el color y texto del estado
@@ -474,8 +479,8 @@ export default function BuscarEspacioPage() {
                         </span>
                       );
                     })()}
+                    </div>
                   </div>
-                </div>
                 
                 <div className="p-4">
                   <h3 className="font-semibold text-gray-900 mb-2 text-lg line-clamp-2">{soporte.title}</h3>
@@ -532,14 +537,21 @@ export default function BuscarEspacioPage() {
                       <span className="text-lg font-bold text-[#e94446]">${soporte.pricePerMonth.toLocaleString()}</span>
                       <span className="text-gray-600 text-xs"> / mes</span>
                     </div>
-                    <Link href={`/product/${soporte.id}`} className="flex items-center px-3 py-1.5 rounded-lg text-sm bg-[#e94446] text-white font-medium hover:bg-[#D7514C] transition-colors">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        window.location.href = `/product/${soporte.id}`;
+                      }}
+                      className="flex items-center px-3 py-1.5 rounded-lg text-sm bg-[#e94446] text-white font-medium hover:bg-[#D7514C] transition-colors"
+                    >
                       <Eye className="w-3 h-3 mr-1" />
                       Ver
-                    </Link>
+                    </button>
                   </div>
                 </div>
-              </div>
-              ))
+                  </div>
+                );
+              })
             )}
           </div>
         </div>

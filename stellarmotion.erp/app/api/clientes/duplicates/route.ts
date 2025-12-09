@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { AirtableService } from '@/lib/airtable'
+import { SupabaseService } from '@/lib/supabase-service'
 
 function withCors(response: NextResponse) {
   response.headers.set('Access-Control-Allow-Origin', '*')
@@ -14,7 +14,7 @@ export async function OPTIONS() {
 
 export async function GET() {
   try {
-    const clientes = await AirtableService.getClientes()
+    const clientes = await SupabaseService.getClientes()
     
     // Agrupar por email para detectar duplicados
     const emailGroups = new Map<string, any[]>()

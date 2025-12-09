@@ -158,6 +158,42 @@ export default function ProductClient({ productId }: ProductClientProps) {
     : ['/placeholder.svg?height=400&width=600'];
   const clampedSelectedIndex = Math.min(selectedImage, Math.max(displayedImages.length - 1, 0));
   const mainImage = displayedImages[clampedSelectedIndex] || '/placeholder.svg?height=400&width=600';
+
+  // Funciones para el carrusel infinito
+  const getCarouselImages = () => {
+    if (displayedImages.length <= 1) return { left: null, center: displayedImages[0], right: null };
+    if (displayedImages.length === 2) {
+      return {
+        left: displayedImages[1],
+        center: displayedImages[0],
+        right: displayedImages[1]
+      };
+    }
+    
+    const currentIndex = clampedSelectedIndex;
+    const leftIndex = currentIndex === 0 ? displayedImages.length - 1 : currentIndex - 1;
+    const rightIndex = currentIndex === displayedImages.length - 1 ? 0 : currentIndex + 1;
+    
+    return {
+      left: displayedImages[leftIndex],
+      center: displayedImages[currentIndex],
+      right: displayedImages[rightIndex]
+    };
+  };
+
+  const handleImageClick = (direction: 'left' | 'right') => {
+    if (displayedImages.length <= 1) return;
+    
+    if (direction === 'left') {
+      const newIndex = clampedSelectedIndex === 0 ? displayedImages.length - 1 : clampedSelectedIndex - 1;
+      setSelectedImage(newIndex);
+    } else {
+      const newIndex = clampedSelectedIndex === displayedImages.length - 1 ? 0 : clampedSelectedIndex + 1;
+      setSelectedImage(newIndex);
+    }
+  };
+
+  const carouselImages = getCarouselImages();
   
   // Crear tags basados en las características del soporte
   const safeTags = [
@@ -291,13 +327,13 @@ export default function ProductClient({ productId }: ProductClientProps) {
           </ol>
         </nav>
 
-        {/* Top Section - Images */}
+        {/* Top Section - Infinite Carousel */}
         <div className="mb-8">
           {displayedImages.length === 1 ? (
-            /* Single Image - 4:3 Aspect Ratio, Smaller */
-            <div className="max-w-4xl mx-auto">
+            /* Single Image - 250x150 Aspect Ratio, Smaller */
+            <div className="max-w-2xl mx-auto">
               <div className="bg-white rounded-2xl overflow-hidden border border-gray-200">
-                <div className="aspect-[4/3] w-full">
+                <div className="aspect-[250/150] w-full">
                   <img
                     src={displayedImages[0] || '/placeholder.svg?height=400&width=600'}
                     alt={soporte?.nombre || 'Soporte'}
@@ -307,15 +343,31 @@ export default function ProductClient({ productId }: ProductClientProps) {
               </div>
             </div>
           ) : (
-            /* Multiple Images - Grid Layout with Thumbnails */
-            <div className="max-w-6xl mx-auto">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                {/* Main Image - 4:3 Aspect Ratio */}
-                <div className="lg:col-span-2">
-                  <div className="bg-white rounded-2xl overflow-hidden border border-gray-200">
-                    <div className="aspect-[4/3] w-full">
+            /* Infinite Carousel - 3 Images Layout */
+            <div className="max-w-5xl mx-auto">
+              <div className="flex items-center justify-center gap-4">
+                {/* Left Image - 1/3 size */}
+                {carouselImages.left && (
+                  <button
+                    onClick={() => handleImageClick('left')}
+                    className="flex-shrink-0 bg-white rounded-xl overflow-hidden border border-gray-200 hover:border-[#D7514C] transition-colors group"
+                  >
+                    <div className="aspect-[250/150] w-32 opacity-70 group-hover:opacity-100 transition-opacity">
                       <img
-                        src={mainImage}
+                        src={carouselImages.left}
+                        alt={`${soporte?.nombre} anterior`}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  </button>
+                )}
+                
+                {/* Center Image - Main Image */}
+                <div className="flex-1 max-w-2xl">
+                  <div className="bg-white rounded-2xl overflow-hidden border-2 border-[#D7514C] shadow-lg">
+                    <div className="aspect-[250/150] w-full">
+                      <img
+                        src={carouselImages.center}
                         alt={soporte?.nombre || 'Soporte'}
                         className="w-full h-full object-cover"
                       />
@@ -323,34 +375,37 @@ export default function ProductClient({ productId }: ProductClientProps) {
                   </div>
                 </div>
                 
-                {/* Thumbnail Grid */}
-                <div className="grid grid-cols-2 gap-2">
-                  {displayedImages.slice(0, 4).map((image, index) => {
-                    const thumbKey = `${soporte?.id}-${image}-${index}`;
-                    const isSelected = clampedSelectedIndex === index;
-                    return (
-                    <button
-                      key={thumbKey}
-                      onClick={() => setSelectedImage(index)}
-                      className={`bg-white rounded-lg overflow-hidden border-2 transition-colors aspect-square ${
-                        isSelected ? 'border-[#D7514C]' : 'border-gray-200'
-                      }`}
-                    >
+                {/* Right Image - 1/3 size */}
+                {carouselImages.right && (
+                  <button
+                    onClick={() => handleImageClick('right')}
+                    className="flex-shrink-0 bg-white rounded-xl overflow-hidden border border-gray-200 hover:border-[#D7514C] transition-colors group"
+                  >
+                    <div className="aspect-[250/150] w-32 opacity-70 group-hover:opacity-100 transition-opacity">
                       <img
-                        src={image}
-                        alt={`${soporte?.nombre} ${index + 1}`}
+                        src={carouselImages.right}
+                        alt={`${soporte?.nombre} siguiente`}
                         className="w-full h-full object-cover"
                       />
-                    </button>
-                  );
-                  })}
-                  {displayedImages.length > 4 && (
-                    <div className="bg-gray-100 rounded-lg border-2 border-gray-200 flex items-center justify-center aspect-square">
-                      <span className="text-sm text-gray-600">+{displayedImages.length - 4} más</span>
                     </div>
-                  )}
-                </div>
+                  </button>
+                )}
               </div>
+              
+              {/* Navigation Dots */}
+              {displayedImages.length > 1 && (
+                <div className="flex justify-center mt-4 gap-2">
+                  {displayedImages.map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setSelectedImage(index)}
+                      className={`w-2 h-2 rounded-full transition-colors ${
+                        index === clampedSelectedIndex ? 'bg-[#D7514C]' : 'bg-gray-300'
+                      }`}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>

@@ -101,7 +101,7 @@ export default function DashboardPage() {
     { id: 'metricas', name: 'Métricas', icon: TrendingUp },
     { id: 'soportes', name: 'Soportes', icon: Monitor },
     { id: 'logistica', name: 'Logística', icon: Globe2 },
-    { id: 'partners', name: 'Partners', icon: Rabbit },
+    { id: 'owners', name: 'Owners', icon: Rabbit },
     { id: 'clientes', name: 'Clientes', icon: Rat },
     { id: 'proyectos', name: 'Proyectos', icon: Terminal },
     { id: 'crm', name: 'CRM', icon: Filter },
@@ -169,8 +169,8 @@ export default function DashboardPage() {
       case 'clientes':
         router.push('/panel/clientes')
         break
-      case 'partners':
-        router.push('/panel/partners')
+      case 'owners':
+        router.push('/panel/owners')
         break
       // Agregar más casos según sea necesario
       default:

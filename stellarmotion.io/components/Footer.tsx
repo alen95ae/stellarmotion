@@ -62,9 +62,9 @@ export default function Footer() {
               </ul>
             </div>
 
-            {/* For Partners Section */}
+            {/* For Owners Section */}
             <div>
-              <h3 className="font-semibold text-gray-900 mb-3 text-sm">Para Partners</h3>
+              <h3 className="font-semibold text-gray-900 mb-3 text-sm">Para Owners</h3>
               <ul className="space-y-2">
                 <li>
                   <Link href="/how-it-works" className="text-gray-600 hover:text-gray-900 transition-colors text-sm">

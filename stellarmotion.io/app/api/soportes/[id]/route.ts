@@ -17,9 +17,32 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     // Construir URL para el ERP
     const erpUrl = `${API_BASE_URL}/api/soportes/${id}`;
     
-    const support = await fetchFromERP(erpUrl);
+    console.log('📡 API soportes/[id]: Fetching from ERP:', erpUrl);
+    
+    let support;
+    try {
+      support = await fetchFromERP(erpUrl);
+    } catch (error) {
+      console.error('❌ API soportes/[id]: Error fetching from ERP:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      
+      // Si el error es 404, devolver 404
+      if (errorMessage.includes('404') || errorMessage.includes('not found')) {
+        return NextResponse.json(
+          { error: 'Soporte no encontrado' },
+          { status: 404 }
+        );
+      }
+      
+      // Para otros errores, devolver 500 con más información
+      return NextResponse.json(
+        { error: `Error al obtener soporte: ${errorMessage}` },
+        { status: 500 }
+      );
+    }
     
     if (!support) {
+      console.warn('⚠️ API soportes/[id]: Soporte no encontrado (null/undefined)');
       return NextResponse.json(
         { error: 'Soporte no encontrado' },
         { status: 404 }
@@ -88,8 +111,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       impactosDiarios: support.impactosDiarios,
       impactosDiariosPorM2: support.impactosDiariosPorM2,
       resumenAutomatico: support.resumenAutomatico,
-      partnerId: support.partnerId,
-      partner: support.partner,
+      ownerId: support.ownerId,
       owner: support.owner,
       iluminacion: support.iluminacion,
       destacado: support.destacado

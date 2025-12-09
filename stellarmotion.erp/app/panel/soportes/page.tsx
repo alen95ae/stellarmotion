@@ -99,14 +99,13 @@ interface Support {
   areaM2: number | null
   pricePerM2: number | null
   productionCost: number | null
-  partnerId: string | null
-  partner: {
+  ownerId: string | null
+  owner: {
     id: string
     name: string
     companyName: string | null
     email: string
   } | null
-  owner: string | null
   imageUrl: string | null
   company?: { name: string }
 }
@@ -198,25 +197,24 @@ export default function SoportesPage() {
         console.log('📊 Datos cargados:', soportes.length, 'soportes')
         console.log('📋 Primer soporte:', soportes[0])
         
-        // Mapear datos de Airtable a la interfaz Support
+        // Mapear datos de la API a la interfaz Support
         const mappedSupports = soportes.map((soporte: any) => ({
           id: soporte.id,
-          code: soporte.codigoInterno || soporte.id, // Usar código interno de Airtable
+          code: soporte.codigoInterno || soporte.id, // Usar código interno
           title: soporte.nombre, // Título del soporte
           type: soporte.tipo, // Tipo de soporte
           status: soporte.estado || 'disponible',
           widthM: soporte.dimensiones?.ancho || null,
           heightM: soporte.dimensiones?.alto || null,
-          city: soporte.ciudad || soporte.ubicacion?.split(',')[0]?.trim() || 'N/A', // Ciudad desde Airtable
-          country: soporte.pais || soporte.ubicacion?.split(',')[1]?.trim() || 'N/A', // País desde Airtable
+          city: soporte.ciudad || soporte.ubicacion?.split(',')[0]?.trim() || 'N/A', // Ciudad
+          country: soporte.pais || soporte.ubicacion?.split(',')[1]?.trim() || 'N/A', // País
           priceMonth: soporte.precio || null, // Precio por mes
           available: soporte.estado === 'disponible',
           areaM2: soporte.dimensiones?.area || null,
           pricePerM2: null,
           productionCost: null,
-          partnerId: soporte.partnerId || null,
-          partner: soporte.partner || null,
-          owner: soporte.owner || soporte.partner?.name || null,
+          ownerId: soporte.ownerId || null,
+          owner: soporte.owner || null,
           imageUrl: soporte.imagenes?.[0] || null,
           company: { name: soporte.categoria || 'N/A' }
         }))
@@ -559,7 +557,7 @@ export default function SoportesPage() {
                     <TableHead>Dimensiones (m)</TableHead>
                     <TableHead>Precio por Mes</TableHead>
                     <TableHead>Estado</TableHead>
-                    <TableHead>Partner</TableHead>
+                    <TableHead>Owner</TableHead>
                     <TableHead>Acciones</TableHead>
                   </TableRow>
                 </TableHeader>

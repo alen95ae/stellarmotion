@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server"
-import { AirtableService } from "@/lib/airtable"
+import { SupabaseService } from "@/lib/supabase-service"
+
+// Forzar runtime Node.js (no edge) para asegurar carga correcta de variables de entorno
+export const runtime = "nodejs"
 
 function withCors(response: NextResponse) {
   response.headers.set("Access-Control-Allow-Origin", "*")
@@ -13,14 +16,53 @@ export async function OPTIONS() {
 }
 
 export async function GET() {
+  const startTime = Date.now();
   try {
-    const categorias = await AirtableService.getCategorias()
+    console.log('📡 GET /api/categories - Iniciando...');
+    
+    const categorias = await SupabaseService.getCategorias()
+    
+    const duration = Date.now() - startTime;
+    console.log(`✅ GET /api/categories completado en ${duration}ms, ${categorias.length} categorias`);
+    
     return withCors(NextResponse.json(categorias))
   } catch (error) {
-    console.error("Error fetching categories:", error)
+    const duration = Date.now() - startTime;
+    console.error(`❌ GET /api/categories falló después de ${duration}ms:`, error);
+    
+    // Mensaje específico según el tipo de error
+    let errorMessage = "Error al obtener categorías";
+    let statusCode = 500;
+    
+    if (error instanceof Error) {
+      const msg = error.message;
+      
+      // Error de tabla no existente
+      if (msg.includes('relation') && msg.includes('does not exist')) {
+        console.warn('⚠️ Tabla "categorias" no existe en Supabase');
+        errorMessage = 'Tabla de categorías no configurada';
+        statusCode = 503; // Service Unavailable
+      }
+      // Error de autenticación
+      else if (msg.includes('JWT') || msg.includes('autenticación') || msg.includes('SUPABASE')) {
+        errorMessage = `Error de configuración: ${msg}`;
+        statusCode = 500;
+      }
+      // Otros errores
+      else {
+        errorMessage = msg;
+      }
+    }
+    
+    console.error(`❌ Respondiendo con error ${statusCode}: ${errorMessage}`);
+    
     return withCors(NextResponse.json(
-      { error: "Error interno del servidor" },
-      { status: 500 }
+      { 
+        error: errorMessage,
+        details: error instanceof Error ? error.message : String(error),
+        categorias: [] // Fallback: retornar array vacío para no romper el frontend
+      },
+      { status: statusCode }
     ))
   }
 }

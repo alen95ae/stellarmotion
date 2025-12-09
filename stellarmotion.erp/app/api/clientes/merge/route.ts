@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { AirtableService } from '@/lib/airtable'
+import { SupabaseService } from '@/lib/supabase-service'
 
 function withCors(response: NextResponse) {
   response.headers.set('Access-Control-Allow-Origin', '*')

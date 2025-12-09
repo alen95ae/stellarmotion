@@ -3,7 +3,7 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 
-import { prisma } from '@/lib/prisma'
+import { supabaseServer } from '@/lib/supabase-server'
 import { NextResponse } from 'next/server'
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib'
 import { join } from 'path'
@@ -46,10 +46,20 @@ export async function GET(req: Request) {
     const ids = (searchParams.get('ids') || '').split(',').map(s => s.trim()).filter(Boolean)
     if (!ids.length) return NextResponse.json({ error: 'ids requeridos' }, { status: 400 })
 
-    const items = await prisma.support.findMany({
-      where: { id: { in: ids } },
-      orderBy: { code: 'asc' }
-    })
+    const { data: items, error } = await supabaseServer
+      .from('soportes')
+      .select('*')
+      .in('id', ids)
+      .order('codigo_interno', { ascending: true })
+
+    if (error) {
+      console.error('Error fetching soportes for PDF:', error)
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    if (!items || items.length === 0) {
+      return NextResponse.json({ error: 'No se encontraron soportes' }, { status: 404 })
+    }
 
     const pdf = await PDFDocument.create()
     const font = await pdf.embedFont(StandardFonts.Helvetica)
@@ -85,22 +95,32 @@ export async function GET(req: Request) {
         })
       }
 
-      line(`${s.code || '-'} — ${s.title || ''}`, 16, true)
-      const sizeStr = `Tamaño: ${s.widthM ?? 0} × ${s.heightM ?? 0} m`
-      const areaStr = `Área: ${s.areaM2 ?? 0}`
-      const row1 = `Tipo: ${s.type || '-'}     ${sizeStr}     ${areaStr}`
+      const code = s.codigo_interno || s.id || '-'
+      const title = s.titulo || ''
+      const tipo = s.tipo_soporte || '-'
+      const ancho = s.ancho ?? 0
+      const alto = s.alto ?? 0
+      const superficie = s.superficie ?? (ancho * alto)
+      const estado = s.estado || '-'
+      const precio = s.precio_mes ?? '-'
+      
+      line(`${code} — ${title}`, 16, true)
+      const sizeStr = `Tamaño: ${ancho} × ${alto} m`
+      const areaStr = `Área: ${superficie} m²`
+      const row1 = `Tipo: ${tipo}     ${sizeStr}     ${areaStr}`
       line(row1, 11, false)
 
-      const row2 = `Disponibilidad: ${s.status}     Propietario: ${s.owner || '-'}     Precio/mes: ${s.priceMonth ?? '-'}`
+      const row2 = `Disponibilidad: ${estado}     Precio/mes: ${precio}`
       line(row2, 11, false)
 
-      // Imagen (si JPG/PNG)
+      // Imagen (si JPG/PNG) - usar imagen_1
       y -= 16
       let imgBuf: Uint8Array | null = null
-      if (s.imageUrl) {
-        imgBuf = s.imageUrl.startsWith('http')
-          ? await loadRemote(s.imageUrl)
-          : await loadLocal(s.imageUrl)
+      const imageUrl = s.imagen_1 || s.imagen_2 || s.imagen_3
+      if (imageUrl) {
+        imgBuf = imageUrl.startsWith('http')
+          ? await loadRemote(imageUrl)
+          : await loadLocal(imageUrl)
       }
 
       if (imgBuf && (isJpg(imgBuf) || isPng(imgBuf))) {

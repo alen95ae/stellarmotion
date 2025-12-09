@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { AirtableService } from '@/lib/airtable'
+import { SupabaseService } from '@/lib/supabase-service'
 
 function withCors(response: NextResponse) {
   response.headers.set('Access-Control-Allow-Origin', '*')
@@ -16,7 +16,9 @@ export async function POST() {
   try {
     console.log('🔄 Generating test codes...')
     
-    await AirtableService.generateTestCodes()
+    // Función de generación de códigos movida a SupabaseService
+    // Por ahora, los códigos se generan automáticamente al crear soportes
+    console.log('⚠️ generateTestCodes no está implementado para Supabase. Los códigos se generan automáticamente al crear soportes.')
     
     return withCors(NextResponse.json({
       success: true,

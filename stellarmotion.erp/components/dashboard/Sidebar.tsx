@@ -92,7 +92,7 @@ export default function Sidebar({ children }: SidebarProps) {
     { id: 'metricas', name: 'Métricas', icon: TrendingUp, path: '/panel/metricas' },
     { id: 'soportes', name: 'Soportes', icon: Monitor, path: '/panel/soportes' },
     { id: 'logistica', name: 'Logística', icon: Globe2, path: '/panel/logistica' },
-    { id: 'partners', name: 'Partners', icon: Rabbit, path: '/panel/partners' },
+    { id: 'owners', name: 'Owners', icon: Rabbit, path: '/panel/owners' },
     { id: 'clientes', name: 'Clientes', icon: Rat, path: '/panel/clientes' },
     { id: 'proyectos', name: 'Proyectos', icon: Terminal, path: '/panel/proyectos' },
     { id: 'crm', name: 'CRM', icon: Filter, path: '/panel/crm' },
@@ -118,7 +118,7 @@ export default function Sidebar({ children }: SidebarProps) {
     if (pathname.startsWith('/panel/ventas')) return 'ventas'
     if (pathname.startsWith('/panel/metricas')) return 'metricas'
     if (pathname.startsWith('/panel/logistica')) return 'logistica'
-    if (pathname.startsWith('/panel/partners')) return 'partners'
+    if (pathname.startsWith('/panel/owners')) return 'owners'
     if (pathname.startsWith('/panel/proyectos')) return 'proyectos'
     if (pathname.startsWith('/panel/crm')) return 'crm'
     if (pathname.startsWith('/panel/legal')) return 'legal'

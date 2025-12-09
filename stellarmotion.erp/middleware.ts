@@ -9,15 +9,15 @@ export default withAuth(
     // Rutas que requieren rol ADMIN
     const adminRoutes = [
       '/panel/soportes',
-      '/panel/partners',
+      '/panel/owners',
       '/panel/clientes',
       '/panel/reservas',
       '/panel/facturacion',
       '/panel/contactos'
     ]
 
-    // Rutas que requieren rol PARTNER
-    const partnerRoutes = [
+    // Rutas que requieren rol OWNER
+    const ownerRoutes = [
       '/panel/inicio',
       '/panel/anuncios',
       '/panel/mensajeria',
@@ -26,13 +26,13 @@ export default withAuth(
 
     // Verificar si la ruta requiere rol específico
     const requiresAdmin = adminRoutes.some(route => pathname.startsWith(route))
-    const requiresPartner = partnerRoutes.some(route => pathname.startsWith(route))
+    const requiresOwner = ownerRoutes.some(route => pathname.startsWith(route))
 
     if (requiresAdmin && token?.role !== 'admin') {
       return NextResponse.redirect(new URL('/dashboard', req.url))
     }
 
-    if (requiresPartner && token?.role !== 'partner') {
+    if (requiresOwner && token?.role !== 'owner') {
       return NextResponse.redirect(new URL('/dashboard', req.url))
     }
 

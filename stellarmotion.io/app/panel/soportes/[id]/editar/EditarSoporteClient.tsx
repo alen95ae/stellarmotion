@@ -407,8 +407,8 @@ export default function EditarSoporteClient({ supportId }: EditarSoporteClientPr
       formDataToSend.append('googleMapsLink', formData.googleMapsLink);
       formDataToSend.append('status', formData.status);
       
-      // Agregar partnerId por defecto (ID del partner creado en el seed)
-      formDataToSend.append('partnerId', 'cmfskhuda0004sj2w46q3g7rc');
+      // Agregar ownerId por defecto (ID del owner creado en el seed)
+      formDataToSend.append('ownerId', 'cmfskhuda0004sj2w46q3g7rc');
       
       // Agregar coordenadas extraídas (si están disponibles)
       if (coordinates.lat !== null && coordinates.lng !== null) {

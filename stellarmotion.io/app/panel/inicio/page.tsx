@@ -118,12 +118,12 @@ export default function DashboardPage() {
     try {
       setLoading(true);
       
-      // ID del partner - en producción esto vendría de la sesión autenticada
-      // Por ahora usamos el ID del partner creado en el seed
-      const partnerId = 'cmfskhuda0004sj2w46q3g7rc'; // ID del partner "Publicidad Vial Imagen SRL"
+      // ID del owner - en producción esto vendría de la sesión autenticada
+      // Por ahora usamos el ID del owner creado en el seed
+      const ownerId = 'cmfskhuda0004sj2w46q3g7rc'; // ID del owner "Publicidad Vial Imagen SRL"
       
-      // Obtener soportes del partner actual
-      const supportsResponse = await fetch(`/api/soportes?partnerId=${partnerId}`);
+      // Obtener soportes del owner actual
+      const supportsResponse = await fetch(`/api/soportes?ownerId=${ownerId}`);
       const supportsData = supportsResponse.ok ? await supportsResponse.json() : { soportes: [] };
       const supports = supportsData.soportes || [];
       

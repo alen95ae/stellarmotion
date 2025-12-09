@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { AirtableService } from '@/lib/airtable'
+import { SupabaseService } from '@/lib/supabase-service'
 
 function withCors(response: NextResponse) {
   response.headers.set('Access-Control-Allow-Origin', '*')
@@ -15,7 +15,7 @@ export async function OPTIONS() {
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
-    const clientes = await AirtableService.getClientes()
+    const clientes = await SupabaseService.getClientes()
     const cliente = clientes.find(c => c.id === id)
 
     if (!cliente) {

@@ -23,6 +23,25 @@ const toInteger = (value: unknown): number => {
   return num === null ? 0 : Math.round(num);
 };
 
+// Obtener URL pública de Supabase Storage (opcional, solo si está configurado)
+const getSupabasePublicUrl = (path: string): string => {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!supabaseUrl) {
+    // Si no está configurado, retornar el path tal cual (será manejado por el ERP)
+    return path;
+  }
+  
+  // Si el path ya es una URL completa de Supabase, retornarla
+  if (path.includes('/storage/v1/object/public/')) {
+    return path;
+  }
+  
+  // Construir URL pública de Supabase Storage
+  // Formato: {supabaseUrl}/storage/v1/object/public/{bucket}/{path}
+  const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+  return `${supabaseUrl}/storage/v1/object/public/soportes/${cleanPath}`;
+};
+
 const toAbsoluteUrl = (value?: string | null): string | null => {
   if (!value) return null;
   const trimmed = value.trim();
@@ -30,6 +49,12 @@ const toAbsoluteUrl = (value?: string | null): string | null => {
   if (trimmed.startsWith('data:')) return trimmed;
   if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed;
   if (trimmed.startsWith('//')) return `https:${trimmed}`;
+  
+  // Si el path parece ser de Supabase Storage (contiene soportes_imagenes), usar getSupabasePublicUrl
+  if (trimmed.includes('soportes_imagenes/')) {
+    return getSupabasePublicUrl(trimmed);
+  }
+  
   return `${ERP_BASE_URL}${trimmed.startsWith('/') ? trimmed : `/${trimmed}`}`;
 };
 
@@ -49,7 +74,7 @@ const parseTags = (value: unknown): string[] => {
 };
 
 const parseImages = (support: any): string[] => {
-  const raw = support?.images;
+  const raw = support?.imagenes || support?.images;
   let images: string[] = [];
 
   if (Array.isArray(raw)) {
@@ -243,12 +268,26 @@ const normalizeSupport = async (support: any) => {
   const pricePerMonth = toNumber(support?.precio ?? support?.pricePerMonth ?? support?.priceMonth) ?? 0;
   const printingCost = toNumber(support?.printingCost) ?? 0;
   const rating = toNumber(support?.rating) ?? 0;
+  // Mapear estado de minúsculas (Supabase) a mayúsculas (frontend)
+  const estadoRaw = support?.estado || support?.status || 'disponible';
+  const estadoMap: Record<string, string> = {
+    'disponible': 'DISPONIBLE',
+    'reservado': 'RESERVADO',
+    'ocupado': 'OCUPADO',
+    'mantenimiento': 'MANTENIMIENTO',
+    'DISPONIBLE': 'DISPONIBLE',
+    'RESERVADO': 'RESERVADO',
+    'OCUPADO': 'OCUPADO',
+    'MANTENIMIENTO': 'MANTENIMIENTO'
+  };
+  const status = estadoMap[estadoRaw.toLowerCase()] || 'DISPONIBLE';
+  
   const available = typeof support?.available === 'boolean'
     ? support.available
-    : String(support?.estado || support?.status || '').toUpperCase() === 'DISPONIBLE';
+    : status === 'DISPONIBLE';
 
   const category = support?.categoria ?? support?.category ?? null;
-  const ownerName = support?.owner || support?.company?.name || support?.partner?.name || '';
+  const ownerName = support?.owner?.name || support?.company?.name || support?.owner || '';
 
   return {
     id: support?.id,
@@ -276,12 +315,12 @@ const normalizeSupport = async (support: any) => {
     reviewsCount: toInteger(support?.reviewsCount),
     categoryId: support?.categoryId ?? category?.id ?? null,
     category,
-    status: support?.estado ?? support?.status ?? 'DISPONIBLE',
+    status,
     available,
     address: support?.ubicacion ?? support?.address ?? '',
-    googleMapsLink: support?.googleMapsLink ?? '',
+    googleMapsLink: support?.googleMapsLink ?? support?.googleMapsLink ?? '',
     ownerName,
-    partnerId: support?.partnerId ?? support?.partner?.id ?? null,
+    ownerId: support?.ownerId ?? support?.owner?.id ?? null,
     createdAt: support?.createdAt,
     updatedAt: support?.updatedAt,
   };
@@ -302,6 +341,7 @@ const CATEGORY_TO_TYPE_MAPPING: Record<string, string> = {
 // GET - Obtener soportes del ERP (proxy)
 export async function GET(req: NextRequest) {
   try {
+    console.log('🌐 IO API: GET /api/soportes - Iniciando proxy al ERP...');
     const { searchParams } = new URL(req.url);
     
     // Mapear categoría a tipo si es necesario
@@ -319,7 +359,8 @@ export async function GET(req: NextRequest) {
     
     // Construir la URL del ERP con todos los parámetros
     const erpUrl = `${ERP_BASE_URL}/api/soportes?${searchParams.toString()}`;
-    
+    console.log('🌐 IO API: ERP URL:', erpUrl);
+    console.log('🌐 IO API: ERP_BASE_URL:', ERP_BASE_URL);
     
     // Hacer petición al ERP
     const response = await fetch(erpUrl, {
@@ -328,29 +369,52 @@ export async function GET(req: NextRequest) {
       },
     });
     
+    console.log('🌐 IO API: ERP Response status:', response.status, response.statusText);
+    
     if (!response.ok) {
-      console.error('IO API: ERP response not ok:', response.status, response.statusText);
+      console.error('❌ IO API: ERP response not ok:', response.status, response.statusText);
       const errorText = await response.text();
-      console.error('IO API: ERP error details:', errorText);
-      return NextResponse.json([], { status: 200 }); // Devolver array vacío en caso de error
+      console.error('❌ IO API: ERP error details:', errorText);
+      return NextResponse.json({
+        soportes: [],
+        pagination: null,
+        error: `ERP error: ${response.status} ${response.statusText}`
+      }, { status: 200 }); // Devolver array vacío en caso de error
     }
     
     const data = await response.json();
+    console.log('🌐 IO API: ERP Response data keys:', Object.keys(data));
+    console.log('🌐 IO API: Soportes count from ERP:', data.soportes?.length || data.data?.length || 0);
     
-    // El ERP devuelve un objeto con soportes y pagination
-    const soportes = data.soportes || [];
+    // El ERP devuelve un objeto con data (array) y pagination
+    // También puede devolver soportes directamente para compatibilidad
+    const soportes = data.soportes || data.data || [];
     const pagination = data.pagination || null;
+    
+    console.log('🌐 IO API: Raw soportes count:', soportes.length);
+    if (soportes.length > 0) {
+      console.log('🌐 IO API: Sample soporte from ERP:', JSON.stringify(soportes[0], null, 2));
+    }
     
     // Transformar datos para compatibilidad con el frontend
     const transformedSupports = await Promise.all(soportes.map(normalizeSupport));
+    console.log('🌐 IO API: Transformed supports count:', transformedSupports.length);
+    if (transformedSupports.length > 0) {
+      console.log('🌐 IO API: Sample transformed support:', JSON.stringify(transformedSupports[0], null, 2));
+    }
     
     return NextResponse.json({
       soportes: transformedSupports,
       pagination: pagination
     });
   } catch (error) {
-    console.error('Error fetching supports:', error);
-    return NextResponse.json([], { status: 200 }); // Devolver array vacío en caso de error
+    console.error('❌ IO API: Error fetching supports:', error);
+    console.error('❌ IO API: Error stack:', error instanceof Error ? error.stack : 'No stack');
+    return NextResponse.json({
+      soportes: [],
+      pagination: null,
+      error: error instanceof Error ? error.message : 'Error desconocido'
+    }, { status: 200 }); // Devolver array vacío en caso de error
   }
 }
 
@@ -377,9 +441,9 @@ export async function POST(req: NextRequest) {
       );
     }
     
-    if (!data.partnerId) {
+    if (!data.ownerId) {
       return NextResponse.json(
-        { error: 'Partner ID es requerido' },
+        { error: 'Owner ID es requerido' },
         { status: 400 }
       );
     }
@@ -530,7 +594,7 @@ export async function POST(req: NextRequest) {
       priceMonth: data.pricePerMonth,
       available: true,
       status: 'DISPONIBLE',
-      partnerId: data.partnerId,
+      ownerId: data.ownerId,
       dimensions: data.dimensions,
       widthM,
       heightM,

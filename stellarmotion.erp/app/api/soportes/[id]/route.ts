@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { AirtableService } from "@/lib/airtable"
+import { SupabaseService } from "@/lib/supabase-service"
 
 function withCors(response: NextResponse) {
   response.headers.set("Access-Control-Allow-Origin", "*")
@@ -60,7 +60,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       ));
     }
 
-    const support = await AirtableService.getSoporteById(id);
+    const support = await SupabaseService.getSoporteById(id);
 
     if (!support) {
       return withCors(NextResponse.json(
@@ -82,6 +82,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 // PUT - Actualizar un soporte existente
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    // LOG TEMPORAL: Verificar que estamos usando service role
+    console.log("🔐 Using service role:", process.env.SUPABASE_SERVICE_ROLE_KEY?.slice(0, 8));
+    
     const { id } = await params;
     const data = await req.json()
     
@@ -96,7 +99,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     }
 
     // Verificar que el soporte existe
-    const existingSupport = await AirtableService.getSoporteById(id);
+    const existingSupport = await SupabaseService.getSoporteById(id);
 
     console.log('ERP: Soporte encontrado:', existingSupport ? 'SÍ' : 'NO');
     if (existingSupport) {
@@ -145,10 +148,10 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     
     console.log('📤 Datos que se enviarán a Airtable:', updateData);
     
-    const updated = await AirtableService.updateSoporte(id, updateData);
+    const updated = await SupabaseService.updateSoporte(id, updateData);
     
     if (!updated) {
-      console.error('❌ Error: AirtableService.updateSoporte returned null');
+      console.error('❌ Error: SupabaseService.updateSoporte returned null');
       return withCors(NextResponse.json(
         { 
           success: false,
@@ -191,7 +194,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     }
 
     // Verificar que el soporte existe
-    const existingSupport = await AirtableService.getSoporteById(id);
+    const existingSupport = await SupabaseService.getSoporteById(id);
 
     if (!existingSupport) {
       return withCors(NextResponse.json(
@@ -200,7 +203,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
       ));
     }
 
-    const success = await AirtableService.deleteSoporte(id);
+    const success = await SupabaseService.deleteSoporte(id);
     
     if (!success) {
       return withCors(NextResponse.json(
