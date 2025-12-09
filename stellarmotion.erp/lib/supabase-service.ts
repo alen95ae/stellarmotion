@@ -1,5 +1,5 @@
 // Supabase Service
-// Reemplazo completo de AirtableService usando Supabase
+// Servicio para operaciones con Supabase
 
 import { supabaseServer } from './supabase-server'
 import { supabaseAdmin } from './supabase-admin'

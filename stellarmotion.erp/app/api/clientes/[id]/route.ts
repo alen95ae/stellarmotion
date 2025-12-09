@@ -40,8 +40,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     const { id } = await params
     const data = await req.json()
 
-    // Aquí deberías implementar la lógica para actualizar en Airtable
-    // Por ahora simulamos éxito
+    // TODO: Implementar lógica para actualizar cliente en Supabase
     
     return withCors(NextResponse.json({
       success: true,
@@ -60,8 +59,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   try {
     const { id } = await params
 
-    // Aquí deberías implementar la lógica para eliminar en Airtable
-    // Por ahora simulamos éxito
+    // TODO: Implementar lógica para eliminar cliente en Supabase
     
     return withCors(NextResponse.json({
       success: true,

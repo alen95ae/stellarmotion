@@ -23,8 +23,7 @@ export async function POST(request: Request) {
       ))
     }
 
-    // Aquí deberías implementar la lógica para fusionar clientes en Airtable
-    // Por ahora simulamos éxito
+    // TODO: Implementar lógica para fusionar clientes en Supabase
     
     return withCors(NextResponse.json({
       success: true,

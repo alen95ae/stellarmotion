@@ -122,7 +122,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       ));
     }
     
-    // Mapear datos al formato de Airtable
+    // Preparar datos para actualizar soporte
     const updateData = {
       'Título del soporte': data['Título del soporte'] || existingSupport.nombre,
       'Descripción': data['Descripción'] || existingSupport.descripcion,
@@ -146,7 +146,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       'Destacado': data['Destacado'] !== undefined ? data['Destacado'] : existingSupport.destacado
     }
     
-    console.log('📤 Datos que se enviarán a Airtable:', updateData);
+    console.log('📤 Datos que se enviarán a Supabase:', updateData);
     
     const updated = await SupabaseService.updateSoporte(id, updateData);
     
@@ -155,8 +155,8 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       return withCors(NextResponse.json(
         { 
           success: false,
-          error: "Error al actualizar en Airtable",
-          details: "El servicio de Airtable no pudo actualizar el registro"
+          error: "Error al actualizar el soporte",
+          details: "No se pudo actualizar el registro en Supabase"
         },
         { status: 500 }
       ));

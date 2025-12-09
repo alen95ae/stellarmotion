@@ -49,8 +49,7 @@ export async function POST(request: Request) {
           continue
         }
 
-        // Aquí deberías implementar la lógica para crear/actualizar en Airtable
-        // Por ahora simulamos éxito
+        // TODO: Implementar lógica para crear/actualizar cliente en Supabase
         created++
       } catch (error) {
         errors.push(`Error procesando registro: ${error}`)

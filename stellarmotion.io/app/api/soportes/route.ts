@@ -118,7 +118,7 @@ const buildDimensions = (support: any): string => {
     return support.dimensions;
   }
 
-  // Usar los campos de dimensiones de Airtable
+  // Usar los campos de dimensiones
   const width = toNumber(support?.dimensiones?.ancho ?? support?.ancho);
   const height = toNumber(support?.dimensiones?.alto ?? support?.alto);
 

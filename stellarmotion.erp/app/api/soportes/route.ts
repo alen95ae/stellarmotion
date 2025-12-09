@@ -138,7 +138,7 @@ export async function POST(request: Request) {
       ));
     }
     
-    // Mapear datos al formato de Airtable
+    // Preparar datos para crear soporte
     const createData = {
       'Título del soporte': data['Título del soporte'],
       'Descripción': data['Descripción'] || '',
@@ -159,7 +159,7 @@ export async function POST(request: Request) {
       'Destacado': data['Destacado'] || false
     }
     
-    console.log('📤 Datos que se enviarán a Airtable:', createData)
+    console.log('📤 Datos que se enviarán a Supabase:', createData)
     
     const newSoporte = await SupabaseService.createSoporte(createData)
     
@@ -168,8 +168,8 @@ export async function POST(request: Request) {
       return withCors(NextResponse.json(
         { 
           success: false,
-          error: "Error al crear en Airtable",
-          details: "El servicio de Airtable no pudo crear el registro"
+          error: "Error al crear el soporte",
+          details: "No se pudo crear el registro en Supabase"
         },
         { status: 500 }
       ));
