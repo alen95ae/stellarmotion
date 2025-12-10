@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useAuth } from '@/hooks/useAuth';
+import { createClient } from '@/lib/supabase-browser';
 import { 
   BarChart3, 
   Calendar, 
@@ -102,6 +104,8 @@ interface DashboardStats {
 }
 
 export default function DashboardPage() {
+  const { user, loading: authLoading } = useAuth();
+  const supabase = createClient();
   const [stats, setStats] = useState<DashboardStats>({
     totalSupports: 0,
     activeReservations: 0,
@@ -109,18 +113,47 @@ export default function DashboardPage() {
     monthlyRevenue: 0
   });
   const [loading, setLoading] = useState(true);
+  const [ownerId, setOwnerId] = useState<string | null>(null);
+
+  // Obtener el ownerId del usuario autenticado
+  useEffect(() => {
+    const getOwnerId = async () => {
+      if (!user) return;
+      
+      try {
+        // Buscar el owner en la tabla owners usando el user_id
+        const { data: ownerData, error } = await supabase
+          .from('owners')
+          .select('id')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        
+        if (ownerData) {
+          setOwnerId(ownerData.id);
+        } else {
+          console.warn('No se encontró owner para el usuario:', user.id);
+        }
+      } catch (error) {
+        console.error('Error obteniendo ownerId:', error);
+      }
+    };
+
+    if (user && !authLoading) {
+      getOwnerId();
+    }
+  }, [user, authLoading, supabase]);
 
   useEffect(() => {
-    fetchDashboardStats();
-  }, []);
+    if (ownerId) {
+      fetchDashboardStats();
+    }
+  }, [ownerId]);
 
   const fetchDashboardStats = async () => {
+    if (!ownerId) return;
+    
     try {
       setLoading(true);
-      
-      // ID del owner - en producción esto vendría de la sesión autenticada
-      // Por ahora usamos el ID del owner creado en el seed
-      const ownerId = 'cmfskhuda0004sj2w46q3g7rc'; // ID del owner "Publicidad Vial Imagen SRL"
       
       // Obtener soportes del owner actual
       const supportsResponse = await fetch(`/api/soportes?ownerId=${ownerId}`);

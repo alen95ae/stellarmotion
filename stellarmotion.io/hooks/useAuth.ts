@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase-browser'
 import type { User } from '@supabase/supabase-js'
+
+const supabase = createClient()
 
 export type UserRole = 'admin' | 'owner' | 'agency' | 'client'
 

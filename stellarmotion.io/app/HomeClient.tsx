@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from "react"
-import { ChevronLeft, ChevronRight, MapPin, Heart, Eye, Ruler, Building, Globe, Lightbulb, Calendar, Monitor, DollarSign } from "lucide-react"
+import { ChevronLeft, ChevronRight, MapPin, Heart, Eye, Ruler, Building, Globe, Lightbulb, Calendar, Monitor, DollarSign, Megaphone, Home, TvMinimal } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -105,7 +105,7 @@ export default function HomeClient() {
       )}
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 mt-2">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Search Section */}
         <div className="mb-16">
           <SearchBarGooglePlaces />
@@ -584,62 +584,39 @@ export default function HomeClient() {
 
         {/* CTA Section */}
         <section className="mb-16 mt-16">
-          <div className="grid md:grid-cols-3 gap-8 max-w-7xl mx-auto">
+          <div className="grid md:grid-cols-2 gap-8 max-w-7xl mx-auto">
             {/* Contrata publicidad exterior */}
-            <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-              <div className="flex flex-col items-start">
-                <div className="w-16 h-16 bg-red-100 rounded-xl flex items-center justify-center mb-6">
-                  <Calendar className="w-8 h-8 text-red-600" />
-                </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-3">Contrata publicidad exterior</h3>
-                <p className="text-gray-600 mb-6 leading-relaxed">
-                  Contratar publicidad outdoor nunca fue tan sencillo
-                </p>
-                <button
-                  onClick={() => router.push('/buscar-un-espacio')}
-                  className="px-6 py-3 bg-[#e94446] hover:bg-[#d63a3a] text-white font-medium rounded-lg transition-colors"
-                >
-                  Buscar soportes
-                </button>
+            <div className="bg-white rounded-3xl p-8 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 flex flex-col items-center text-center">
+              <div className="w-20 h-20 bg-[#e94446]/10 rounded-2xl flex items-center justify-center mb-6">
+                <Megaphone className="w-10 h-10 text-[#e94446]" />
               </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-3">Contrata publicidad exterior</h3>
+              <p className="text-gray-600 mb-6 leading-relaxed text-base max-w-md">
+                Encuentra los mejores espacios publicitarios para tu marca. Contratar publicidad outdoor nunca fue tan sencillo y efectivo.
+              </p>
+              <button
+                onClick={() => router.push('/buscar-un-espacio')}
+                className="px-6 py-3 bg-[#e94446] hover:bg-[#d63a3a] text-white font-semibold rounded-full transition-all duration-300 transform hover:scale-105"
+              >
+                Buscar soportes
+              </button>
             </div>
 
             {/* Conviértete en Owner */}
-            <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-              <div className="flex flex-col items-start">
-                <div className="w-16 h-16 bg-red-100 rounded-xl flex items-center justify-center mb-6">
-                  <Monitor className="w-8 h-8 text-red-600" />
-                </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-3">Conviértete en Owner</h3>
-                <p className="text-gray-600 mb-6 leading-relaxed">
-                  Gana dinero con un terreno o un espacio donde poder arrendar publicidad
-                </p>
-                <button
-                  onClick={() => router.push('/owners/registrarse')}
-                  className="px-6 py-3 bg-[#e94446] hover:bg-[#d63a3a] text-white font-medium rounded-lg transition-colors"
-                >
-                  Registro Owner
-                </button>
+            <div className="bg-white rounded-3xl p-8 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 flex flex-col items-center text-center">
+              <div className="w-20 h-20 bg-[#e94446]/10 rounded-2xl flex items-center justify-center mb-6">
+                <TvMinimal className="w-10 h-10 text-[#e94446]" />
               </div>
-            </div>
-
-            {/* Colabora como agencia */}
-            <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-              <div className="flex flex-col items-start">
-                <div className="w-16 h-16 bg-red-100 rounded-xl flex items-center justify-center mb-6">
-                  <DollarSign className="w-8 h-8 text-red-600" />
-                </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-3">Colabora como agencia</h3>
-                <p className="text-gray-600 mb-6 leading-relaxed">
-                  Consigue ventas con nuestro sofisticado sistema y logra potentes ingresos
-                </p>
-                <button
-                  onClick={() => router.push('/panel')}
-                  className="px-6 py-3 bg-[#e94446] hover:bg-[#d63a3a] text-white font-medium rounded-lg transition-colors"
-                >
-                  Saber más
-                </button>
-              </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-3">Conviértete en Owner</h3>
+              <p className="text-gray-600 mb-6 leading-relaxed text-base max-w-md">
+                Gana dinero con tu terreno o espacio. Arrienda publicidad y maximiza el valor de tus propiedades con nuestra plataforma.
+              </p>
+              <button
+                onClick={() => router.push('/owners/registrarse?type=owner')}
+                className="px-6 py-3 bg-[#e94446] hover:bg-[#d63a3a] text-white font-semibold rounded-full transition-all duration-300 transform hover:scale-105"
+              >
+                Registro Owner
+              </button>
             </div>
           </div>
         </section>

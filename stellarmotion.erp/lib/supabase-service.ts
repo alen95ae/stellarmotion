@@ -848,6 +848,13 @@ export class SupabaseService {
     ein?: string | null; // Para empresa, se mapea a 'nit'
     direccion_fiscal?: string | null; // Para empresa, se mapea a 'direccion'
     sitio_web?: string | null;
+    tipo_empresa?: string | null;
+    representante_legal?: string | null;
+    tax_id?: string | null;
+    puesto?: string | null;
+    tipo_tenencia?: string | null;
+    tiene_permisos?: boolean;
+    permite_instalacion?: boolean;
   }): Promise<any> {
     try {
       if (!ownerData.user_id) {
@@ -910,6 +917,13 @@ export class SupabaseService {
           direccion: insertData.direccion || null,
           ciudad: insertData.ciudad || null,
           sitio_web: insertData.sitio_web || null,
+          tipo_empresa: ownerData.tipo_empresa || null,
+          representante_legal: ownerData.representante_legal || null,
+          tax_id: ownerData.tax_id || null,
+          puesto: ownerData.puesto || null,
+          tipo_tenencia: ownerData.tipo_tenencia || null,
+          tiene_permisos: ownerData.tiene_permisos || false,
+          permite_instalacion: ownerData.permite_instalacion || false,
           created_at: insertData.created_at,
           updated_at: insertData.updated_at
         })

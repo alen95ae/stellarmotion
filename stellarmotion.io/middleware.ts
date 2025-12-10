@@ -1,42 +1,41 @@
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+import { createServerClient } from '@supabase/ssr'
+import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(req: NextRequest) {
-  const res = NextResponse.next()
-  const { pathname } = req.nextUrl
-
-  // Si las variables de entorno no están configuradas, permitir acceso (modo desarrollo)
-  if (!supabaseUrl || !supabaseAnonKey) {
-    console.warn('⚠️ Supabase variables no configuradas en middleware. Permitiendo acceso sin autenticación.')
-    return res
-  }
-  
-  // Crear cliente de Supabase para el middleware
-  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-      detectSessionInUrl: false
-    }
+  let response = NextResponse.next({
+    request: {
+      headers: req.headers,
+    },
   })
 
-  // Intentar obtener sesión
-  let session = null
-  try {
-    const { data: { session: sessionData }, error: sessionError } = await supabase.auth.getSession()
-    if (sessionError) {
-      console.log('Error getting session in middleware:', sessionError.message)
-    } else {
-      session = sessionData
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return req.cookies.getAll()
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => req.cookies.set(name, value))
+          response = NextResponse.next({
+            request: {
+              headers: req.headers,
+            },
+          })
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options)
+          )
+        },
+      },
     }
-  } catch (error) {
-    // Si no hay sesión, continuar sin autenticación
-    console.log('No session found in middleware:', error)
-  }
+  )
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  const { pathname } = req.nextUrl
 
   // Rutas públicas que no requieren autenticación
   const publicRoutes = [
@@ -45,78 +44,121 @@ export async function middleware(req: NextRequest) {
     '/auth/register',
     '/auth/logout',
     '/auth/error',
+    '/auth/forgot-password',
+    '/login',
     '/buscar-un-espacio',
     '/product',
     '/propietarios',
     '/owners/registrarse',
-    '/owners/registrarse/info',
+  ]
+  
+  // Rutas que requieren autenticación pero son accesibles para cualquier usuario autenticado
+  const authenticatedRoutes = [
+    '/owners/registrarse/info', // Paso 2 requiere autenticación
   ]
 
-  // Rutas que requieren autenticación
-  const protectedRoutes = [
-    '/panel',
-    '/owners/dashboard',
-    '/agencias/dashboard',
-  ]
+  // Rutas de API siempre son públicas (no requieren autenticación)
+  const isApiRoute = pathname.startsWith('/api/')
 
   // Verificar si la ruta es pública
-  const isPublicRoute = publicRoutes.some(route => 
+  const isPublicRoute = isApiRoute || publicRoutes.some(route => 
     pathname === route || pathname.startsWith(route + '/')
   )
-
-  // Verificar si la ruta está protegida
-  const isProtectedRoute = protectedRoutes.some(route => 
-    pathname.startsWith(route)
+  
+  // Verificar si la ruta requiere autenticación (pero no rol específico)
+  const isAuthenticatedRoute = authenticatedRoutes.some(route => 
+    pathname === route || pathname.startsWith(route + '/')
   )
-
-  // Si es una ruta protegida y no hay sesión, redirigir a login
-  if (isProtectedRoute && !session) {
+  
+  // Si es ruta que requiere autenticación y no hay usuario, redirigir a login
+  if (isAuthenticatedRoute && !user) {
+    const redirectUrl = new URL('/login', req.url)
+    redirectUrl.searchParams.set('next', pathname)
+    return NextResponse.redirect(redirectUrl)
+  }
+  
+  // Proteger /account - requiere autenticación
+  if (pathname.startsWith('/account') && !user) {
     const redirectUrl = new URL('/auth/login', req.url)
     redirectUrl.searchParams.set('redirect', pathname)
     return NextResponse.redirect(redirectUrl)
   }
 
-  // Si está autenticado y trata de acceder a login/register, redirigir al panel
-  if (session && (pathname === '/auth/login' || pathname === '/auth/register')) {
-    return NextResponse.redirect(new URL('/panel/inicio', req.url))
+  // Si está autenticado y trata de acceder a login/register, redirigir según su rol
+  // Pero permitir acceso a /login si viene del registro de owner
+  if (user && (pathname === '/auth/login' || pathname === '/auth/register')) {
+    const userRole = user.user_metadata?.role as string | undefined
+    let redirectPath = '/'
+    
+    switch (userRole) {
+      case 'admin':
+        redirectPath = '/panel/inicio'
+        break
+      case 'owner':
+        redirectPath = '/panel/inicio'
+        break
+      case 'seller':
+        redirectPath = '/panel/inicio'
+        break
+      case 'client':
+        redirectPath = '/'
+        break
+    }
+    
+    return NextResponse.redirect(new URL(redirectPath, req.url))
   }
 
-  // Verificar roles para rutas específicas
-  if (session && isProtectedRoute) {
-    // Determinar rol del usuario
-    let userRole: string | null = null
+  // Permitir acceso a /login incluso si está autenticado (para completar registro de owner)
+  // La lógica de redirección se manejará en el componente
 
-    // Primero verificar si es owner (tabla owners)
-    const { data: ownerData } = await supabase
-      .from('owners')
-      .select('user_id')
-      .eq('user_id', session.user.id)
-      .maybeSingle()
+  // Si no está autenticado y trata de acceder a una ruta protegida, redirigir a login
+  // Las rutas de API no requieren autenticación, así que las dejamos pasar
+  if (!user && !isPublicRoute && !isApiRoute) {
+    const redirectUrl = new URL('/auth/login', req.url)
+    redirectUrl.searchParams.set('redirect', pathname)
+    return NextResponse.redirect(redirectUrl)
+  }
 
-    if (ownerData) {
-      userRole = 'owner'
-    } else {
-      // Si no es owner, verificar en user_metadata
-      userRole = session.user.user_metadata?.rol || null
+  // Proteger rutas según rol
+  if (user) {
+    const userRole = user.user_metadata?.role as string | undefined
+
+    // Proteger /admin/** solo para admin
+    if (pathname.startsWith('/admin') && userRole !== 'admin') {
+      return NextResponse.redirect(new URL('/auth/login', req.url))
     }
 
-    // Proteger /panel/** solo para admin
-    if (pathname.startsWith('/panel') && userRole !== 'admin') {
-      return NextResponse.redirect(new URL('/auth/error', req.url))
+    // Permitir acceso a /owners/registrarse/info para TODOS los usuarios autenticados
+    // (necesario para que clients puedan convertirse en owners)
+    if (pathname === '/owners/registrarse/info' || pathname === '/owners/registrarse') {
+      // Permitir acceso a cualquier usuario autenticado
+      return response
     }
 
-    // Proteger /owners/dashboard solo para owner
+    // Proteger /owners/dashboard/** solo para owner
     if (pathname.startsWith('/owners/dashboard') && userRole !== 'owner') {
-      return NextResponse.redirect(new URL('/auth/error', req.url))
+      return NextResponse.redirect(new URL('/auth/login', req.url))
     }
 
-    // Proteger /agencias/dashboard solo para agency
-    if (pathname.startsWith('/agencias/dashboard') && userRole !== 'agency') {
-      return NextResponse.redirect(new URL('/auth/error', req.url))
+    // Proteger /seller/** solo para seller
+    if (pathname.startsWith('/seller') && userRole !== 'seller') {
+      return NextResponse.redirect(new URL('/auth/login', req.url))
+    }
+
+    // Proteger /client/** solo para client
+    if (pathname.startsWith('/client') && userRole !== 'client') {
+      return NextResponse.redirect(new URL('/auth/login', req.url))
+    }
+
+    // Proteger /panel/** para admin, owner y seller
+    if (pathname.startsWith('/panel')) {
+      if (userRole !== 'admin' && userRole !== 'owner' && userRole !== 'seller') {
+        return NextResponse.redirect(new URL('/auth/login', req.url))
+      }
     }
   }
 
-  return res
+  return response
 }
 
 export const config = {
@@ -131,4 +173,3 @@ export const config = {
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
-

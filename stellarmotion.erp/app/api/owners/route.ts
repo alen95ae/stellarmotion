@@ -62,20 +62,38 @@ export async function POST(request: NextRequest) {
     // Mapear tipo_owner a tipo_contacto (si viene tipo_owner, convertir a tipo_contacto)
     const tipo_contacto = data.tipo_contacto || (data.tipo_owner === 'empresa' ? 'compania' : data.tipo_owner) || 'persona';
 
+    // Verificar si viene user_id (usuario ya autenticado) o password (nuevo registro)
+    const isExistingUser = !!data.user_id;
+    const hasPassword = !!data.password;
+
     // Validaciones según tipo_contacto
     if (tipo_contacto === 'persona') {
       // Para persona: nombre_contacto, email, telefono, pais son obligatorios
-      if (!data.nombre_contacto || !data.email || !data.telefono || !data.pais || !data.password) {
+      if (!data.nombre_contacto || !data.email || !data.telefono || !data.pais) {
         return withCors(NextResponse.json(
-          { error: 'Faltan campos requeridos: nombre_contacto, email, telefono, pais, password' },
+          { error: 'Faltan campos requeridos: nombre_contacto, email, telefono, pais' },
+          { status: 400 }
+        ));
+      }
+      // Password solo es requerido si no viene user_id
+      if (!isExistingUser && !hasPassword) {
+        return withCors(NextResponse.json(
+          { error: 'Falta campo requerido: password' },
           { status: 400 }
         ));
       }
     } else if (tipo_contacto === 'compania' || tipo_contacto === 'agencia' || tipo_contacto === 'gobierno') {
       // Para compania/agencia/gobierno: empresa, nit, email, telefono, pais son obligatorios
-      if (!data.empresa || !data.nit || !data.email || !data.telefono || !data.pais || !data.password) {
+      if (!data.empresa || !data.nit || !data.email || !data.telefono || !data.pais) {
         return withCors(NextResponse.json(
-          { error: 'Faltan campos requeridos: empresa, nit, email, telefono, pais, password' },
+          { error: 'Faltan campos requeridos: empresa, nit, email, telefono, pais' },
+          { status: 400 }
+        ));
+      }
+      // Password solo es requerido si no viene user_id
+      if (!isExistingUser && !hasPassword) {
+        return withCors(NextResponse.json(
+          { error: 'Falta campo requerido: password' },
           { status: 400 }
         ));
       }
@@ -86,63 +104,197 @@ export async function POST(request: NextRequest) {
       ));
     }
 
-    // Verificar si el email ya existe en owners o en auth.users
-    const { data: existingOwner } = await supabaseAdmin
-      .from('owners')
-      .select('id')
-      .eq('email', data.email)
-      .maybeSingle();
+    let userId: string;
 
-    if (existingOwner) {
-      return withCors(NextResponse.json(
-        { error: 'Este email ya está registrado' },
-        { status: 409 }
-      ));
-    }
-
-    // Verificar también en auth.users
-    const { data: authUsers } = await supabaseAdmin.auth.admin.listUsers();
-    const emailExistsInAuth = authUsers?.users?.some(user => user.email === data.email);
-    
-    if (emailExistsInAuth) {
-      return withCors(NextResponse.json(
-        { error: 'Este email ya está registrado' },
-        { status: 409 }
-      ));
-    }
-
-    // 1. Crear usuario en Supabase Auth usando supabaseAdmin
-    console.log('🔐 [API ERP] Paso 1 - Creando usuario en Supabase Auth...');
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email: data.email,
-      password: data.password,
-      email_confirm: true,
-      user_metadata: {
-        nombre_contacto: data.nombre_contacto,
-        telefono: data.telefono,
-        pais: data.pais,
-        rol: 'owner',
-        tipo_owner: data.tipo_contacto || data.tipo_owner
+    if (isExistingUser) {
+      // Usuario ya autenticado - usar el user_id proporcionado
+      userId = data.user_id;
+      console.log('🔐 [API ERP] Usando usuario existente (upsert idempotente):', userId);
+      
+      // Verificar que el usuario existe en auth
+      const { data: existingAuthUser, error: authUserError } = await supabaseAdmin.auth.admin.getUserById(userId);
+      
+      if (authUserError || !existingAuthUser.user) {
+        return withCors(NextResponse.json(
+          { error: 'El user_id proporcionado no es válido' },
+          { status: 400 }
+        ));
       }
-    });
 
-    if (authError) {
-      console.error('❌ [API ERP] Error creando Auth User:', authError.message);
-      return withCors(NextResponse.json(
-        { error: authError.message || 'Error al crear usuario en Auth' },
-        { status: 400 }
-      ));
+      // Verificar que el email del usuario coincide (comparación case-insensitive)
+      const userEmail = existingAuthUser.user.email?.toLowerCase().trim();
+      const requestEmail = data.email?.toLowerCase().trim();
+      
+      if (userEmail !== requestEmail) {
+        console.error('❌ [API ERP] Email no coincide:', { userEmail, requestEmail });
+        return withCors(NextResponse.json(
+          { error: `El email no coincide con el usuario autenticado. Email del usuario: ${userEmail}, Email enviado: ${requestEmail}` },
+          { status: 400 }
+        ));
+      }
+
+      // Usar el email del usuario autenticado para asegurar consistencia
+      data.email = existingAuthUser.user.email;
+
+      // Verificar si el usuario ya tiene registro en owners
+      const { data: existingOwner, error: checkError } = await supabaseAdmin
+        .from('owners')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (checkError && checkError.code !== 'PGRST116') {
+        // PGRST116 es "no rows returned", cualquier otro error es real
+        console.error('❌ [API ERP] Error verificando owner:', checkError);
+        return withCors(NextResponse.json(
+          { error: 'Error al verificar registro existente' },
+          { status: 500 }
+        ));
+      }
+
+      // Si YA EXISTE -> ACTUALIZAMOS (Upsert lógico, nunca 409)
+      if (existingOwner) {
+        console.log('🔄 [API ERP] Owner existente para user_id. Actualizando datos (upsert)...');
+
+        // Preparar datos a actualizar (excluyendo id, created_at, user_id)
+        const updateData: any = {
+          nombre_contacto: data.nombre_contacto,
+          email: data.email,
+          telefono: data.telefono,
+          pais: data.pais,
+          tipo_contacto: tipo_contacto,
+          updated_at: new Date().toISOString()
+        };
+
+        // Campos específicos según tipo_contacto
+        if (tipo_contacto === 'persona') {
+          updateData.direccion = data.direccion || null;
+          updateData.ciudad = data.ciudad || null;
+        } else if (tipo_contacto === 'compania' || tipo_contacto === 'agencia' || tipo_contacto === 'gobierno') {
+          updateData.empresa = data.empresa || null;
+          updateData.nit = data.nit || null;
+          updateData.direccion = data.direccion || null;
+          updateData.ciudad = data.ciudad || null;
+          updateData.sitio_web = data.sitio_web || null;
+        }
+
+        // Nuevos campos comunes
+        updateData.tipo_empresa = data.tipo_empresa || null;
+        updateData.representante_legal = data.representante_legal || null;
+        updateData.tax_id = data.tax_id || null;
+        updateData.puesto = data.puesto || null;
+        updateData.tipo_tenencia = data.tipo_tenencia || null;
+        updateData.tiene_permisos = data.tiene_permisos !== undefined ? data.tiene_permisos : false;
+        updateData.permite_instalacion = data.permite_instalacion !== undefined ? data.permite_instalacion : false;
+
+        // Actualizar el registro existente
+        const { data: updatedOwner, error: updateError } = await supabaseAdmin
+          .from('owners')
+          .update(updateData)
+          .eq('user_id', userId)
+          .select()
+          .single();
+
+        if (updateError) {
+          console.error('❌ [API ERP] Error actualizando owner:', updateError);
+          return withCors(NextResponse.json(
+            { error: updateError.message || 'Error al actualizar el owner' },
+            { status: 500 }
+          ));
+        }
+
+        // Actualizar metadata del usuario para incluir rol owner
+        await supabaseAdmin.auth.admin.updateUserById(userId, {
+          user_metadata: {
+            ...existingAuthUser.user.user_metadata,
+            nombre_contacto: data.nombre_contacto,
+            telefono: data.telefono,
+            pais: data.pais,
+            rol: 'owner',
+            tipo_owner: tipo_contacto || data.tipo_owner
+          }
+        });
+
+        console.log('✅ [API ERP] Owner actualizado correctamente (200 OK).');
+        return withCors(NextResponse.json({
+          ...updatedOwner,
+          user_id: userId
+        }, { status: 200 }));
+      }
+
+      // Si NO EXISTE en owners (pero sí tiene user_id) -> CREAMOS EL REGISTRO
+      // Esto pasa si era un "Cliente" que nunca había sido "Owner" o es un primer registro
+      console.log('🆕 [API ERP] Usuario existe en Auth pero no en Owners. Creando perfil...');
+
+      // Actualizar metadata del usuario para incluir rol owner
+      await supabaseAdmin.auth.admin.updateUserById(userId, {
+        user_metadata: {
+          ...existingAuthUser.user.user_metadata,
+          nombre_contacto: data.nombre_contacto,
+          telefono: data.telefono,
+          pais: data.pais,
+          rol: 'owner',
+          tipo_owner: data.tipo_contacto || data.tipo_owner
+        }
+      });
+    } else {
+      // Para nuevos usuarios, verificar si el email ya existe en owners
+      const { data: existingOwner } = await supabaseAdmin
+        .from('owners')
+        .select('id')
+        .eq('email', data.email)
+        .maybeSingle();
+
+      if (existingOwner) {
+        return withCors(NextResponse.json(
+          { error: 'Este email ya está registrado como owner' },
+          { status: 409 }
+        ));
+      }
+      // Nuevo usuario - crear en Supabase Auth
+      // Verificar que el email no existe en auth.users
+      const { data: authUsers } = await supabaseAdmin.auth.admin.listUsers();
+      const emailExistsInAuth = authUsers?.users?.some(user => user.email === data.email);
+      
+      if (emailExistsInAuth) {
+        return withCors(NextResponse.json(
+          { error: 'Este email ya está registrado. Por favor, inicia sesión para completar tu registro como owner.' },
+          { status: 409 }
+        ));
+      }
+
+      console.log('🔐 [API ERP] Paso 1 - Creando usuario en Supabase Auth...');
+      const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+        email: data.email,
+        password: data.password,
+        email_confirm: true,
+        user_metadata: {
+          nombre_contacto: data.nombre_contacto,
+          telefono: data.telefono,
+          pais: data.pais,
+          rol: 'owner',
+          tipo_owner: data.tipo_contacto || data.tipo_owner
+        }
+      });
+
+      if (authError) {
+        console.error('❌ [API ERP] Error creando Auth User:', authError.message);
+        return withCors(NextResponse.json(
+          { error: authError.message || 'Error al crear usuario en Auth' },
+          { status: 400 }
+        ));
+      }
+
+      if (!authData.user) {
+        return withCors(NextResponse.json(
+          { error: 'No se pudo crear el usuario en Auth' },
+          { status: 500 }
+        ));
+      }
+
+      userId = authData.user.id;
+      console.log('✅ [API ERP] Auth User creado:', userId);
     }
-
-    if (!authData.user) {
-      return withCors(NextResponse.json(
-        { error: 'No se pudo crear el usuario en Auth' },
-        { status: 500 }
-      ));
-    }
-
-    const userId = authData.user.id;
-    console.log('✅ [API ERP] Auth User creado:', userId);
 
     // 2. Crear registro en tabla owners usando SupabaseService.createOwner
     console.log('🏢 [API ERP] Paso 2 - Creando registro en tabla owners...');
@@ -177,6 +329,15 @@ export async function POST(request: NextRequest) {
       ownerData.ciudad = data.ciudad || null;
     }
 
+    // Nuevos campos comunes
+    ownerData.tipo_empresa = data.tipo_empresa || null;
+    ownerData.representante_legal = data.representante_legal || null;
+    ownerData.tax_id = data.tax_id || null;
+    ownerData.puesto = data.puesto || null;
+    ownerData.tipo_tenencia = data.tipo_tenencia || null;
+    ownerData.tiene_permisos = data.tiene_permisos || false;
+    ownerData.permite_instalacion = data.permite_instalacion || false;
+
     try {
       // Usar SupabaseService.createOwner que usa supabaseAdmin internamente
       const newOwner = await SupabaseService.createOwner(ownerData);
@@ -189,8 +350,10 @@ export async function POST(request: NextRequest) {
     } catch (ownerError: any) {
       console.error('🔥 [API ERP] Error Fatal en createOwner:', ownerError);
       
-      // Limpiar: eliminar usuario de Auth si falla la creación del owner
-      await supabaseAdmin.auth.admin.deleteUser(userId).catch(() => {});
+      // Limpiar: eliminar usuario de Auth solo si fue creado en esta petición (no si ya existía)
+      if (!isExistingUser) {
+        await supabaseAdmin.auth.admin.deleteUser(userId).catch(() => {});
+      }
       
       return withCors(NextResponse.json(
         { 

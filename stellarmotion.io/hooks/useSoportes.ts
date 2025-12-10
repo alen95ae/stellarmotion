@@ -107,7 +107,22 @@ export function useSoportes(options: UseSoportesOptions = {}): UseSoportesReturn
         if (!response.ok) {
           const errorText = await response.text().catch(() => 'Unknown error');
           console.error('❌ useSoportes: HTTP error!', response.status, errorText);
+          
+          // Si la respuesta es HTML (página de error), dar un mensaje más claro
+          if (errorText.trim().startsWith('<!DOCTYPE') || errorText.trim().startsWith('<html')) {
+            throw new Error(`Error ${response.status}: El servidor devolvió una página de error. Verifica que el endpoint /api/soportes existe.`);
+          }
+          
           throw new Error(`Error ${response.status}: ${errorText.slice(0, 100)}`);
+        }
+
+        // Verificar que la respuesta sea JSON antes de parsear
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          const text = await response.text().catch(() => '');
+          console.error('❌ useSoportes: Response is not JSON! Content-Type:', contentType);
+          console.error('❌ useSoportes: Response body (first 200 chars):', text.slice(0, 200));
+          throw new Error('El servidor devolvió una respuesta que no es JSON. Verifica que el endpoint /api/soportes esté funcionando correctamente.');
         }
 
         const data = await response.json();
