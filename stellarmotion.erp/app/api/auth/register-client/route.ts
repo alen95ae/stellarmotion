@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-admin';
+import { createUserWithRole, findUserByEmail, signSession } from '@/lib/auth';
+import { setSessionCookie } from '@/lib/auth/cookies';
 
 function withCors(response: NextResponse) {
   response.headers.set('Access-Control-Allow-Origin', '*');
@@ -25,6 +26,17 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       ));
     }
+    
+    // Extraer nombre y apellidos de nombre_contacto si viene separado
+    let nombre = data.nombre_contacto?.trim() || '';
+    let apellidos = data.apellidos?.trim() || '';
+    
+    // Si nombre_contacto contiene espacio, separar en nombre y apellidos
+    if (nombre && !apellidos && nombre.includes(' ')) {
+      const parts = nombre.split(' ');
+      nombre = parts[0] || '';
+      apellidos = parts.slice(1).join(' ') || '';
+    }
 
     // Validar formato de email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -35,15 +47,12 @@ export async function POST(request: NextRequest) {
       ));
     }
 
-    // Verificar si el email ya existe en auth.users
+    // Verificar si el email ya existe
     console.log('🔍 [REGISTER CLIENT] Verificando si email existe...');
-    const { data: authUsers } = await supabaseAdmin.auth.admin.listUsers();
-    const emailExistsInAuth = authUsers?.users?.some(user => 
-      user.email?.toLowerCase() === data.email.toLowerCase()
-    );
+    const existing = await findUserByEmail(data.email);
     
-    if (emailExistsInAuth) {
-      console.log('⚠️ [REGISTER CLIENT] Email ya existe en auth.users');
+    if (existing) {
+      console.log('⚠️ [REGISTER CLIENT] Email ya existe');
       return withCors(NextResponse.json(
         { 
           error: 'EMAIL_EXISTS',
@@ -54,66 +63,89 @@ export async function POST(request: NextRequest) {
       ));
     }
 
-    // Crear usuario en Supabase Auth con role 'client'
-    console.log('🔐 [REGISTER CLIENT] Creando usuario en Supabase Auth...');
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email: data.email.trim(),
-      password: data.password,
-      email_confirm: true,
-      user_metadata: {
-        nombre_contacto: data.nombre_contacto.trim(),
-        telefono: data.telefono.trim(),
-        pais: data.pais.trim(),
-        role: 'client'
-      }
-    });
-
-    if (authError) {
-      console.error('❌ [REGISTER CLIENT] Error creando Auth User:', authError.message);
-      
-      // Si el error es que el usuario ya existe, devolver el mismo formato
-      if (authError.message.includes('already registered') || authError.message.includes('already exists')) {
-        return withCors(NextResponse.json(
-          { 
-            error: 'EMAIL_EXISTS',
-            action: 'LOGIN_TO_UPGRADE',
-            message: 'Este email ya está registrado. Por favor, inicia sesión para completar tu perfil como owner.'
-          },
-          { status: 409 }
-        ));
-      }
-      
+    // Crear usuario con role 'client'
+    console.log('🔐 [REGISTER CLIENT] Creando usuario...');
+    let user;
+    try {
+      user = await createUserWithRole(
+        data.email.trim(), 
+        data.password, 
+        nombre, 
+        'client',
+        data.telefono?.trim(),
+        data.pais?.trim(),
+        data.ciudad?.trim(),
+        data.tipo_owner?.trim(),
+        data.nombre_empresa?.trim() || data.empresa?.trim(),
+        data.tipo_empresa?.trim(),
+        apellidos
+      );
+      console.log('✅ [REGISTER CLIENT] Usuario creado:', user.id, {
+        email: data.email.trim(),
+        nombre,
+        apellidos: apellidos || 'no proporcionado',
+        telefono: data.telefono?.trim() || 'no proporcionado',
+        pais: data.pais?.trim() || 'no proporcionado',
+        ciudad: data.ciudad?.trim() || 'no proporcionado',
+        tipo_owner: data.tipo_owner?.trim() || 'no proporcionado',
+        nombre_empresa: data.nombre_empresa?.trim() || data.empresa?.trim() || 'no proporcionado',
+        tipo_empresa: data.tipo_empresa?.trim() || 'no proporcionado'
+      });
+    } catch (userError: any) {
+      console.error('❌ [REGISTER CLIENT] Error creando usuario:', userError);
       return withCors(NextResponse.json(
-        { error: authError.message || 'Error al crear usuario en Auth' },
-        { status: 400 }
-      ));
-    }
-
-    if (!authData.user) {
-      return withCors(NextResponse.json(
-        { error: 'No se pudo crear el usuario en Auth' },
+        { 
+          error: 'Error al crear usuario',
+          details: userError?.message || 'Error desconocido al crear usuario'
+        },
         { status: 500 }
       ));
     }
 
-    console.log('✅ [REGISTER CLIENT] Cliente creado exitosamente:', authData.user.id);
+    console.log('✅ [REGISTER CLIENT] Cliente creado exitosamente:', user.id);
     
-    // Retornar solo el user_id y email (nunca password)
-    return withCors(NextResponse.json({
-      user_id: authData.user.id,
-      email: authData.user.email,
+    // Crear sesión y cookie
+    let token;
+    try {
+      token = await signSession({ 
+        id: user.id, 
+        email: user.fields.Email, 
+        role: 'client', 
+        name: user.fields.Nombre 
+      });
+      console.log('✅ [REGISTER CLIENT] Sesión creada');
+    } catch (sessionError: any) {
+      console.error('❌ [REGISTER CLIENT] Error creando sesión:', sessionError);
+      return withCors(NextResponse.json(
+        { 
+          error: 'Error al crear sesión',
+          details: sessionError?.message || 'Error desconocido al crear sesión'
+        },
+        { status: 500 }
+      ));
+    }
+    
+    const response = withCors(NextResponse.json({
+      user_id: user.id,
+      email: user.fields.Email,
       role: 'client'
     }, { status: 201 }));
+    
+    setSessionCookie(response, token);
+    return response;
 
   } catch (error) {
     console.error('❌ [REGISTER CLIENT] Error Fatal:', error);
+    console.error('❌ [REGISTER CLIENT] Stack:', error instanceof Error ? error.stack : 'No stack');
     return withCors(NextResponse.json(
       { 
         error: 'Error interno del servidor',
-        details: error instanceof Error ? error.message : 'Error desconocido'
+        details: error instanceof Error ? error.message : 'Error desconocido',
+        stack: process.env.NODE_ENV === 'development' && error instanceof Error ? error.stack : undefined
       },
       { status: 500 }
     ));
   }
 }
+
 

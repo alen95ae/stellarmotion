@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { getUserByIdSupabase, updateUserRoleSupabase } from '@/lib/supabaseUsers';
 
 function withCors(response: NextResponse) {
   response.headers.set('Access-Control-Allow-Origin', '*');
@@ -14,12 +15,26 @@ export async function OPTIONS() {
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('🏢 [COMPLETE OWNER] Iniciando completado de perfil owner...');
-    
-    const data = await request.json();
-    
+    console.log('🏢 [ERP COMPLETE OWNER] POST received');
+
+    // Leer body con seguridad
+    let data;
+    try {
+      data = await request.json();
+    } catch (e) {
+      console.error('❌ [ERP COMPLETE OWNER] Invalid JSON body');
+      return withCors(NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 }));
+    }
+
+    console.log('📝 [ERP COMPLETE OWNER] Payload summary:', {
+      user_id: data.user_id,
+      tipo: data.tipo_contacto,
+      has_empresa: !!data.empresa
+    });
+
     // Validar que viene user_id (requerido)
     if (!data.user_id) {
+      console.error('❌ [ERP COMPLETE OWNER] Missing user_id');
       return withCors(NextResponse.json(
         { error: 'user_id es requerido. El usuario debe estar autenticado.' },
         { status: 400 }
@@ -27,23 +42,62 @@ export async function POST(request: NextRequest) {
     }
 
     const userId = data.user_id;
+
+    // Verificar que el usuario existe en la tabla usuarios
+    console.log(`🔍 [ERP COMPLETE OWNER] Verificando Usuario: ${userId}`);
+    console.log(`🔍 [ERP COMPLETE OWNER] Tipo de userId: ${typeof userId}, Longitud: ${userId?.length}`);
     
-    // Verificar que el usuario existe en auth
-    console.log('🔍 [COMPLETE OWNER] Verificando usuario en auth...');
-    const { data: existingAuthUser, error: authUserError } = await supabaseAdmin.auth.admin.getUserById(userId);
-    
-    if (authUserError || !existingAuthUser.user) {
-      console.error('❌ [COMPLETE OWNER] Usuario no encontrado en auth:', authUserError);
+    const existingUser = await getUserByIdSupabase(userId);
+
+    if (!existingUser) {
+      console.error('❌ [ERP COMPLETE OWNER] Usuario no encontrado en tabla usuarios');
+      console.error('❌ [ERP COMPLETE OWNER] userId buscado:', userId);
+      console.error('❌ [ERP COMPLETE OWNER] Intentando verificar si existe en Supabase...');
+      
+      // Intentar buscar por email como fallback para debug
+      if (data.email) {
+        const { data: userByEmail } = await supabaseAdmin
+          .from('usuarios')
+          .select('id, email')
+          .eq('email', data.email)
+          .maybeSingle();
+        
+        console.log('🔍 [ERP COMPLETE OWNER] Usuario encontrado por email:', userByEmail);
+        
+        if (userByEmail && userByEmail.id !== userId) {
+          console.error('⚠️ [ERP COMPLETE OWNER] El userId no coincide con el encontrado por email');
+          console.error('⚠️ [ERP COMPLETE OWNER] userId enviado:', userId);
+          console.error('⚠️ [ERP COMPLETE OWNER] userId real:', userByEmail.id);
+        }
+      }
+      
       return withCors(NextResponse.json(
-        { error: 'El user_id proporcionado no es válido' },
+        { 
+          error: 'El user_id proporcionado no es válido o no existe en la tabla usuarios',
+          details: `userId: ${userId}, email: ${data.email}`
+        },
         { status: 400 }
       ));
     }
 
-    // Mapear tipo_owner a tipo_contacto
-    const tipo_contacto = data.tipo_contacto || (data.tipo_owner === 'empresa' ? 'compania' : data.tipo_owner) || 'persona';
+    console.log('✅ [ERP COMPLETE OWNER] Usuario encontrado:', {
+      id: existingUser.id,
+      email: existingUser.email,
+      nombre: existingUser.nombre
+    });
 
-    // Validaciones según tipo_contacto
+    // Mapear tipo_owner a tipo_contacto
+    const tipo_contacto = data.tipo_contacto || (data.tipo_owner === 'empresa' ? 'empresa' : data.tipo_owner) || 'persona';
+
+    // Validar que tipo_contacto sea un valor válido
+    if (!['persona', 'empresa', 'agencia', 'gobierno'].includes(tipo_contacto)) {
+      return withCors(NextResponse.json(
+        { error: `tipo_contacto inválido: ${tipo_contacto}. Debe ser persona, empresa, agencia o gobierno.` },
+        { status: 400 }
+      ));
+    }
+
+    // Validaciones básicas de campos según tipo
     if (tipo_contacto === 'persona') {
       if (!data.nombre_contacto || !data.email || !data.telefono || !data.pais) {
         return withCors(NextResponse.json(
@@ -51,186 +105,123 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         ));
       }
-    } else if (tipo_contacto === 'compania' || tipo_contacto === 'agencia' || tipo_contacto === 'gobierno') {
-      if (!data.empresa || !data.email || !data.telefono || !data.pais) {
+    } else if (['empresa', 'agencia', 'gobierno'].includes(tipo_contacto)) {
+      if (!data.empresa) {
+        console.error('❌ [ERP COMPLETE OWNER] Falta campo empresa para tipo:', tipo_contacto);
         return withCors(NextResponse.json(
-          { error: 'Faltan campos requeridos: empresa, email, telefono, pais' },
+          { error: `El campo 'empresa' es obligatorio para ${tipo_contacto}` },
+          { status: 400 }
+        ));
+      }
+      if (!data.email || !data.telefono || !data.pais) {
+        return withCors(NextResponse.json(
+          { error: 'Faltan campos requeridos: email, telefono, pais' },
           { status: 400 }
         ));
       }
     }
 
-    // Verificar que el email del usuario coincide
-    const userEmail = existingAuthUser.user.email?.toLowerCase().trim();
-    const requestEmail = data.email?.toLowerCase().trim();
-    
-    if (userEmail !== requestEmail) {
-      console.error('❌ [COMPLETE OWNER] Email no coincide:', { userEmail, requestEmail });
-      return withCors(NextResponse.json(
-        { error: `El email no coincide con el usuario autenticado. Email del usuario: ${userEmail}, Email enviado: ${requestEmail}` },
-        { status: 400 }
-      ));
-    }
-
-    // Usar el email del usuario autenticado para asegurar consistencia
-    data.email = existingAuthUser.user.email;
-
     // Verificar si el usuario ya tiene registro en owners
-    console.log('🔍 [COMPLETE OWNER] Verificando si owner existe...');
+    console.log('🔍 [ERP COMPLETE OWNER] Consultando tabla owners...');
     const { data: existingOwner, error: checkError } = await supabaseAdmin
       .from('owners')
-      .select('*')
+      .select('id, user_id')
       .eq('user_id', userId)
       .maybeSingle();
 
     if (checkError && checkError.code !== 'PGRST116') {
-      console.error('❌ [COMPLETE OWNER] Error verificando owner:', checkError);
+      console.error('❌ [ERP COMPLETE OWNER] DB Error verificando owner:', checkError);
       return withCors(NextResponse.json(
-        { error: 'Error al verificar registro existente' },
+        { error: 'Error de base de datos al verificar owner' },
         { status: 500 }
       ));
     }
 
-    // Mapear tipo_contacto a tipo_owner
-    const tipo_owner_map: Record<string, 'persona' | 'empresa' | 'gobierno' | 'agencia'> = {
-      'persona': 'persona',
-      'compania': 'empresa',
-      'gobierno': 'gobierno',
-      'agencia': 'agencia'
+    // Datos comunes de Upsert
+    const commonData: any = {
+      nombre_contacto: data.nombre_contacto,
+      email: data.email, // Preferimos el del payload si coincide, o podriamos forzar el del auth user
+      telefono: data.telefono,
+      pais: data.pais,
+      direccion: data.direccion || null,
+      ciudad: data.ciudad || null,
+      tipo_contacto: tipo_contacto,
+      empresa: data.empresa || null,
+      tipo_empresa: data.tipo_empresa || null,
+      representante_legal: data.representante_legal || null,
+      tax_id: data.tax_id || null,
+      puesto: data.puesto || null,
+      tipo_tenencia: data.tipo_tenencia || null,
+      sitio_web: data.sitio_web || null,
+      direccion_fiscal: data.direccion_fiscal || null,
+      tiene_permisos: data.tiene_permisos !== undefined ? data.tiene_permisos : false,
+      permite_instalacion: data.permite_instalacion !== undefined ? data.permite_instalacion : false,
+      updated_at: new Date().toISOString()
     };
-    
-    const tipo_owner = tipo_owner_map[tipo_contacto] || 'persona';
+
+    let resultOwner;
 
     if (existingOwner) {
-      // Si YA EXISTE -> ACTUALIZAMOS (Upsert lógico)
-      console.log('🔄 [COMPLETE OWNER: update] El owner ya existe. Actualizando datos...');
-      
-      // Preparar datos a actualizar
-      const updateData: any = {
-        nombre_contacto: data.nombre_contacto,
-        email: data.email,
-        telefono: data.telefono,
-        pais: data.pais,
-        direccion: data.direccion || null,
-        ciudad: data.ciudad || null,
-        tipo_contacto: tipo_contacto,
-        empresa: data.empresa || null,
-        tipo_empresa: data.tipo_empresa || null,
-        representante_legal: data.representante_legal || null,
-        tax_id: data.tax_id || null,
-        puesto: data.puesto || null,
-        tipo_tenencia: data.tipo_tenencia || null,
-        sitio_web: data.sitio_web || null,
-        direccion_fiscal: data.direccion_fiscal || null,
-        tiene_permisos: data.tiene_permisos !== undefined ? data.tiene_permisos : false,
-        permite_instalacion: data.permite_instalacion !== undefined ? data.permite_instalacion : false,
-        updated_at: new Date().toISOString()
-      };
+      // UPDATE
+      console.log(`🔄 [ERP COMPLETE OWNER] Usuario ya es owner (ID: ${existingOwner.id}). Actualizando...`);
 
-      // Actualizar el registro existente
-      const { data: updatedOwner, error: updateError } = await supabaseAdmin
+      const { data: updated, error: updateError } = await supabaseAdmin
         .from('owners')
-        .update(updateData)
+        .update(commonData)
         .eq('user_id', userId)
         .select()
         .single();
 
       if (updateError) {
-        console.error('❌ [COMPLETE OWNER: update] Error actualizando owner:', updateError);
-        return withCors(NextResponse.json(
-          { error: updateError.message || 'Error al actualizar el owner' },
-          { status: 500 }
-        ));
+        console.error('❌ [ERP COMPLETE OWNER] Update Failed:', updateError);
+        return withCors(NextResponse.json({ error: updateError.message }, { status: 500 }));
       }
-
-      // Actualizar metadata del usuario para incluir rol owner
-      console.log('🔄 [UPDATED METADATA role=owner] Actualizando user_metadata...');
-      await supabaseAdmin.auth.admin.updateUserById(userId, {
-        user_metadata: {
-          ...existingAuthUser.user.user_metadata,
-          nombre_contacto: data.nombre_contacto,
-          telefono: data.telefono,
-          pais: data.pais,
-          role: 'owner',
-          tipo_owner: tipo_contacto || data.tipo_owner
-        }
-      });
-
-      console.log('✅ [COMPLETE OWNER: update] Owner actualizado correctamente.');
-      return withCors(NextResponse.json({
-        ...updatedOwner,
-        user_id: userId
-      }, { status: 200 }));
+      resultOwner = updated;
 
     } else {
-      // Si NO EXISTE -> CREAMOS EL REGISTRO
-      console.log('🆕 [COMPLETE OWNER: insert] Usuario existe en Auth pero no en Owners. Creando perfil...');
-      
-      // Preparar datos para insert
-      const insertData: any = {
+      // INSERT
+      console.log('🆕 [ERP COMPLETE OWNER] Creando nuevo registro owner...');
+
+      const insertData = {
+        ...commonData,
         user_id: userId,
-        nombre_contacto: data.nombre_contacto,
-        email: data.email,
-        telefono: data.telefono,
-        pais: data.pais,
-        direccion: data.direccion || null,
-        ciudad: data.ciudad || null,
-        tipo_contacto: tipo_contacto,
-        empresa: data.empresa || null,
-        tipo_empresa: data.tipo_empresa || null,
-        representante_legal: data.representante_legal || null,
-        tax_id: data.tax_id || null,
-        puesto: data.puesto || null,
-        tipo_tenencia: data.tipo_tenencia || null,
-        sitio_web: data.sitio_web || null,
-        direccion_fiscal: data.direccion_fiscal || null,
-        tiene_permisos: data.tiene_permisos !== undefined ? data.tiene_permisos : false,
-        permite_instalacion: data.permite_instalacion !== undefined ? data.permite_instalacion : false,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        created_at: new Date().toISOString()
       };
 
-      // Insertar el registro
-      const { data: newOwner, error: insertError } = await supabaseAdmin
+      const { data: inserted, error: insertError } = await supabaseAdmin
         .from('owners')
         .insert([insertData])
         .select()
         .single();
 
       if (insertError) {
-        console.error('❌ [COMPLETE OWNER: insert] Error insertando owner:', insertError);
-        return withCors(NextResponse.json(
-          { error: insertError.message || 'Error al crear el owner' },
-          { status: 500 }
-        ));
+        console.error('❌ [ERP COMPLETE OWNER] Insert Failed:', insertError);
+        return withCors(NextResponse.json({ error: insertError.message }, { status: 500 }));
       }
-
-      // Actualizar metadata del usuario para incluir rol owner
-      console.log('🔄 [UPDATED METADATA role=owner] Actualizando user_metadata...');
-      await supabaseAdmin.auth.admin.updateUserById(userId, {
-        user_metadata: {
-          ...existingAuthUser.user.user_metadata,
-          nombre_contacto: data.nombre_contacto,
-          telefono: data.telefono,
-          pais: data.pais,
-          role: 'owner',
-          tipo_owner: tipo_contacto || data.tipo_owner
-        }
-      });
-
-      console.log('✅ [COMPLETE OWNER: insert] Owner creado correctamente.');
-      return withCors(NextResponse.json({
-        ...newOwner,
-        user_id: userId
-      }, { status: 201 }));
+      resultOwner = inserted;
     }
 
-  } catch (error) {
-    console.error('❌ [COMPLETE OWNER] Error Fatal:', error);
+    // Actualizar rol del usuario a owner
+    console.log('🔄 [ERP COMPLETE OWNER] Actualizando rol a owner...');
+    try {
+      await updateUserRoleSupabase(userId, 'owner');
+    } catch (error) {
+      console.error('Error actualizando rol a owner:', error);
+      // No fallar si no se puede actualizar el rol, solo loguear
+    }
+
+    console.log('✅ [ERP COMPLETE OWNER] Proceso finalizado con éxito.');
+    return withCors(NextResponse.json({
+      ...resultOwner,
+      user_id: userId
+    }, { status: existingOwner ? 200 : 201 }));
+
+  } catch (error: any) {
+    console.error('🔥 [ERP COMPLETE OWNER] Excepción fatal:', error);
     return withCors(NextResponse.json(
-      { 
+      {
         error: 'Error interno del servidor',
-        details: error instanceof Error ? error.message : 'Error desconocido'
+        details: error.message
       },
       { status: 500 }
     ));

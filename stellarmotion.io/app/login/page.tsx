@@ -2,25 +2,25 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { createClient } from '@/lib/supabase-browser'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2, Lock, Mail, Eye, EyeOff } from 'lucide-react'
 import Link from 'next/link'
-
-type UserRole = 'admin' | 'owner' | 'seller' | 'client'
+import { getNextFromSearchParams } from '@/lib/auth/next'
+import { getRoleFromPayload } from '@/lib/auth/role'
+import { ROUTES } from '@/lib/routes'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [rememberMe, setRememberMe] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
-  const supabase = createClient()
 
   // Prellenar email desde query params si existe
   useEffect(() => {
@@ -51,97 +51,62 @@ export default function LoginPage() {
         return
       }
 
-      // Intentar iniciar sesión
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include', // CRÍTICO: Permite que el navegador acepte cookies HttpOnly
+        body: JSON.stringify({
+          email: email.trim(),
+          password,
+          rememberMe,
+        }),
       })
 
-      if (signInError) {
-        // Manejar errores específicos
-        let errorMessage = 'Error al iniciar sesión'
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Error desconocido' }))
+        const errorMessage = errorData.error || 'Error al iniciar sesión'
         
-        if (signInError.message.includes('Invalid login credentials')) {
-          errorMessage = 'Email o contraseña incorrectos'
-        } else if (signInError.message.includes('Email not confirmed')) {
-          errorMessage = 'Por favor, confirma tu email antes de iniciar sesión'
-        } else if (signInError.message.includes('Too many requests')) {
-          errorMessage = 'Demasiados intentos. Por favor, espera un momento'
+        // Mensajes más amigables
+        if (errorMessage.includes('Credenciales inválidas') || errorMessage.includes('Invalid')) {
+          setError('Email o contraseña incorrectos')
         } else {
-          errorMessage = signInError.message
+          setError(errorMessage)
         }
-
-        setError(errorMessage)
         setLoading(false)
         return
       }
 
-      if (!data.user) {
+      const data = await response.json()
+
+      if (!data.success || !data.user) {
         setError('No se pudo obtener la información del usuario')
         setLoading(false)
         return
       }
 
       // Obtener parámetro next de la URL
-      const nextParam = searchParams.get('next')
-      console.log('🔍 [LOGIN] nextParam:', nextParam);
+      const nextParam = getNextFromSearchParams(searchParams)
       
-      // Verificar si el usuario ya tiene registro en la tabla owners
-      const { data: ownerData, error: ownerError } = await supabase
-        .from('owners')
-        .select('id')
-        .eq('user_id', data.user.id)
-        .maybeSingle()
-
-      if (ownerError) {
-        console.error('❌ [LOGIN] Error verificando owner:', ownerError)
-      }
-
-      console.log('🔍 [LOGIN] ownerData:', ownerData ? 'existe' : 'no existe');
-
       // Obtener rol del usuario
-      const userRole = data.user.user_metadata?.role as UserRole | undefined
-      console.log('🔍 [LOGIN] userRole:', userRole);
+      const userRole = getRoleFromPayload(data.user.role)
 
-      // Determinar redirección
-      let redirectPath = '/'
+      // Determinar redirección - siempre a HOME excepto si hay parámetro next
+      let redirectPath = ROUTES.HOME
 
-      // Si no tiene registro en owners, SIEMPRE redirigir al paso 2 para completar el registro
-      if (!ownerData) {
-        // Priorizar next si viene y es para completar owner
-        if (nextParam && (nextParam.includes('owners/registrarse/info') || nextParam === '/owners/registrarse/info')) {
-          redirectPath = nextParam
-          console.log('✅ [LOGIN] Redirigiendo al paso 2 (next param):', redirectPath);
-        } else {
-          redirectPath = '/owners/registrarse/info'
-          console.log('✅ [LOGIN] Redirigiendo al paso 2 (sin owner):', redirectPath);
-        }
-      } else {
-        // Si ya tiene registro en owners, redirigir según su rol
-        switch (userRole) {
-          case 'admin':
-            redirectPath = '/panel/inicio'
-            break
-          case 'owner':
-            redirectPath = '/panel/inicio'
-            break
-          case 'seller':
-            redirectPath = '/panel/inicio'
-            break
-          case 'client':
-            // Si es client y viene next, usar next; si no, home
-            redirectPath = nextParam || '/'
-            break
-          default:
-            redirectPath = nextParam || '/'
-        }
-        console.log('✅ [LOGIN] Redirigiendo según rol:', redirectPath);
+      if (nextParam) {
+        redirectPath = nextParam
       }
 
-      // Forzar redirección con window.location para evitar problemas de estado
-      window.location.href = redirectPath
+      console.log('🔄 [LOGIN] Redirigiendo a:', redirectPath, 'para rol:', userRole)
+      console.log('🔄 [LOGIN] Data recibida:', { success: data.success, user: data.user?.email, role: data.user?.role })
+
+      // Pequeño delay para estabilidad de cookies
+      await new Promise((r) => setTimeout(r, 300))
       
-      // No necesitamos setLoading(false) aquí porque la página se redirigirá
+      // Usar window.location para forzar recarga completa y asegurar que la cookie se lea
+      window.location.href = redirectPath
     } catch (err: any) {
       console.error('Error en login:', err)
       setError(err.message || 'Error de conexión. Por favor, intenta nuevamente')
@@ -220,6 +185,19 @@ export default function LoginPage() {
             </div>
           </div>
 
+          <div className="flex items-center">
+            <input
+              id="rememberMe"
+              type="checkbox"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              className="h-4 w-4 text-[#e94446] focus:ring-[#e94446] border-gray-300 rounded"
+            />
+            <Label htmlFor="rememberMe" className="ml-2 text-sm text-gray-700">
+              Mantener sesión iniciada
+            </Label>
+          </div>
+
           <div className="flex justify-center pt-4">
             <Button
               type="submit"
@@ -245,4 +223,3 @@ export default function LoginPage() {
     </div>
   )
 }
-

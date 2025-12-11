@@ -76,3 +76,4 @@ $$;
 -- maneja la actualización del array directamente en el código.
 -- Sin embargo, pueden ser útiles para operaciones más complejas o triggers.
 
+

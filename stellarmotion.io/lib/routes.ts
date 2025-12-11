@@ -4,11 +4,13 @@
 export const ROUTES = {
   HOME: '/',
   LOGIN: '/auth/login',
-  REGISTER: '/auth/register',
+  SIGNUP: '/auth/signup',
   OWNER_REGISTER: '/owner/register',
-  OWNER_COMPLETE: '/owner/register/complete',
-  DASHBOARD_OWNER: '/owners/dashboard',
-  DASHBOARD_ADMIN: '/panel/inicio',
+  OWNER_ONBOARDING: '/owner/onboarding',
+  ACCOUNT: '/account',
+  DASHBOARD: '/dashboard',
+  DASHBOARD_OWNER: '/dashboard/owner',
+  DASHBOARD_ADMIN: '/dashboard/admin',
 } as const;
 
 export type AppRouteKey = keyof typeof ROUTES;

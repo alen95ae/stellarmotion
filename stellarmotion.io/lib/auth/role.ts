@@ -1,36 +1,29 @@
-import type { User } from '@supabase/supabase-js';
-
 export type AppRole = 'admin' | 'owner' | 'client';
 
 /**
- * Safely extract the normalized application role from a Supabase user.
- *
- * It checks (in order):
- * - user.user_metadata.role
- * - user.user_metadata.rol  (legacy key without "e")
- * - user.app_metadata.role
+ * Safely extract the normalized application role from a JWT payload or role string.
+ * 
+ * This function works with the new JWT-based authentication system.
+ * It normalizes role strings to the AppRole type.
  */
-export function getRoleFromUser(user: User | null | undefined): AppRole | undefined {
-  if (!user) return undefined;
+export function getRoleFromPayload(role: string | undefined | null): AppRole | undefined {
+  if (!role) return undefined;
 
-  const meta = (user.user_metadata || {}) as Record<string, any>;
-  const appMeta = (user.app_metadata || {}) as Record<string, any>;
-
-  const rawRole =
-    (meta.role as string | undefined) ??
-    (meta.rol as string | undefined) ??
-    (appMeta.role as string | undefined);
-
-  if (!rawRole) return undefined;
-
-  const normalized = String(rawRole).toLowerCase();
+  const normalized = String(role).toLowerCase();
 
   if (normalized === 'admin') return 'admin';
   if (normalized === 'owner') return 'owner';
   if (normalized === 'client') return 'client';
 
-  // Any other custom role is treated as undefined here
   return undefined;
 }
+
+/**
+ * Get default role for navigation (used when role is undefined)
+ */
+export function getDefaultRole(): AppRole {
+  return 'client';
+}
+
 
 

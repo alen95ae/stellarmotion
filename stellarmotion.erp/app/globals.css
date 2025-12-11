@@ -23,6 +23,9 @@
   --input: 214.3 31.8% 91.4%;
   --ring: 222.2 84% 4.9%;
   --radius: 0.5rem;
+  /* Variables para componentes UI */
+  --cell-size: 2rem; /* Equivalente a spacing(8) = 32px */
+  --spacing-4: 1rem; /* Equivalente a spacing(4) = 16px */
 }
 
 .dark {

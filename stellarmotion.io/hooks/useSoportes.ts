@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { API_ENDPOINTS, fetchFromERP } from '@/lib/api-config';
 
 export interface Soporte {
   id: string;
@@ -69,14 +70,13 @@ export function useSoportes(options: UseSoportesOptions = {}): UseSoportesReturn
 
   useEffect(() => {
     let isCancelled = false;
-    const controller = new AbortController();
 
     const fetchSoportes = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        // Construir URL con parámetros
+        // Construir URL con parámetros usando la API del ERP
         const params = new URLSearchParams();
         if (options.search) params.set('search', options.search);
         if (options.categoria) params.set('categoria', options.categoria);
@@ -85,47 +85,11 @@ export function useSoportes(options: UseSoportesOptions = {}): UseSoportesReturn
         if (options.page) params.set('page', options.page.toString());
         if (options.limit) params.set('limit', options.limit.toString());
 
-        const url = `/api/soportes?${params.toString()}`;
-        console.log('📡 useSoportes: Fetching from:', url);
+        const url = `${API_ENDPOINTS.supports}?${params.toString()}`;
+        console.log('📡 useSoportes: Fetching from ERP:', url);
 
-        // Timeout de 10s para el hook (más corto que el timeout del ERP)
-        const timeoutId = setTimeout(() => controller.abort(), 10000);
-
-        const response = await fetch(url, {
-          signal: controller.signal,
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-        
-        clearTimeout(timeoutId);
-        
-        if (isCancelled) return;
-        
-        console.log('📡 useSoportes: Response status:', response.status);
-        
-        if (!response.ok) {
-          const errorText = await response.text().catch(() => 'Unknown error');
-          console.error('❌ useSoportes: HTTP error!', response.status, errorText);
-          
-          // Si la respuesta es HTML (página de error), dar un mensaje más claro
-          if (errorText.trim().startsWith('<!DOCTYPE') || errorText.trim().startsWith('<html')) {
-            throw new Error(`Error ${response.status}: El servidor devolvió una página de error. Verifica que el endpoint /api/soportes existe.`);
-          }
-          
-          throw new Error(`Error ${response.status}: ${errorText.slice(0, 100)}`);
-        }
-
-        // Verificar que la respuesta sea JSON antes de parsear
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-          const text = await response.text().catch(() => '');
-          console.error('❌ useSoportes: Response is not JSON! Content-Type:', contentType);
-          console.error('❌ useSoportes: Response body (first 200 chars):', text.slice(0, 200));
-          throw new Error('El servidor devolvió una respuesta que no es JSON. Verifica que el endpoint /api/soportes esté funcionando correctamente.');
-        }
-
-        const data = await response.json();
+        // Usar fetchFromERP que maneja timeouts y reintentos
+        const data = await fetchFromERP(url);
         
         if (isCancelled) return;
         
@@ -137,15 +101,11 @@ export function useSoportes(options: UseSoportesOptions = {}): UseSoportesReturn
         if (isCancelled) return;
         
         const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
+        console.error('❌ useSoportes: Error al cargar soportes:', errorMessage);
         
-        // Distinguir entre timeout y otros errores
-        if (err instanceof Error && err.name === 'AbortError') {
-          console.error('⏱️ useSoportes: Timeout al cargar soportes');
-          setError('Tiempo de espera agotado. El servidor no respondió a tiempo.');
-        } else {
-          console.error('❌ useSoportes: Error al cargar soportes:', errorMessage);
-          setError(errorMessage);
-        }
+        // Usar el mensaje de error diagnosticado directamente (fetchFromERP ya lo hace)
+        // El mensaje ya incluye información útil sobre CORS, conexión, timeout, etc.
+        setError(errorMessage);
         
         // Fallback a datos vacíos en caso de error
         setSoportes([]);
@@ -162,7 +122,6 @@ export function useSoportes(options: UseSoportesOptions = {}): UseSoportesReturn
     // Cleanup: cancelar request si el componente se desmonta o cambian las deps
     return () => {
       isCancelled = true;
-      controller.abort();
     };
   }, [options.search, options.categoria, options.estado, options.tipo, options.page, options.limit]);
 

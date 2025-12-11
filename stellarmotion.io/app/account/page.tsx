@@ -1,23 +1,70 @@
-import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase-server'
+'use client'
+
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { LogOut, User, Mail, Shield } from 'lucide-react'
-import { logout } from './actions'
+import { LogOut, User, Mail, Shield, Loader2 } from 'lucide-react'
+import { getRoleFromPayload } from '@/lib/auth/role'
 
-export default async function AccountPage() {
-  const supabase = createClient()
-  
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+export default function AccountPage() {
+  const [user, setUser] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const router = useRouter()
 
-  if (!user) {
-    redirect('/auth/login')
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const response = await fetch('/api/auth/me')
+        
+        if (!response.ok) {
+          router.push('/auth/login')
+          return
+        }
+
+        const data = await response.json()
+        
+        if (!data.success || !data.user) {
+          router.push('/auth/login')
+          return
+        }
+
+        setUser(data.user)
+      } catch (error) {
+        console.error('Error loading user:', error)
+        router.push('/auth/login')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadUser()
+  }, [router])
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' })
+      router.push('/')
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error)
+      router.push('/')
+    }
   }
 
-  const userRole = user.user_metadata?.role as string | undefined
-  const userName = user.user_metadata?.nombre_contacto || user.user_metadata?.name || user.email?.split('@')[0] || 'Usuario'
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-[#e94446]" />
+      </div>
+    )
+  }
+
+  if (!user) {
+    return null
+  }
+
+  const userRole = getRoleFromPayload(user.role)
+  const userName = user.name || user.nombre || user.email?.split('@')[0] || 'Usuario'
   const userEmail = user.email || 'No disponible'
 
   return (
@@ -68,16 +115,14 @@ export default async function AccountPage() {
             </div>
 
             <div className="pt-4 border-t border-gray-200">
-              <form action={logout}>
-                <Button
-                  type="submit"
-                  variant="destructive"
-                  className="w-full sm:w-auto"
-                >
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Cerrar sesión
-                </Button>
-              </form>
+              <Button
+                onClick={handleLogout}
+                variant="destructive"
+                className="w-full sm:w-auto"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Cerrar sesión
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -85,4 +130,3 @@ export default async function AccountPage() {
     </div>
   )
 }
-

@@ -2,14 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase-browser';
+// Removed Supabase Auth - using JWT-based auth
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, Building2, FileText, MapPin, CheckCircle2, User, Briefcase, Globe, Key, Home, CheckSquare } from 'lucide-react';
+import { Loader2, Building2, FileText, MapPin, CheckCircle2, User, Briefcase, Globe, Key, Home, CheckSquare, Phone } from 'lucide-react';
 
 type TipoOwner = 'persona' | 'empresa' | 'gobierno' | 'agencia';
 
@@ -19,14 +19,13 @@ export default function InfoOwnerPage() {
   const [error, setError] = useState<string | null>(null);
   const [step1Data, setStep1Data] = useState<any>(null);
   const [initialLoading, setInitialLoading] = useState(true);
-  
+
   const [tipoOwner, setTipoOwner] = useState<TipoOwner>('persona');
   const [formData, setFormData] = useState({
     // Persona
     direccion: '',
     ciudad: '',
-    pais: '',
-    // Empresa/Compania/Agencia/Gobierno
+    // Empresa/Agencia/Gobierno
     razon_social: '',
     tipo_empresa: '',
     representante_legal: '',
@@ -44,62 +43,103 @@ export default function InfoOwnerPage() {
 
     const load = async () => {
       try {
-        const supabase = createClient();
+        const response = await fetch('/api/auth/me');
+        
+        if (!response.ok) {
+          console.log('⚠️ [OWNER_STEP2] No hay sesión, redirigiendo a login...');
+          window.location.href = `/login?next=${encodeURIComponent('/owners/registrarse/info')}`;
+          return;
+        }
 
-        const {
-          data: { user },
-          error
-        } = await supabase.auth.getUser();
+        const data = await response.json();
+        
+        if (!isMounted) return;
 
-        // Usuario no autenticado
-        if (error || !user) {
-          console.log('⚠️ [Paso 2] Usuario no autenticado, redirigiendo a login...');
-          // Establecer datos mínimos para evitar freeze durante redirección
+        if (!data.success || !data.user) {
+          console.log('⚠️ [OWNER_STEP2] Usuario no encontrado, redirigiendo a login...');
+          window.location.href = `/login?next=${encodeURIComponent('/owners/registrarse/info')}`;
+          return;
+        }
+
+        console.log('✅ [OWNER_STEP2] Sesión encontrada:', data.user.email);
+
+        // Intentar obtener datos del owner existente si ya existe
+        let ownerProfile = null;
+        try {
+          const ownerResponse = await fetch('/api/me/owner-profile');
+          if (ownerResponse.ok) {
+            ownerProfile = await ownerResponse.json();
+            console.log('✅ [OWNER_STEP2] Datos del owner existente:', ownerProfile);
+          }
+        } catch (err) {
+          console.log('ℹ️ [OWNER_STEP2] No hay owner existente o error al obtenerlo:', err);
+        }
+
+        // Construir datos mínimos para poblar el formulario
+        // Prioridad: owner existente > usuario de BD > localStorage (fallback)
+        console.log('🔍 [OWNER_STEP2] Cargando datos del paso 1 desde BD:', {
+          user_from_bd: {
+            nombre: data.user.nombre,
+            apellidos: data.user.apellidos,
+            telefono: data.user.telefono,
+            pais: data.user.pais,
+            ciudad: data.user.ciudad,
+            tipo_owner: data.user.tipo_owner,
+            nombre_empresa: data.user.nombre_empresa,
+            tipo_empresa: data.user.tipo_empresa
+          },
+          ownerProfile: ownerProfile ? {
+            nombre_contacto: ownerProfile.nombre_contacto,
+            telefono: ownerProfile.telefono,
+            pais: ownerProfile.pais
+          } : null
+        });
+        
+        const step1DataLoaded = {
+          nombre: ownerProfile?.nombre_contacto || 
+                  data.user.nombre || 
+                  data.user.name || 
+                  localStorage.getItem('owner_nombre_completo') ||
+                  '',
+          apellidos: data.user.apellidos || '',
+          email: data.user.email || '',
+          telefono: ownerProfile?.telefono || 
+                   data.user.telefono || 
+                   localStorage.getItem('owner_telefono') || 
+                   '',
+          pais: ownerProfile?.pais || 
+                data.user.pais || 
+                localStorage.getItem('owner_pais') || 
+                '',
+          ciudad: data.user.ciudad || '',
+          tipo_owner: data.user.tipo_owner || '',
+          nombre_empresa: data.user.nombre_empresa || '',
+          tipo_empresa: data.user.tipo_empresa || '',
+          step: 1
+        };
+
+        setStep1Data(step1DataLoaded);
+
+        // Inicializar campos del formulario con datos disponibles del owner existente
+        if (isMounted && ownerProfile) {
+          setFormData(prev => ({
+            ...prev,
+            razon_social: ownerProfile.empresa || prev.razon_social,
+            tipo_empresa: ownerProfile.tipo_empresa || prev.tipo_empresa,
+          }));
+        }
+
+        setInitialLoading(false);
+      } catch (err) {
+        console.error('🔥 [OWNER_STEP2] Error crítico cargando usuario:', err);
+
+        if (isMounted) {
           setStep1Data({
             nombre: '',
             email: '',
             telefono: '',
             pais: '',
             step: 1
-          });
-          setInitialLoading(false);
-          // Usar router.replace en lugar de window.location.href
-          router.replace(`/login?next=${encodeURIComponent('/owners/registrarse/info')}`);
-          return;
-        }
-
-        if (!isMounted) return;
-
-        // Construir datos mínimos para poblar el formulario
-        const stepData = {
-          nombre: user.user_metadata?.nombre_contacto || '',
-          email: user.email || '',
-          telefono: user.user_metadata?.telefono || '',
-          pais: user.user_metadata?.pais || '',
-          step: 1
-        };
-
-        setStep1Data(stepData);
-
-        // Inicializar país del formulario con el país conocido del usuario
-        setFormData(prev => ({
-          ...prev,
-          pais: stepData.pais || prev.pais,
-        }));
-
-        setInitialLoading(false);
-
-      } catch (err) {
-        console.error('[OWNER STEP 2] Error cargando usuario:', err);
-
-        if (isMounted) {
-          // Nunca dejar loading infinito - establecer datos mínimos
-          setStep1Data({
-            nombre: '',
-            email: '',
-            telefono: '',
-            pais: '',
-            step: 1,
           });
           setInitialLoading(false);
         }
@@ -111,7 +151,7 @@ export default function InfoOwnerPage() {
     return () => {
       isMounted = false;
     };
-  }, [router]);
+  }, []); // Dependencias vacías para ejecutar solo al montar
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -128,16 +168,17 @@ export default function InfoOwnerPage() {
   };
 
   const validateForm = (): boolean => {
-    // Validaciones según tipo_contacto (según esquema de tabla owners)
+    // Validaciones según tipo_contacto
     if (tipoOwner === 'persona') {
-      // Para persona: nombre_contacto, email, telefono, pais son obligatorios
-      // direccion y ciudad son opcionales pero recomendados
       if (!formData.direccion?.trim() || !formData.ciudad?.trim()) {
         setError('Por favor, completa la dirección y ciudad');
         return false;
       }
-    } else if (tipoOwner === 'empresa' || tipoOwner === 'agencia' || tipoOwner === 'gobierno') {
-      // Para compania/agencia/gobierno: empresa, email, telefono, pais son obligatorios
+    } else if (['empresa', 'agencia', 'gobierno'].includes(tipoOwner)) {
+      if (!formData.razon_social?.trim()) {
+        setError('La Razón Social / Empresa es obligatoria.');
+        return false;
+      }
       if (!formData.direccion_fiscal?.trim() || !formData.ciudad?.trim()) {
         setError('Por favor, completa la dirección fiscal y ciudad');
         return false;
@@ -145,22 +186,21 @@ export default function InfoOwnerPage() {
     }
 
     // Validación de campos comunes requeridos
-    if (!formData.razon_social?.trim() || !formData.tipo_empresa?.trim() || 
-        !formData.representante_legal?.trim() || !formData.tax_id?.trim() ||
-        !formData.puesto?.trim()) {
-      setError('Por favor, completa todos los campos requeridos');
-      return false;
+    if (['empresa', 'agencia', 'gobierno'].includes(tipoOwner)) {
+      if (!formData.tipo_empresa?.trim() || !formData.representante_legal?.trim() ||
+        !formData.tax_id?.trim() || !formData.puesto?.trim()) {
+        setError('Por favor, completa todos los campos de la empresa');
+        return false;
+      }
     }
 
-    // Validación de permisos
     if (!formData.tiene_permisos) {
       setError('Debes confirmar que tienes los permisos necesarios');
       return false;
     }
 
-    // Validación de instalación
     if (!formData.permite_instalacion) {
-      setError('Debes confirmar que permites la instalación de publicidad en tu soporte');
+      setError('Debes confirmar que permites la instalación de publicidad');
       return false;
     }
 
@@ -177,98 +217,193 @@ export default function InfoOwnerPage() {
 
     try {
       if (!validateForm()) {
-        setLoading(false);
+        // setLoading(false) se maneja en finally
         return;
       }
 
-      // Obtener usuario autenticado (requerido para paso 2)
-      const supabase = createClient();
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      console.log('🚀 [OWNER_STEP2] Iniciando envío de formulario...');
 
-      if (userError || !user) {
+      // Obtener usuario autenticado (requerido para paso 2)
+      const userResponse = await fetch('/api/auth/me');
+      
+      if (!userResponse.ok) {
+        const errorData = await userResponse.json().catch(() => ({ error: 'No autorizado' }));
+        console.error('❌ [OWNER_STEP2] Error de sesión al enviar:', errorData);
         setError('Debes estar autenticado para completar el registro. Redirigiendo...');
-        router.replace(`/login?next=${encodeURIComponent('/owners/registrarse/info')}`);
-        setLoading(false);
+        setTimeout(() => {
+          window.location.href = `/login?next=${encodeURIComponent('/owners/registrarse/info')}`;
+        }, 2000);
         return;
+      }
+
+      const userData = await userResponse.json();
+      
+      if (!userData.success || !userData.user) {
+        throw new Error("No se pudo obtener la información del usuario.");
+      }
+
+      const user = userData.user;
+
+      // Validar user_id - el JWT devuelve tanto id como sub (ambos deberían ser iguales)
+      const userId = user.id || user.sub;
+
+      if (!userId) {
+        console.error('❌ [OWNER_STEP2] No se pudo obtener user_id. User data:', user);
+        throw new Error("No se pudo identificar el ID del usuario. Por favor, inicia sesión nuevamente.");
+      }
+
+      // Validar que userId existe y tiene formato válido (UUID o string)
+      if (typeof userId !== 'string' || userId.trim().length === 0) {
+        console.error('❌ [OWNER_STEP2] user_id inválido:', userId, 'Type:', typeof userId);
+        throw new Error('ID de usuario inválido. Por favor, inicia sesión nuevamente.');
+      }
+
+      console.log('🔍 [OWNER_STEP2] Usuario autenticado:', {
+        userId,
+        email: user.email,
+        name: user.name || user.nombre,
+        id: user.id,
+        sub: user.sub,
+        role: user.role || user.rol
+      });
+
+      // Intentar obtener datos del owner existente si ya existe
+      let ownerProfile = null;
+      try {
+        const ownerResponse = await fetch('/api/me/owner-profile');
+        if (ownerResponse.ok) {
+          ownerProfile = await ownerResponse.json();
+          console.log('✅ [OWNER_STEP2] Datos del owner existente al enviar:', ownerProfile);
+        }
+      } catch (err) {
+        console.log('ℹ️ [OWNER_STEP2] No hay owner existente o error al obtenerlo:', err);
       }
 
       // Obtener datos del usuario autenticado
-      const nombreCompleto = localStorage.getItem('owner_nombre_completo') || 
-                            user.user_metadata?.nombre_contacto || 
-                            step1Data.nombre || 
-                            user.email?.split('@')[0] || '';
-      
-      const email = user.email || step1Data.email || '';
-      const telefono = step1Data.telefono || user.user_metadata?.telefono || '';
-      const pais = formData.pais?.trim() || step1Data.pais || user.user_metadata?.pais || '';
+      // Prioridad: owner existente > localStorage > step1Data > usuario autenticado
+      const nombreCompleto = ownerProfile?.nombre_contacto ||
+        localStorage.getItem('owner_nombre_completo') ||
+        user.name || user.nombre ||
+        step1Data?.nombre ||
+        user.email?.split('@')[0] || '';
 
-      // Validar que tenemos los campos requeridos
-      if (!nombreCompleto || !email || !telefono || !pais) {
-        setError('Faltan datos requeridos. Por favor, completa todos los campos.');
-        setLoading(false);
-        return;
+      const email = user.email || step1Data?.email || '';
+      
+      // Obtener datos del usuario de la BD (prioridad: ownerProfile > user de BD > step1Data > localStorage)
+      const telefono = ownerProfile?.telefono || 
+                      user.telefono || 
+                      step1Data?.telefono || 
+                      localStorage.getItem('owner_telefono') || 
+                      '';
+      
+      const pais = ownerProfile?.pais || 
+                  user.pais || 
+                  step1Data?.pais || 
+                  localStorage.getItem('owner_pais') || 
+                  '';
+      
+      console.log('🔍 [OWNER_STEP2] Obteniendo datos para envío desde BD:', {
+        ownerProfile: {
+          telefono: ownerProfile?.telefono,
+          pais: ownerProfile?.pais
+        },
+        user_from_bd: {
+          telefono: user.telefono,
+          pais: user.pais
+        },
+        step1Data: {
+          telefono: step1Data?.telefono,
+          pais: step1Data?.pais
+        },
+        final: {
+          telefono,
+          pais
+        }
+      });
+
+      // Validar que tenemos los campos base mínimos
+      if (!nombreCompleto || !email) {
+        throw new Error('Faltan datos base del usuario (nombre o email). Recarga la página.');
       }
 
-      // Mapear tipo_owner a tipo_contacto según la tabla owners
-      const tipo_contacto = tipoOwner === 'empresa' ? 'compania' : tipoOwner;
+      // Si faltan telefono o pais, usar valores por defecto razonables
+      const telefonoFinal = telefono || '000000000'; // Valor temporal si no está disponible
+      // NO usar 'España' como valor por defecto - si no hay país, debe ser un error
+      const paisFinal = pais || '';
+      
+      if (!paisFinal) {
+        console.error('❌ [OWNER_STEP2] País no encontrado. Fuentes:', {
+          ownerProfile_pais: ownerProfile?.pais,
+          user_bd_pais: user.pais,
+          step1Data_pais: step1Data?.pais,
+          localStorage_pais: localStorage.getItem('owner_pais')
+        });
+        throw new Error('No se encontró el país del paso 1 en la base de datos. Por favor, regresa al paso 1 y completa el registro nuevamente.');
+      }
 
-      // Preparar datos para enviar al endpoint /api/owners/complete
-      const registrationData: any = {
-        user_id: user.id, // REQUERIDO: siempre viene de la sesión
-        nombre_contacto: nombreCompleto,
+      console.log('📋 [OWNER_STEP2] Datos finales preparados:', {
+        userId,
+        userIdType: typeof userId,
+        userIdLength: userId?.length,
+        nombreCompleto,
         email,
-        telefono,
-        pais,
-        tipo_contacto,
+        telefono: telefonoFinal,
+        pais: paisFinal
+      });
+
+      // Mapear tipo_owner a tipo_contacto
+      const tipo_contacto = tipoOwner === 'empresa' ? 'empresa' : tipoOwner;
+
+      // Preparar datos para enviar
+      const registrationData: any = {
+        user_id: userId, // CRÍTICO - debe existir en tabla usuarios
+        nombre_contacto: nombreCompleto,
+        email: email,
+        telefono: telefonoFinal,
+        pais: paisFinal,
+        tipo_contacto: tipo_contacto
       };
 
-      // Campos específicos según tipo de owner
+      console.log('📤 [OWNER_STEP2] Payload a enviar:', {
+        user_id: registrationData.user_id,
+        email: registrationData.email,
+        tipo_contacto: registrationData.tipo_contacto,
+        has_telefono: !!registrationData.telefono,
+        has_pais: !!registrationData.pais
+      });
+
+      // Mapeo de campos
       if (tipo_contacto === 'persona') {
-        const direccion = formData.direccion?.trim();
-        const ciudad = formData.ciudad?.trim();
-        if (direccion) registrationData.direccion = direccion;
-        if (ciudad) registrationData.ciudad = ciudad;
-      } else if (tipo_contacto === 'compania' || tipo_contacto === 'agencia' || tipo_contacto === 'gobierno') {
-        // Mapear razon_social -> empresa (REQUERIDO para compania/agencia/gobierno)
-        // La validación frontend ya garantiza que razon_social tiene valor
-        const razonSocial = formData.razon_social?.trim();
-        const direccionFiscal = formData.direccion_fiscal?.trim();
-        const ciudad = formData.ciudad?.trim();
-        const sitioWeb = formData.sitio_web?.trim();
-        const tipoEmpresa = formData.tipo_empresa?.trim();
-        const representanteLegal = formData.representante_legal?.trim();
-        const taxId = formData.tax_id?.trim();
-        const puesto = formData.puesto?.trim();
-        const tipoTenencia = formData.tipo_tenencia?.trim();
+        registrationData.direccion = formData.direccion?.trim() || null;
+        registrationData.ciudad = formData.ciudad?.trim() || null;
+      } else if (['empresa', 'agencia', 'gobierno'].includes(tipo_contacto)) {
+        // VALIDACIÓN DEFENSIVA: Asegurar que empresa tenga valor
+        const empresaVal = formData.razon_social?.trim();
+        if (!empresaVal) {
+          throw new Error("El campo Empresa/Razón Social es obligatorio.");
+        }
+        registrationData.empresa = empresaVal;
 
-        // empresa es REQUERIDO según validación del ERP
-        // Si llegamos aquí, la validación frontend ya garantizó que razon_social tiene valor
-        if (!razonSocial) {
-          throw new Error('Razón social es requerida. Por favor, completa todos los campos.');
-        }
-        registrationData.empresa = razonSocial;
-        
-        if (direccionFiscal) {
-          registrationData.direccion = direccionFiscal;
-          registrationData.direccion_fiscal = direccionFiscal;
-        }
-        if (ciudad) registrationData.ciudad = ciudad;
-        if (sitioWeb) registrationData.sitio_web = sitioWeb;
-        // Nuevos campos - solo enviar si tienen valor
-        if (tipoEmpresa) registrationData.tipo_empresa = tipoEmpresa;
-        if (representanteLegal) registrationData.representante_legal = representanteLegal;
-        if (taxId) registrationData.tax_id = taxId;
-        if (puesto) registrationData.puesto = puesto;
-        if (tipoTenencia) registrationData.tipo_tenencia = tipoTenencia;
+        registrationData.direccion = formData.direccion_fiscal?.trim() || null;
+        registrationData.ciudad = formData.ciudad?.trim() || null;
+        registrationData.direccion_fiscal = formData.direccion_fiscal?.trim() || null;
+        registrationData.sitio_web = formData.sitio_web?.trim() || null;
+
+        registrationData.tipo_empresa = formData.tipo_empresa?.trim() || null;
+        registrationData.representante_legal = formData.representante_legal?.trim() || null;
+        registrationData.tax_id = formData.tax_id?.trim() || null;
+        registrationData.puesto = formData.puesto?.trim() || null;
       }
-      
+
       // Campos booleanos comunes
-      registrationData.tiene_permisos = formData.tiene_permisos || false;
-      registrationData.permite_instalacion = formData.permite_instalacion || false;
+      registrationData.tiene_permisos = formData.tiene_permisos;
+      registrationData.permite_instalacion = formData.permite_instalacion;
 
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[OWNER_STEP2] Payload enviado:', registrationData);
-      }
+      console.log('📡 [OWNER_STEP2] Enviando payload a API:', {
+        user_id: registrationData.user_id,
+        tipo_contacto,
+        empresa: registrationData.empresa
+      });
 
       // Enviar al endpoint /api/owners/complete con timeout de seguridad
       const response = await fetch('/api/owners/complete', {
@@ -283,35 +418,46 @@ export default function InfoOwnerPage() {
       const result = await response.json();
 
       if (!response.ok) {
-        if (process.env.NODE_ENV === 'development') {
-          console.error('[OWNER_STEP2] Error ERP:', result);
+        console.error('❌ [OWNER_STEP2] Error API - Status:', response.status);
+        console.error('❌ [OWNER_STEP2] Error API - Result:', JSON.stringify(result, null, 2));
+        console.error('❌ [OWNER_STEP2] User ID enviado:', userId);
+        
+        // Mensaje de error más descriptivo
+        let errorMessage = result.error || result.message || 'Error al completar el registro de owner';
+        
+        // Mensajes específicos para errores comunes
+        if (result.error?.includes('foreign key constraint') || JSON.stringify(result.details || '').includes('foreign key')) {
+          errorMessage = 'El usuario no existe en el sistema. Por favor, inicia sesión nuevamente o regístrate.';
+        } else if (result.error?.includes('user_id')) {
+          errorMessage = 'Error con el ID de usuario. Por favor, inicia sesión nuevamente.';
         }
-        throw new Error(result.error || result.message || 'Error al completar el registro de owner');
+        
+        throw new Error(errorMessage);
       }
 
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[OWNER_STEP2] Respuesta ERP:', result);
-      }
+      console.log('✅ [OWNER_STEP2] Registro completado exitosamente');
 
       // Limpiar localStorage
       localStorage.removeItem('ownerRegistration');
       localStorage.removeItem('owner_nombre_completo');
 
-      console.log('✅ [OWNER_STEP2] Owner completado correctamente, redirigiendo al dashboard...');
-      
-      // Usar router.replace para navegación final (no permite volver atrás)
-      router.replace('/panel/inicio?registered=true');
-    } catch (err) {
-      if ((err as any)?.name === 'AbortError') {
+      // Esperar brevemente
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Forzar redirección al dashboard (con hard reload para asegurar roles actualizados)
+      window.location.href = '/panel/inicio?registered=true';
+
+    } catch (err: any) {
+      if (err?.name === 'AbortError') {
         console.error('[OWNER_STEP2] Request timeout');
-        setError('Request timeout, please try again');
+        setError('El servidor tardó demasiado en responder. Intenta de nuevo.');
       } else {
-        console.error('Error en registro:', err);
-        setError(err instanceof Error ? err.message : 'Ocurrió un error. Por favor, intenta nuevamente.');
+        console.error('🔥 [OWNER_STEP2] Error en proceso:', err);
+        setError(err instanceof Error ? err.message : 'Ocurrió un error inesperado.');
       }
     } finally {
       clearTimeout(timeoutId);
-      setLoading(false);
+      setLoading(false); // SIEMPRE liberar el estado de carga
     }
   };
 
@@ -337,7 +483,7 @@ export default function InfoOwnerPage() {
         <div className="text-center">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">Información del Owner</h1>
           <p className="text-lg text-gray-600 mb-4">Completa tu perfil</p>
-          
+
           {/* Indicadores de pasos */}
           <div className="flex items-center justify-center gap-3 mt-6">
             <div className={`w-3 h-3 rounded-full transition-colors ${false ? 'bg-[#e94446]' : 'bg-white border-2 border-gray-300'}`} />
@@ -513,11 +659,15 @@ export default function InfoOwnerPage() {
                     name="ciudad_pais"
                     type="text"
                     disabled
-                    value={step1Data.pais || ''}
-                    placeholder="España"
-                    className="py-3 rounded-2xl border-gray-300 bg-gray-100"
+                    value={step1Data?.pais || ''}
+                    placeholder={step1Data?.pais ? '' : 'No especificado'}
+                    className={`py-3 rounded-2xl border-gray-300 bg-gray-100 ${!step1Data?.pais ? 'border-red-300 bg-red-50' : ''}`}
                   />
-                  <p className="text-xs text-gray-500">País del paso 1</p>
+                  <p className="text-xs text-gray-500">
+                    {step1Data?.pais 
+                      ? `País del paso 1: ${step1Data.pais}` 
+                      : '⚠️ País no encontrado del paso 1. Por favor, regresa al paso 1.'}
+                  </p>
                 </div>
               </>
             )}
@@ -563,11 +713,15 @@ export default function InfoOwnerPage() {
                     name="ciudad_pais"
                     type="text"
                     disabled
-                    value={step1Data.pais || ''}
-                    placeholder="España"
-                    className="py-3 rounded-2xl border-gray-300 bg-gray-100"
+                    value={step1Data?.pais || ''}
+                    placeholder={step1Data?.pais ? '' : 'No especificado'}
+                    className={`py-3 rounded-2xl border-gray-300 bg-gray-100 ${!step1Data?.pais ? 'border-red-300 bg-red-50' : ''}`}
                   />
-                  <p className="text-xs text-gray-500">País del paso 1</p>
+                  <p className="text-xs text-gray-500">
+                    {step1Data?.pais 
+                      ? `País del paso 1: ${step1Data.pais}` 
+                      : '⚠️ País no encontrado del paso 1. Por favor, regresa al paso 1.'}
+                  </p>
                 </div>
               </>
             )}
@@ -578,7 +732,7 @@ export default function InfoOwnerPage() {
                 <Checkbox
                   id="tiene_permisos"
                   checked={formData.tiene_permisos}
-                  onCheckedChange={(checked) => 
+                  onCheckedChange={(checked) =>
                     setFormData(prev => ({ ...prev, tiene_permisos: checked === true }))
                   }
                   className="mt-1"
@@ -597,7 +751,7 @@ export default function InfoOwnerPage() {
                 <Checkbox
                   id="permite_instalacion"
                   checked={formData.permite_instalacion}
-                  onCheckedChange={(checked) => 
+                  onCheckedChange={(checked) =>
                     setFormData(prev => ({ ...prev, permite_instalacion: checked === true }))
                   }
                   className="mt-1"

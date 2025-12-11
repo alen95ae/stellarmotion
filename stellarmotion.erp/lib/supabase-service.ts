@@ -1,7 +1,7 @@
 // Supabase Service
 // Servicio para operaciones con Supabase
+// IMPORTANTE: Usa SOLO supabaseAdmin (SERVICE_ROLE_KEY) para todas las operaciones
 
-import { supabaseServer } from './supabase-server'
 import { supabaseAdmin } from './supabase-admin'
 
 // Función para obtener URL pública de una imagen desde Supabase Storage
@@ -22,7 +22,7 @@ export function getPublicImageUrl(path: string | null | undefined): string {
   }
   
   // Obtener URL pública desde Supabase Storage
-  const { data } = supabaseServer.storage
+  const { data } = supabaseAdmin.storage
     .from('soportes')
     .getPublicUrl(trimmedPath);
   
@@ -92,7 +92,7 @@ export interface Categoria {
 // Función para generar código interno automático secuencial
 async function generateInternalCode(): Promise<string> {
   try {
-    const { data, error } = await supabaseServer
+    const { data, error } = await supabaseAdmin
       .from('soportes')
       .select('codigo_interno')
       .not('codigo_interno', 'is', null)
@@ -342,7 +342,7 @@ export class SupabaseService {
       const to = from + limit - 1;
 
       // Query base con count para obtener el total
-      let query = supabaseServer
+      let query = supabaseAdmin
         .from('soportes')
         .select('*', { count: 'exact' });
 
@@ -441,7 +441,7 @@ export class SupabaseService {
     try {
       console.log(`🔍 Fetching soporte by ID: ${id}`);
 
-      const { data, error } = await supabaseServer
+      const { data, error } = await supabaseAdmin
         .from('soportes')
         .select('*')
         .eq('id', id)
@@ -543,7 +543,7 @@ export class SupabaseService {
 
       console.log('📤 Campos que se enviarán a Supabase:', insertData);
 
-      const { data: result, error } = await supabaseServer
+      const { data: result, error } = await supabaseAdmin
         .from('soportes')
         .insert(insertData)
         .select()
@@ -686,7 +686,7 @@ export class SupabaseService {
         updateData.updated_at = new Date().toISOString();
       }
 
-      const { data: result, error } = await supabaseServer
+      const { data: result, error } = await supabaseAdmin
         .from('soportes')
         .update(updateData)
         .eq('id', id)
@@ -710,7 +710,7 @@ export class SupabaseService {
     try {
       console.log(`🗑️ Deleting soporte ${id} from Supabase...`);
 
-      const { error } = await supabaseServer
+      const { error } = await supabaseAdmin
         .from('soportes')
         .delete()
         .eq('id', id);
@@ -732,7 +732,7 @@ export class SupabaseService {
     try {
       console.log('🔍 Fetching clientes from Supabase...');
 
-      const { data, error } = await supabaseServer
+      const { data, error } = await supabaseAdmin
         .from('clientes')
         .select('*')
         .order('created_at', { ascending: false });
@@ -753,7 +753,7 @@ export class SupabaseService {
     try {
       console.log(`🔍 Fetching cliente by ID: ${id}`);
 
-      const { data, error } = await supabaseServer
+      const { data, error } = await supabaseAdmin
         .from('clientes')
         .select('*')
         .eq('id', id)
@@ -788,7 +788,7 @@ export class SupabaseService {
         estado: data.estado.toUpperCase()
       };
 
-      const { data: result, error } = await supabaseServer
+      const { data: result, error } = await supabaseAdmin
         .from('clientes')
         .insert(insertData)
         .select()
@@ -817,7 +817,7 @@ export class SupabaseService {
     metadata?: Record<string, any>
   ): Promise<{ user: any; error: any }> {
     try {
-      const { data, error } = await supabaseServer.auth.admin.createUser({
+      const { data, error } = await supabaseAdmin.auth.admin.createUser({
         email,
         password,
         email_confirm: true,
@@ -867,7 +867,7 @@ export class SupabaseService {
       // Mapear tipo_owner a tipo_contacto para la tabla owners
       const tipo_contacto_map: Record<string, string> = {
         'persona': 'persona',
-        'empresa': 'compania',
+        'empresa': 'empresa',
         'gobierno': 'gobierno',
         'agencia': 'agencia'
       };
@@ -957,7 +957,7 @@ export class SupabaseService {
    */
   static async getOwnerByEmail(email: string): Promise<any | null> {
     try {
-      const { data, error } = await supabaseServer
+      const { data, error } = await supabaseAdmin
         .from('owners')
         .select('*')
         .eq('email', email)
@@ -982,7 +982,7 @@ export class SupabaseService {
    */
   static async getOwnerByUserId(userId: string): Promise<any | null> {
     try {
-      const { data, error } = await supabaseServer
+      const { data, error } = await supabaseAdmin
         .from('owners')
         .select('*')
         .eq('user_id', userId)
@@ -1009,7 +1009,7 @@ export class SupabaseService {
       const startTime = Date.now();
 
       // FALLBACK 1: Intentar obtener de tabla categorias (puede no existir)
-      const { data, error } = await supabaseServer
+      const { data, error } = await supabaseAdmin
         .from('categorias')
         .select('*')
         .order('nombre', { ascending: true });
@@ -1023,7 +1023,7 @@ export class SupabaseService {
           console.warn('⚠️ Tabla categorias no existe, derivando desde soportes...');
           
           // FALLBACK 2: Obtener categorías únicas desde soportes
-          const { data: soportesData, error: soportesError } = await supabaseServer
+          const { data: soportesData, error: soportesError } = await supabaseAdmin
             .from('soportes')
             .select('categoria_ubicacion')
             .not('categoria_ubicacion', 'is', null);

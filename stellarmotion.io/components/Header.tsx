@@ -3,8 +3,8 @@ import { useState, useRef, useEffect, useMemo } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { ChevronDown, User, Heart, Settings, LogOut, BarChart3, Megaphone } from "lucide-react"
-import { createClient } from "@/lib/supabase-browser"
-import { logout } from "@/app/account/actions"
+// Removed Supabase Auth - using JWT-based auth
+import { getRoleFromPayload } from "@/lib/auth/role"
 
 export default function Header() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
@@ -15,9 +15,6 @@ export default function Header() {
   const pathname = usePathname()
   const router = useRouter()
   
-  // Crear cliente una sola vez usando useMemo
-  const supabase = useMemo(() => createClient(), [])
-
   useEffect(() => {
     let isMounted = true;
     let timeoutId: NodeJS.Timeout;
@@ -30,50 +27,46 @@ export default function Header() {
       }
     }, 2000);
 
-    const loadSessionAndOwner = async () => {
+    const loadUser = async () => {
       try {
-        console.log('🔍 Header: Obteniendo sesión...');
-        const { data: { session }, error } = await supabase.auth.getSession();
+        console.log('🔍 Header: Obteniendo usuario...');
+        const response = await fetch('/api/auth/me', { credentials: 'include' });
         
         if (!isMounted) return;
 
-        if (error) {
-          console.error('❌ Header: Error getting session:', error);
-          setUser(null);
-          setOwnerData(null);
-        } else if (session?.user) {
-          console.log('✅ Header: Usuario obtenido:', session.user.email || 'null');
-          setUser(session.user);
-          
-          // Cargar datos del owner si existe
-          try {
-            const { data: owner, error: ownerError } = await supabase
-              .from('owners')
-              .select('empresa, tipo_empresa')
-              .eq('user_id', session.user.id)
-              .maybeSingle();
-            
-            if (!isMounted) return;
-            
-            if (ownerError) {
-              console.error('❌ Header: Error loading owner data:', ownerError);
-              setOwnerData(null);
-            } else {
-              console.log('✅ Header: Owner data loaded:', owner);
-              console.log('📋 Header: Owner empresa:', owner?.empresa, 'tipo_empresa:', owner?.tipo_empresa);
-              setOwnerData(owner);
-            }
-          } catch (err) {
-            console.error('❌ Header: Error en consulta owner:', err);
-            setOwnerData(null);
-          }
-        } else {
+        if (!response.ok) {
           console.log('ℹ️ Header: No hay sesión activa');
           setUser(null);
           setOwnerData(null);
+        } else {
+          const data = await response.json();
+          if (data.success && data.user) {
+            console.log('✅ Header: Usuario obtenido:', data.user.email || 'null');
+            setUser(data.user);
+            
+            // Cargar datos del owner si es owner
+            if (data.user.role === 'owner' && data.user.id) {
+              try {
+                const ownerResponse = await fetch(`/api/me/owner-profile`);
+                if (ownerResponse.ok) {
+                  const ownerData = await ownerResponse.json();
+                  if (ownerData && !isMounted) return;
+                  setOwnerData(ownerData);
+                }
+              } catch (err) {
+                console.error('❌ Header: Error loading owner data:', err);
+                setOwnerData(null);
+              }
+            } else {
+              setOwnerData(null);
+            }
+          } else {
+            setUser(null);
+            setOwnerData(null);
+          }
         }
       } catch (error) {
-        console.error('❌ Header: Error getting session:', error);
+        console.error('❌ Header: Error getting user:', error);
         if (isMounted) {
           setUser(null);
           setOwnerData(null);
@@ -86,54 +79,21 @@ export default function Header() {
       }
     };
 
-    loadSessionAndOwner();
+    loadUser();
 
-    // Escuchar cambios en la autenticación
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('🔐 Header: Auth state changed:', event, session?.user?.email || 'null');
-      
-      if (!isMounted) return;
-
-      setUser(session?.user ?? null);
-      
-      // Si hay usuario, obtener datos del owner
-      if (session?.user) {
-        try {
-          const { data: owner, error: ownerError } = await supabase
-            .from('owners')
-            .select('empresa, tipo_empresa')
-            .eq('user_id', session.user.id)
-            .maybeSingle();
-          
-          if (!isMounted) return;
-          
-          if (ownerError) {
-            console.error('❌ Header: Error loading owner data (auth change):', ownerError);
-            setOwnerData(null);
-          } else {
-            console.log('✅ Header: Owner data loaded (auth change):', owner);
-            console.log('📋 Header: Owner empresa:', owner?.empresa, 'tipo_empresa:', owner?.tipo_empresa);
-            setOwnerData(owner);
-          }
-        } catch (err) {
-          console.error('❌ Header: Error en consulta owner (auth change):', err);
-          setOwnerData(null);
-        }
-      } else {
-        setOwnerData(null);
-      }
-      
+    // Recargar usuario cuando cambia la ruta (para detectar login/logout)
+    const intervalId = setInterval(() => {
       if (isMounted) {
-        setLoading(false);
+        loadUser();
       }
-    });
+    }, 5000); // Verificar cada 5 segundos
 
     return () => {
       isMounted = false;
       clearTimeout(timeoutId);
-      subscription.unsubscribe();
+      clearInterval(intervalId);
     };
-  }, [supabase])
+  }, [pathname]) // Recargar cuando cambia la ruta
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -153,16 +113,14 @@ export default function Header() {
     
     // Actualizar el estado inmediatamente para que el UI se actualice
     setUser(null)
+    setOwnerData(null)
     setLoading(false)
     
-    // Cerrar sesión en el cliente - esto disparará onAuthStateChange
-    const { error } = await supabase.auth.signOut()
-    
-    if (error) {
+    try {
+      // Cerrar sesión llamando al endpoint de logout
+      await fetch('/api/auth/logout', { method: 'POST' })
+    } catch (error) {
       console.error('Error al cerrar sesión:', error)
-      // Si hay error, restaurar el estado (aunque no debería pasar)
-      const { data: { session } } = await supabase.auth.getSession()
-      setUser(session?.user ?? null)
     }
     
     // Redirigir a home
@@ -194,33 +152,11 @@ export default function Header() {
     }
     
     // Fallback al nombre normal
-    return user?.user_metadata?.nombre_contacto || user?.user_metadata?.name || user?.email?.split('@')[0] || 'Usuario'
+    return user?.name || user?.nombre || user?.email?.split('@')[0] || 'Usuario'
   }, [ownerData, user])
   
-  // Intentar obtener el rol de diferentes lugares
-  const getUserRole = () => {
-    if (!user) return undefined
-    
-    // Intentar desde user_metadata.role
-    if (user.user_metadata?.role) {
-      return user.user_metadata.role
-    }
-    
-    // Intentar desde user_metadata.rol (sin 'e')
-    if (user.user_metadata?.rol) {
-      return user.user_metadata.rol
-    }
-    
-    // Intentar desde app_metadata
-    if (user.app_metadata?.role) {
-      return user.app_metadata.role
-    }
-    
-    return undefined
-  }
-  
-  // Obtener el rol del usuario para determinar la ruta del dashboard
-  const userRole = getUserRole()
+  // Obtener el rol del usuario usando el helper centralizado
+  const userRole = user ? getRoleFromPayload(user.role) : undefined
   
   // Log para debug
   useEffect(() => {
@@ -228,13 +164,17 @@ export default function Header() {
       console.log('👤 User data:', {
         email: user.email,
         role: userRole,
-        metadata: user.user_metadata,
-        rawMetadata: JSON.stringify(user.user_metadata, null, 2)
+        name: user.name || user.nombre
       })
     }
   }, [user, userRole])
   
   const getDashboardPath = () => {
+    // Si no hay usuario o rol undefined, redirigir a home
+    if (!user || !userRole) {
+      return '/'
+    }
+    
     const path = (() => {
       switch (userRole) {
         case 'admin':
@@ -246,7 +186,7 @@ export default function Header() {
         case 'client':
           return '/' // Home para client
         default:
-          return '/panel/inicio' // Por defecto, panel de inicio
+          return '/' // Por defecto, home (no debería llegar aquí si getRoleFromUser funciona correctamente)
       }
     })()
     console.log('🔍 Dashboard path:', path, 'for role:', userRole || 'undefined')

@@ -1,7 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { API_ENDPOINTS, fetchFromERP } from '@/lib/api-config';
 
-const ERP_BASE_URL = process.env.NEXT_PUBLIC_ERP_API_URL || 'http://localhost:3000';
+// Leer URL del ERP con fallback seguro
+const ERP_BASE_URL = process.env.NEXT_PUBLIC_ERP_API_URL || process.env.ERP_BASE_URL || 'http://localhost:3000';
+
+// Validar URL en desarrollo
+if (process.env.NODE_ENV === 'development') {
+  try {
+    const url = new URL(ERP_BASE_URL);
+    if (!['http:', 'https:'].includes(url.protocol)) {
+      console.error('❌ ERROR: ERP_BASE_URL tiene protocolo inválido:', url.protocol);
+    } else {
+      console.log('✅ API Proxy: ERP_BASE_URL configurado:', ERP_BASE_URL);
+    }
+  } catch (e) {
+    console.error('❌ ERROR: ERP_BASE_URL no es una URL válida:', ERP_BASE_URL);
+  }
+}
 const PLACEHOLDER_PATTERN = /placeholder(\.(svg|png|jpe?g))?/i;
 
 const toNumber = (value: unknown): number | null => {
@@ -362,23 +377,71 @@ export async function GET(req: NextRequest) {
     console.log('🌐 IO API: ERP URL:', erpUrl);
     console.log('🌐 IO API: ERP_BASE_URL:', ERP_BASE_URL);
     
-    // Hacer petición al ERP
-    const response = await fetch(erpUrl, {
-      headers: {
-        'User-Agent': 'StellarMotion-IO/1.0',
-      },
-    });
+    // Hacer petición al ERP con timeout y manejo de errores robusto
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+    }, 25000); // 25s timeout (menor que el del cliente para dar tiempo a respuesta)
+    
+    let response: Response;
+    try {
+      response = await fetch(erpUrl, {
+        headers: {
+          'User-Agent': 'StellarMotion-IO/1.0',
+        },
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      console.error('❌ IO API: Error de conexión al ERP:', fetchError);
+      const errorMessage = fetchError instanceof Error ? fetchError.message : 'Error desconocido';
+      
+      // Diagnosticar el error
+      if (fetchError instanceof Error && fetchError.name === 'AbortError') {
+        return NextResponse.json({
+          soportes: [],
+          pagination: null,
+          error: 'Timeout: El ERP no respondió a tiempo. Verifica que esté corriendo en localhost:3000'
+        }, { status: 200 });
+      }
+      
+      if (errorMessage.includes('ECONNREFUSED') || errorMessage.includes('Failed to fetch')) {
+        return NextResponse.json({
+          soportes: [],
+          pagination: null,
+          error: `No se pudo conectar con el ERP en ${ERP_BASE_URL}. Verifica que el servidor esté corriendo.`
+        }, { status: 200 });
+      }
+      
+      return NextResponse.json({
+        soportes: [],
+        pagination: null,
+        error: `Error de conexión: ${errorMessage}`
+      }, { status: 200 });
+    }
     
     console.log('🌐 IO API: ERP Response status:', response.status, response.statusText);
     
     if (!response.ok) {
       console.error('❌ IO API: ERP response not ok:', response.status, response.statusText);
-      const errorText = await response.text();
+      let errorText = 'Unknown error';
+      try {
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const errorJson = await response.json();
+          errorText = errorJson.error || errorJson.message || JSON.stringify(errorJson);
+        } else {
+          errorText = await response.text();
+        }
+      } catch (e) {
+        errorText = response.statusText || `HTTP ${response.status}`;
+      }
       console.error('❌ IO API: ERP error details:', errorText);
       return NextResponse.json({
         soportes: [],
         pagination: null,
-        error: `ERP error: ${response.status} ${response.statusText}`
+        error: `ERP error: ${response.status} ${response.statusText} - ${errorText}`
       }, { status: 200 }); // Devolver array vacío en caso de error
     }
     

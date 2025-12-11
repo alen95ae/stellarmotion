@@ -2,10 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase-browser'
-import type { User } from '@supabase/supabase-js'
-
-const supabase = createClient()
+// Using relative API routes instead of direct ERP calls
 
 export type UserRole = 'admin' | 'owner' | 'agency' | 'client'
 
@@ -18,7 +15,11 @@ export interface UserProfile {
 }
 
 export interface AuthUser {
-  user: User | null
+  user: {
+    id: string
+    email: string
+    name: string
+  } | null
   profile: UserProfile | null
   role: UserRole | null
   loading: boolean
@@ -34,44 +35,38 @@ export function useAuth() {
   const router = useRouter()
 
   useEffect(() => {
-    // Obtener sesión inicial
     checkSession()
+  }, [])
 
-    // Escuchar cambios en la autenticación
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('🔐 Auth state changed:', event, session?.user?.id)
-      
-      if (session?.user) {
-        await loadUserProfile(session.user.id)
-      } else {
+  const checkSession = async () => {
+    try {
+      const response = await fetch('/api/auth/me', {
+        credentials: 'include',
+      })
+
+      if (!response.ok) {
         setAuthUser({
           user: null,
           profile: null,
           role: null,
           loading: false
         })
-      }
-    })
-
-    return () => {
-      subscription.unsubscribe()
-    }
-  }, [])
-
-  const checkSession = async () => {
-    try {
-      const { data: { session }, error } = await supabase.auth.getSession()
-      
-      if (error) {
-        console.error('❌ Error getting session:', error)
-        setAuthUser(prev => ({ ...prev, loading: false }))
         return
       }
 
-      if (session?.user) {
-        await loadUserProfile(session.user.id)
+      const data = await response.json()
+      
+      if (data.success && data.user) {
+        setAuthUser({
+          user: {
+            id: data.user.id,
+            email: data.user.email,
+            name: data.user.name || data.user.nombre || ''
+          },
+          profile: null, // No necesitamos profile separado
+          role: data.user.role as UserRole,
+          loading: false
+        })
       } else {
         setAuthUser({
           user: null,
@@ -82,69 +77,55 @@ export function useAuth() {
       }
     } catch (error) {
       console.error('❌ Error checking session:', error)
-      setAuthUser(prev => ({ ...prev, loading: false }))
-    }
-  }
-
-  const loadUserProfile = async (userId: string) => {
-    try {
-      // Obtener datos del owner desde la tabla owners usando user_id
-      const { data: ownerData, error: ownerError } = await supabase
-        .from('owners')
-        .select('*')
-        .eq('user_id', userId)
-        .maybeSingle()
-
-      if (ownerError && ownerError.code !== 'PGRST116') { // PGRST116 = no rows returned
-        console.error('❌ Error loading owner data:', ownerError)
-      }
-
-      const { data: { user } } = await supabase.auth.getUser()
-
-      // Determinar rol basado en si existe owner data
-      let userRole: UserRole | null = null
-      if (ownerData) {
-        userRole = 'owner'
-      } else {
-        // Si no es owner, verificar en user_metadata
-        const metadataRole = user?.user_metadata?.rol as UserRole
-        if (metadataRole && ['admin', 'agency', 'client'].includes(metadataRole)) {
-          userRole = metadataRole
-        }
-      }
-
       setAuthUser({
-        user: user || null,
-        profile: ownerData ? {
-          id: ownerData.id,
-          user_id: ownerData.user_id,
-          role: 'owner',
-          created_at: ownerData.created_at || new Date().toISOString(),
-          updated_at: ownerData.updated_at || new Date().toISOString()
-        } : null,
-        role: userRole,
+        user: null,
+        profile: null,
+        role: null,
         loading: false
       })
-    } catch (error) {
-      console.error('❌ Error loading user profile:', error)
-      setAuthUser(prev => ({ ...prev, loading: false }))
     }
   }
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string, rememberMe?: boolean) => {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ email, password, rememberMe }),
       })
 
-      if (error) {
-        console.error('❌ Sign in error:', error)
-        return { error: error.message }
+      const data = await response.json()
+
+      if (!response.ok) {
+        return { error: data.error || 'Error al iniciar sesión' }
       }
 
-      if (data.user) {
-        await loadUserProfile(data.user.id)
+      // La nueva API devuelve { ok: true, success, user, redirect } o { ok: true, data: { success, user, redirect } }
+      const userData = data.user || data.data?.user;
+      const success = data.success || data.data?.success || data.ok;
+      const redirect = data.redirect || data.data?.redirect;
+
+      if (success && userData) {
+        setAuthUser({
+          user: {
+            id: userData.id,
+            email: userData.email,
+            name: userData.name || ''
+          },
+          profile: null,
+          role: userData.role as UserRole,
+          loading: false
+        })
+
+        // Redirigir a HOME excepto si hay redirect específico
+        if (redirect) {
+          router.push(redirect)
+        } else {
+          router.push('/')
+        }
       }
 
       return { data, error: null }
@@ -156,29 +137,47 @@ export function useAuth() {
 
   const signUp = async (email: string, password: string, role: UserRole) => {
     try {
-      // Crear usuario en Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ email, password, nombre: email.split('@')[0], role }),
       })
 
-      if (authError) {
-        console.error('❌ Sign up error:', authError)
-        return { error: authError.message }
+      const data = await response.json()
+
+      if (!response.ok) {
+        return { error: data.error || 'Error al registrar usuario' }
       }
 
-      if (!authData.user) {
-        return { error: 'No se pudo crear el usuario' }
+      // La nueva API devuelve { ok: true, data: { success, user, redirect } }
+      const userData = data.data?.user || data.user;
+      const success = data.data?.success || data.success || data.ok;
+      const redirect = data.data?.redirect || data.redirect;
+
+      if (success && userData) {
+        setAuthUser({
+          user: {
+            id: userData.id,
+            email: userData.email,
+            name: userData.name || ''
+          },
+          profile: null,
+          role: userData.role as UserRole,
+          loading: false
+        })
+
+        // Redirigir a HOME excepto si hay redirect específico
+        if (redirect) {
+          router.push(redirect)
+        } else {
+          router.push('/')
+        }
       }
 
-      // Para owners, el perfil se crea en la tabla owners (no en usuarios)
-      // Para otros roles (admin, agency, client), solo se guarda en user_metadata
-      // No necesitamos crear registro en usuarios ya que usamos auth.users directamente
-      
-      // Cargar perfil después de crear el usuario
-      await loadUserProfile(authData.user.id)
-
-      return { data: authData, error: null }
+      return { data, error: null }
     } catch (error: any) {
       console.error('❌ Sign up error:', error)
       return { error: error.message || 'Error al registrar usuario' }
@@ -187,12 +186,10 @@ export function useAuth() {
 
   const signOut = async () => {
     try {
-      const { error } = await supabase.auth.signOut()
-      
-      if (error) {
-        console.error('❌ Sign out error:', error)
-        return { error: error.message }
-      }
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+      })
 
       setAuthUser({
         user: null,
@@ -201,28 +198,10 @@ export function useAuth() {
         loading: false
       })
 
-      router.push('/auth/login')
-      return { error: null }
+      router.push('/login')
     } catch (error: any) {
       console.error('❌ Sign out error:', error)
-      return { error: error.message || 'Error al cerrar sesión' }
     }
-  }
-
-  const requireAuth = (requiredRole?: UserRole) => {
-    if (authUser.loading) {
-      return { authorized: false, redirect: null }
-    }
-
-    if (!authUser.user) {
-      return { authorized: false, redirect: '/auth/login' }
-    }
-
-    if (requiredRole && authUser.role !== requiredRole) {
-      return { authorized: false, redirect: '/auth/error' }
-    }
-
-    return { authorized: true, redirect: null }
   }
 
   return {
@@ -230,8 +209,6 @@ export function useAuth() {
     signIn,
     signUp,
     signOut,
-    requireAuth,
-    refresh: checkSession
+    refresh: checkSession,
   }
 }
-

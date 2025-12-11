@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
-import { createClient } from '@/lib/supabase-browser';
 import { 
   BarChart3, 
   Calendar, 
@@ -105,7 +104,6 @@ interface DashboardStats {
 
 export default function DashboardPage() {
   const { user, loading: authLoading } = useAuth();
-  const supabase = createClient();
   const [stats, setStats] = useState<DashboardStats>({
     totalSupports: 0,
     activeReservations: 0,
@@ -115,21 +113,29 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [ownerId, setOwnerId] = useState<string | null>(null);
 
-  // Obtener el ownerId del usuario autenticado
+  // Obtener el ownerId del usuario autenticado usando la API
   useEffect(() => {
     const getOwnerId = async () => {
       if (!user) return;
       
       try {
-        // Buscar el owner en la tabla owners usando el user_id
-        const { data: ownerData, error } = await supabase
-          .from('owners')
-          .select('id')
-          .eq('user_id', user.id)
-          .maybeSingle();
-        
-        if (ownerData) {
-          setOwnerId(ownerData.id);
+        // Obtener owner desde la API
+        const response = await fetch(`/api/me/owner-profile`);
+        if (response.ok) {
+          const ownerData = await response.json();
+          if (ownerData && ownerData.id) {
+            // Si la API devuelve un ID directamente
+            setOwnerId(ownerData.id);
+          } else {
+            // Si necesitamos buscar por user_id
+            const ownersResponse = await fetch(`/api/owners?user_id=${user.id}`);
+            if (ownersResponse.ok) {
+              const owners = await ownersResponse.json();
+              if (Array.isArray(owners) && owners.length > 0) {
+                setOwnerId(owners[0].id);
+              }
+            }
+          }
         } else {
           console.warn('No se encontró owner para el usuario:', user.id);
         }
@@ -141,7 +147,7 @@ export default function DashboardPage() {
     if (user && !authLoading) {
       getOwnerId();
     }
-  }, [user, authLoading, supabase]);
+  }, [user, authLoading]);
 
   useEffect(() => {
     if (ownerId) {

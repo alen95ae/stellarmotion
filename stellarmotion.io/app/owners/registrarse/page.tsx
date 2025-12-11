@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { createClient } from '@/lib/supabase-browser';
+// Removed Supabase Auth - using JWT-based auth
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,10 +16,10 @@ export default function RegistroOwnerPage() {
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  
+
   // Detectar si es registro de owner (con pasos) o registro normal
   const isOwnerRegistration = searchParams.get('type') === 'owner';
-  
+
   const [formData, setFormData] = useState({
     nombre: '',
     apellidos: '',
@@ -34,33 +34,32 @@ export default function RegistroOwnerPage() {
   // Solo para registro de owner (con pasos)
   useEffect(() => {
     if (!isOwnerRegistration) return; // Solo verificar si es registro de owner
-    
+
     const checkAuth = async () => {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (user) {
-        // Si el usuario ya está autenticado, verificar si tiene registro en owners
-        const { data: ownerData } = await supabase
-          .from('owners')
-          .select('id')
-          .eq('user_id', user.id)
-          .maybeSingle();
-        
-        // Si no tiene registro en owners, redirigir al paso 2
-        if (!ownerData) {
-          console.log('✅ [Paso 1] Usuario autenticado sin owner, redirigiendo al paso 2...');
-          router.push('/owners/registrarse/info');
-          return;
-        } else {
-          // Si ya tiene owner, redirigir al dashboard
-          console.log('✅ [Paso 1] Usuario ya tiene owner, redirigiendo al dashboard...');
-          router.push('/panel/inicio');
-          return;
+      try {
+        const response = await fetch('/api/auth/me');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.user) {
+            // Usuario autenticado - verificar si tiene owner
+            // Si es owner, redirigir al dashboard
+            if (data.user.role === 'owner') {
+              router.push('/dashboard/owner');
+              return;
+            }
+            // Si es client, redirigir al paso 2
+            if (data.user.role === 'client') {
+              router.push('/owners/registrarse/info');
+              return;
+            }
+          }
         }
+      } catch (err) {
+        // No autenticado, continuar con el formulario
+        console.log('Usuario no autenticado, continuando con registro...');
       }
     };
-    
+
     checkAuth();
   }, [isOwnerRegistration, router]);
 
@@ -77,12 +76,10 @@ export default function RegistroOwnerPage() {
     setLoading(true);
 
     try {
-      const supabase = createClient();
-
       // Validaciones básicas
-      if (!formData.nombre.trim() || !formData.apellidos.trim() || !formData.email.trim() || 
-          !formData.telefono.trim() || !formData.pais.trim() || !formData.contraseña.trim() || 
-          !formData.confirmarContraseña.trim()) {
+      if (!formData.nombre.trim() || !formData.apellidos.trim() || !formData.email.trim() ||
+        !formData.telefono.trim() || !formData.pais.trim() || !formData.contraseña.trim() ||
+        !formData.confirmarContraseña.trim()) {
         setError('Por favor, completa todos los campos');
         setLoading(false);
         return;
@@ -114,6 +111,7 @@ export default function RegistroOwnerPage() {
       const nombreCompleto = `${formData.nombre} ${formData.apellidos}`;
 
       // Registrar cliente en el ERP
+      console.log('📡 [OWNER_STEP1] Enviando registro al ERP...');
       const response = await fetch('/api/auth/register-client', {
         method: 'POST',
         headers: {
@@ -123,6 +121,8 @@ export default function RegistroOwnerPage() {
           email: formData.email.trim(),
           password: formData.contraseña,
           nombre_contacto: nombreCompleto.trim(),
+          nombre: formData.nombre.trim(),
+          apellidos: formData.apellidos.trim(),
           telefono: formData.telefono.trim(),
           pais: formData.pais.trim()
         })
@@ -135,52 +135,33 @@ export default function RegistroOwnerPage() {
         if (result.error === 'EMAIL_EXISTS' || response.status === 409 || result.action === 'LOGIN_TO_UPGRADE') {
           console.log('⚠️ [OWNER_STEP1] Email ya existe, redirigiendo al login...');
           // Si es registro de owner, redirigir al paso 2 después del login
-          const nextUrl = isOwnerRegistration 
+          const nextUrl = isOwnerRegistration
             ? `/login?next=${encodeURIComponent('/owners/registrarse/info')}&email=${encodeURIComponent(formData.email)}`
             : `/login?email=${encodeURIComponent(formData.email)}`;
-          router.replace(nextUrl);
+          window.location.href = nextUrl;
           return;
         }
-        
+
         setError(result.message || result.error || 'Error al registrar. Por favor, intenta nuevamente.');
-        return;
-      }
-
-      // Si el registro fue exitoso, iniciar sesión automáticamente
-      console.log('✅ [OWNER_STEP1] Registro exitoso, iniciando sesión automática...');
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-        email: formData.email.trim(),
-        password: formData.contraseña
-      });
-
-      if (signInError || !signInData.user || !signInData.session) {
-        console.error('❌ [OWNER_STEP1] Error al iniciar sesión automáticamente:', signInError);
-        setError('No se pudo iniciar sesión automáticamente. Por favor, inicia sesión manualmente.');
         setLoading(false);
-        const nextUrl = isOwnerRegistration 
-          ? `/login?next=${encodeURIComponent('/owners/registrarse/info')}&email=${encodeURIComponent(formData.email)}`
-          : `/login?email=${encodeURIComponent(formData.email)}`;
-        // Pequeño delay para que el usuario vea el error antes de redirigir
-        setTimeout(() => {
-          router.replace(nextUrl);
-        }, 2000);
         return;
       }
 
-      console.log('✅ [OWNER_STEP1] Sesión iniciada correctamente, user:', signInData.user.id);
+      // El registro ya crea la sesión automáticamente (cookie JWT)
+      // Los datos del paso 1 ahora se guardan en la BD (tabla usuarios)
+      // Ya no necesitamos localStorage - el paso 2 leerá de la BD
+      console.log('✅ [OWNER_STEP1] Registro exitoso, cookie de sesión establecida');
+      console.log('✅ [OWNER_STEP1] Datos guardados en BD (tabla usuarios):', {
+        nombre: formData.nombre.trim(),
+        apellidos: formData.apellidos.trim(),
+        telefono: formData.telefono.trim(),
+        pais: formData.pais.trim()
+      });
+      
+      await new Promise(resolve => setTimeout(resolve, 300));
 
-      // signInWithPassword ya establece la sesión y las cookies automáticamente con createBrowserClient
-      // No necesitamos esperar getSession() - confiamos en que la sesión está lista
       // Si es registro de owner, redirigir al paso 2
       if (isOwnerRegistration) {
-        // Guardar nombre completo en localStorage SOLO como ayuda visual para el paso 2 (no crítico)
-        try {
-          localStorage.setItem('owner_nombre_completo', nombreCompleto);
-        } catch {
-          // Ignorar errores de localStorage
-        }
-        // Pequeño delay para asegurar que las cookies se escribieron antes de redirigir
-        await new Promise(resolve => setTimeout(resolve, 300));
         // Redirigir al paso 2 usando router.replace
         router.replace('/owners/registrarse/info');
       } else {
@@ -202,7 +183,7 @@ export default function RegistroOwnerPage() {
         <div className="text-center">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">Bienvenido a Stellamotion</h1>
           <p className="text-lg text-gray-600 mb-4">Información básica</p>
-          
+
           {/* Indicadores de pasos - Solo mostrar si es registro de owner */}
           {isOwnerRegistration && (
             <div className="flex items-center justify-center gap-3 mt-6">
@@ -219,7 +200,7 @@ export default function RegistroOwnerPage() {
                 {error}
                 {error.includes('ya está registrado') && (
                   <div className="mt-3">
-                    <a 
+                    <a
                       href={`/login?next=${encodeURIComponent('/owners/registrarse/info')}`}
                       className="text-[#e94446] hover:underline font-medium"
                     >
