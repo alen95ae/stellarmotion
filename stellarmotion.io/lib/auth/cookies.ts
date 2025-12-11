@@ -27,6 +27,17 @@ export function clearAuthCookie(name: string) {
 }
 
 /**
+ * Establece la cookie de sesión con el formato correcto
+ * @param response - La respuesta NextResponse donde se establecerá la cookie
+ * @param token - El token JWT a guardar
+ */
+export function setSessionCookie(response: NextResponse, token: string) {
+  const maxAge = 7 * 24 * 60 * 60; // 7 días en segundos
+  const cookie = createAuthCookie('st_session', token, maxAge);
+  response.headers.set('Set-Cookie', cookie);
+}
+
+/**
  * Limpia la cookie de sesión con el formato correcto para localhost
  * @param response - La respuesta NextResponse donde se limpiará la cookie
  */

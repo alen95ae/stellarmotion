@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { API_ENDPOINTS, fetchFromERP } from '@/lib/api-config';
 
+// Forzar runtime Node.js para acceso a process.env
+export const runtime = 'nodejs';
+
 // Leer URL del ERP con fallback seguro
 const ERP_BASE_URL = process.env.NEXT_PUBLIC_ERP_API_URL || process.env.ERP_BASE_URL || 'http://localhost:3000';
 

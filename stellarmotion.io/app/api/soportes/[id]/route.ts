@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { fetchFromERP, API_BASE_URL } from '@/lib/api-config';
 import { getSoporteCoordinates } from '@/lib/google-maps-utils';
 
+// Forzar runtime Node.js para acceso a process.env
+export const runtime = 'nodejs';
+
 // GET - Obtener un soporte específico por ID
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {

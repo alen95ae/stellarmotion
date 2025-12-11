@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 
+// Forzar runtime Node.js para acceso a process.env
+export const runtime = 'nodejs';
+
 // Prefer server key; keep backward compatibility with old var name
 const KEY = process.env.GOOGLE_MAPS_SERVER_KEY || process.env.GOOGLE_MAPS_API_KEY;
 

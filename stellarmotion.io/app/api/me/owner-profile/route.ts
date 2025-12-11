@@ -1,73 +1,77 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { verifySession } from '@/lib/auth/session';
+import { getAdminSupabase } from '@/lib/supabase/admin';
 
-const ERP_BASE_URL = process.env.NEXT_PUBLIC_ERP_API_URL || process.env.ERP_BASE_URL || 'http://localhost:3000';
+// Forzar runtime Node.js para acceso completo a process.env
+export const runtime = 'nodejs';
 
 export async function GET(req: NextRequest) {
   try {
-    // Obtener todas las cookies y enviarlas al ERP
-    const cookieStore = await cookies();
-    const cookieHeader = cookieStore.toString();
-
-    // Obtener usuario actual primero
-    const userResponse = await fetch(`${ERP_BASE_URL}/api/auth/me`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Cookie': cookieHeader,
-      },
+    // ⚠️ LOGGING OBLIGATORIO PARA VERIFICAR ENV
+    console.log('[ENV CHECK]', {
+      url: process.env.NEXT_PUBLIC_SUPABASE_URL,
+      serviceKeyLoaded: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
     });
+    
+    const cookieStore = await cookies();
+    const st = cookieStore.get("st_session");
 
-    if (!userResponse.ok) {
+    if (!st) {
       return NextResponse.json(
         { error: 'No autorizado' },
         { status: 401 }
       );
     }
 
-    const userData = await userResponse.json();
+    // Verificar JWT
+    const payload = await verifySession(st.value);
     
-    if (!userData.success || !userData.user) {
+    if (!payload || !payload.sub) {
       return NextResponse.json(
-        { error: 'Usuario no encontrado' },
-        { status: 404 }
+        { error: 'Sesión inválida' },
+        { status: 401 }
       );
     }
 
-    const userId = userData.user.id || userData.user.sub;
-    const userEmail = userData.user.email;
+    // Obtener owner desde Supabase
+    const supabase = getAdminSupabase();
+    const { data: owner, error: ownerError } = await supabase
+      .from('owners')
+      .select('*')
+      .eq('user_id', payload.sub)
+      .maybeSingle();
 
-    // Obtener datos del owner desde el ERP (buscar por email ya que el ERP solo acepta email)
-    const ownerResponse = await fetch(`${ERP_BASE_URL}/api/owners?email=${encodeURIComponent(userEmail)}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!ownerResponse.ok) {
+    if (ownerError && ownerError.code !== 'PGRST116') {
+      console.error('❌ [WEB OWNER-PROFILE] Error:', ownerError);
       return NextResponse.json(
-        { empresa: null, tipo_empresa: null }
+        { error: 'Error al obtener perfil' },
+        { status: 500 }
       );
     }
 
-    const ownerData = await ownerResponse.json();
-    
-    // Si es un array, tomar el primer elemento
-    const owner = Array.isArray(ownerData) ? ownerData[0] : ownerData;
+    if (!owner) {
+      return NextResponse.json({
+        empresa: null,
+        tipo_empresa: null,
+        telefono: null,
+        pais: null,
+        nombre_contacto: null,
+      });
+    }
 
     return NextResponse.json({
-      empresa: owner?.empresa || owner?.razon_social || null,
-      tipo_empresa: owner?.tipo_empresa || null,
-      telefono: owner?.telefono || null,
-      pais: owner?.pais || null,
-      nombre_contacto: owner?.nombre_contacto || null,
+      empresa: owner.empresa || null,
+      tipo_empresa: owner.tipo_empresa || null,
+      telefono: owner.telefono || null,
+      pais: owner.pais || null,
+      nombre_contacto: owner.nombre_contacto || null,
     });
-  } catch (error) {
-    console.error('Error obteniendo perfil de owner:', error);
+  } catch (error: any) {
+    console.error('❌ [WEB OWNER-PROFILE] Error:', error);
     return NextResponse.json(
       { empresa: null, tipo_empresa: null },
-      { status: 200 } // Devolver null en caso de error, no romper la app
+      { status: 200 }
     );
   }
 }

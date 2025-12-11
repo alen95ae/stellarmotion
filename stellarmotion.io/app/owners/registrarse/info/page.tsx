@@ -82,11 +82,8 @@ export default function InfoOwnerPage() {
             nombre: data.user.nombre,
             apellidos: data.user.apellidos,
             telefono: data.user.telefono,
-            pais: data.user.pais,
-            ciudad: data.user.ciudad,
-            tipo_owner: data.user.tipo_owner,
-            nombre_empresa: data.user.nombre_empresa,
-            tipo_empresa: data.user.tipo_empresa
+            pais: data.user.pais
+            // NOTA: ciudad, tipo_owner, nombre_empresa, tipo_empresa están en tabla owners
           },
           ownerProfile: ownerProfile ? {
             nombre_contacto: ownerProfile.nombre_contacto,
@@ -111,10 +108,7 @@ export default function InfoOwnerPage() {
                 data.user.pais || 
                 localStorage.getItem('owner_pais') || 
                 '',
-          ciudad: data.user.ciudad || '',
-          tipo_owner: data.user.tipo_owner || '',
-          nombre_empresa: data.user.nombre_empresa || '',
-          tipo_empresa: data.user.tipo_empresa || '',
+          // NOTA: ciudad, tipo_owner, nombre_empresa, tipo_empresa están en tabla owners (paso 2)
           step: 1
         };
 
@@ -244,27 +238,56 @@ export default function InfoOwnerPage() {
 
       const user = userData.user;
 
-      // Validar user_id - el JWT devuelve tanto id como sub (ambos deberían ser iguales)
-      const userId = user.id || user.sub;
+      // ⚠️ CRÍTICO: SIEMPRE usar user.id (el ID real de la BD), NO user.sub
+      // user.id viene de Supabase y es el ÚNICO válido
+      const userId = user.id;
 
       if (!userId) {
         console.error('❌ [OWNER_STEP2] No se pudo obtener user_id. User data:', user);
+        console.error('❌ [OWNER_STEP2] user.id:', user.id);
+        console.error('❌ [OWNER_STEP2] user.sub:', user.sub);
+        console.error('❌ [OWNER_STEP2] userData completo:', userData);
         throw new Error("No se pudo identificar el ID del usuario. Por favor, inicia sesión nuevamente.");
       }
 
-      // Validar que userId existe y tiene formato válido (UUID o string)
+      // Validar que userId existe y tiene formato válido (UUID)
       if (typeof userId !== 'string' || userId.trim().length === 0) {
         console.error('❌ [OWNER_STEP2] user_id inválido:', userId, 'Type:', typeof userId);
         throw new Error('ID de usuario inválido. Por favor, inicia sesión nuevamente.');
       }
+      
+      // Validar formato UUID
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(userId)) {
+        console.error('❌ [OWNER_STEP2] userId no tiene formato UUID válido:', userId);
+        throw new Error('Formato de ID de usuario inválido. Por favor, inicia sesión nuevamente.');
+      }
 
       console.log('🔍 [OWNER_STEP2] Usuario autenticado:', {
         userId,
+        userIdType: typeof userId,
+        userIdLength: userId?.length,
         email: user.email,
         name: user.name || user.nombre,
         id: user.id,
         sub: user.sub,
+        idVsSub: user.id === user.sub ? '✅ IGUALES' : '❌ DIFERENTES',
         role: user.role || user.rol
+      });
+      
+      // ⚠️ VALIDACIÓN CRÍTICA: Verificar que id y sub son iguales (ambos deben ser el mismo)
+      if (user.id && user.sub && user.id !== user.sub) {
+        console.error('🚨 [OWNER_STEP2] CRÍTICO: user.id !== user.sub');
+        console.error('🚨 [OWNER_STEP2] ID:', user.id);
+        console.error('🚨 [OWNER_STEP2] SUB:', user.sub);
+        throw new Error('Inconsistencia detectada en el ID del usuario. Por favor, cierra sesión e inicia sesión nuevamente.');
+      }
+      
+      console.log('✅ [OWNER_STEP2] userId validado correctamente:', {
+        userId,
+        tipoString: typeof userId === 'string',
+        formatoUUID: /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId),
+        matchesBackend: true,
       });
 
       // Intentar obtener datos del owner existente si ya existe

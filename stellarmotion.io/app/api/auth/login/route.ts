@@ -1,61 +1,105 @@
 import { NextResponse } from "next/server";
+import bcrypt from 'bcryptjs';
+import { findUserByEmail } from '@/lib/auth/users';
+import { signSession } from '@/lib/auth/session';
+import { setSessionCookie } from '@/lib/auth/cookies';
+import { getAdminSupabase } from '@/lib/supabase/admin';
 
-const ERP_BASE_URL = process.env.ERP_BASE_URL || process.env.NEXT_PUBLIC_ERP_API_URL || 'http://localhost:3000';
+// Forzar runtime Node.js para acceso completo a process.env
+export const runtime = 'nodejs';
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
+    const { email, password } = body;
 
-    const res = await fetch(`${ERP_BASE_URL}/api/auth/login`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    });
-
-    const data = await res.json().catch(() => ({}));
-
-    if (!res.ok) {
+    if (!email || !password) {
       return NextResponse.json(
-        {
-          error: data.error || "Error en login",
-          backendStatus: res.status,
-        },
-        { status: res.status }
+        { error: 'Email y contraseña son requeridos' },
+        { status: 400 }
       );
     }
 
-    // Crear respuesta primero
-    const response = NextResponse.json(data, { status: res.status });
+    console.log('🔐 [WEB LOGIN] Iniciando login directo en Supabase');
+    
+    // ⚠️ LOGGING OBLIGATORIO PARA VERIFICAR ENV
+    console.log('[ENV CHECK]', {
+      url: process.env.NEXT_PUBLIC_SUPABASE_URL,
+      serviceKeyLoaded: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+    });
 
-    // Leer cookie usando headers.get() (funciona mejor que raw() en algunos casos)
-    const setCookie = res.headers.get('set-cookie') || res.headers.get('Set-Cookie');
+    // Buscar usuario por email
+    const user = await findUserByEmail(email);
+    
+    if (!user) {
+      console.log('❌ [WEB LOGIN] Usuario no encontrado:', email);
+      return NextResponse.json(
+        { error: 'Credenciales inválidas' },
+        { status: 401 }
+      );
+    }
 
-    if (setCookie) {
-      // Copiar la cookie directamente al navegador
-      response.headers.set("Set-Cookie", setCookie);
-      console.log('✅ [WEB LOGIN] Cookie copiada al navegador:', setCookie.substring(0, 80) + '...');
-    } else {
-      console.error('❌ [WEB LOGIN] ERROR: No se pudo leer la cookie del ERP');
-      // Fallback: intentar con raw()
-      const raw = (res.headers as any).raw?.();
-      const cookies = raw?.["set-cookie"] ?? [];
-      if (cookies.length > 0) {
-        cookies.forEach((cookie: string) => {
-          response.headers.append("Set-Cookie", cookie.trim());
-          console.log('✅ [WEB LOGIN] Cookie copiada (fallback raw):', cookie.substring(0, 80) + '...');
-        });
-      } else {
-        console.error('❌ [WEB LOGIN] ERROR CRÍTICO: Cookie no disponible en ningún formato');
+    // Verificar contraseña
+    if (!user.passwordhash) {
+      console.error('❌ [WEB LOGIN] Usuario sin passwordhash');
+      return NextResponse.json(
+        { error: 'Error de configuración del usuario' },
+        { status: 500 }
+      );
+    }
+
+    const isValidPassword = await bcrypt.compare(password, user.passwordhash);
+    
+    if (!isValidPassword) {
+      console.log('❌ [WEB LOGIN] Contraseña incorrecta para:', email);
+      return NextResponse.json(
+        { error: 'Credenciales inválidas' },
+        { status: 401 }
+      );
+    }
+
+    // Obtener nombre del rol
+    let roleName = 'client';
+    if (user.rol_id) {
+      const supabase = getAdminSupabase();
+      const { data: roleData } = await supabase
+        .from('roles')
+        .select('nombre')
+        .eq('id', user.rol_id)
+        .maybeSingle();
+      
+      if (roleData?.nombre) {
+        roleName = roleData.nombre;
       }
     }
 
+    // Crear sesión JWT
+    const token = await signSession({
+      id: user.id,
+      email: user.email,
+      role: roleName,
+      name: user.nombre || ''
+    });
+
+    // Crear respuesta con cookie
+    const response = NextResponse.json({
+      success: true,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.nombre,
+        role: roleName,
+      }
+    }, { status: 200 });
+
+    setSessionCookie(response, token);
+    console.log('✅ [WEB LOGIN] Login exitoso:', user.email);
+    
     return response;
-  } catch (error) {
-    console.error('❌ [WEB LOGIN] Error en API proxy de login:', error);
+  } catch (error: any) {
+    console.error('🔥 [WEB LOGIN] Error fatal:', error);
     return NextResponse.json(
-      { error: 'Error interno del servidor' },
+      { error: 'Error interno del servidor', details: error.message },
       { status: 500 }
     );
   }

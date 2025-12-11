@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ReservationRequest, ReservationResponse } from '@/types/product';
 
+// Forzar runtime Node.js para consistencia
+export const runtime = 'nodejs';
+
 // TODO: conectar a backend real
 export async function POST(request: NextRequest) {
   try {

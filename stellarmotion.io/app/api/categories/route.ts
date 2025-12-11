@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { API_ENDPOINTS, fetchFromERP } from "@/lib/api-config";
 import { CATEGORIES } from "@/lib/categories";
 
+// Forzar runtime Node.js para acceso a process.env
+export const runtime = 'nodejs';
+
 export async function GET() {
   try {
     // Obtener categorías del backend

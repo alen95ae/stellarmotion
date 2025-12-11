@@ -1,7 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { findUserByEmail } from '@/lib/auth/users';
+import { getAdminSupabase } from '@/lib/supabase/admin';
+
+// Forzar runtime Node.js para acceso completo a process.env
+export const runtime = 'nodejs';
 
 export async function GET(req: NextRequest) {
   try {
+    // ⚠️ LOGGING OBLIGATORIO PARA VERIFICAR ENV
+    console.log('[ENV CHECK]', {
+      url: process.env.NEXT_PUBLIC_SUPABASE_URL,
+      serviceKeyLoaded: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+    });
+    
     const { searchParams } = new URL(req.url);
     const email = searchParams.get('email');
 
@@ -12,51 +23,26 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Hacer proxy al ERP que tiene la service role key
-    const erpBaseUrl = process.env.NEXT_PUBLIC_ERP_API_URL || process.env.ERP_BASE_URL || 'http://localhost:3000';
-    
-    // Timeout de 10 segundos (más corto porque es una verificación rápida)
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
-    
-    let response: Response;
-    try {
-      response = await fetch(`${erpBaseUrl}/api/owners?email=${encodeURIComponent(email)}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        signal: controller.signal
-      });
-      clearTimeout(timeoutId);
-    } catch (fetchError) {
-      clearTimeout(timeoutId);
-      // Si hay error de conexión, permitir continuar (no bloquear registro)
-      console.warn('Error de conexión al verificar email en ERP:', fetchError);
-      return NextResponse.json({ exists: false }, { status: 200 });
-    }
+    console.log('🔍 [WEB CHECK-EMAIL] Verificando email en Supabase:', email);
 
-    if (!response.ok) {
-      // Si hay error, permitir continuar (no bloquear registro)
-      console.warn('Error checking email in ERP:', response.status);
-      return NextResponse.json({ exists: false }, { status: 200 });
-    }
-
-    let data: any;
-    try {
-      data = await response.json();
-    } catch (jsonError) {
-      // Si hay error parseando, permitir continuar
-      console.warn('Error parseando respuesta del ERP:', jsonError);
-      return NextResponse.json({ exists: false }, { status: 200 });
-    }
+    // Verificar en tabla usuarios
+    const user = await findUserByEmail(email);
     
-    // Si el ERP devuelve un array con datos, el email existe
-    const exists = Array.isArray(data) && data.length > 0;
+    // Verificar en tabla owners
+    const supabase = getAdminSupabase();
+    const { data: owner } = await supabase
+      .from('owners')
+      .select('id')
+      .eq('email', email.toLowerCase().trim())
+      .maybeSingle();
+
+    const exists = !!(user || owner);
+    
+    console.log('✅ [WEB CHECK-EMAIL] Email existe:', exists);
     
     return NextResponse.json({ exists }, { status: 200 });
   } catch (error: any) {
-    console.error('Error in check-email:', error);
+    console.error('❌ [WEB CHECK-EMAIL] Error:', error);
     // Si hay error, permitir continuar (no bloquear registro)
     return NextResponse.json({ exists: false }, { status: 200 });
   }

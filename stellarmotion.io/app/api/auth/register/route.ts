@@ -1,54 +1,134 @@
 import { NextResponse } from "next/server";
+import { createUser, findUserByEmail } from '@/lib/auth/users';
+import { signSession } from '@/lib/auth/session';
+import { setSessionCookie } from '@/lib/auth/cookies';
 
-const ERP_BASE_URL = process.env.ERP_BASE_URL || process.env.NEXT_PUBLIC_ERP_API_URL || 'http://localhost:3000';
+// Forzar runtime Node.js para acceso completo a process.env
+export const runtime = 'nodejs';
 
+/**
+ * Endpoint de registro directo en Supabase (sin ERP)
+ * WEB → Supabase directo
+ */
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-
-    const res = await fetch(`${ERP_BASE_URL}/api/auth/register`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+    console.log('📡 [WEB REGISTER] Registro directo en Supabase (sin ERP)');
+    
+    // ⚠️ LOGGING OBLIGATORIO PARA VERIFICAR ENV
+    console.log('[ENV CHECK]', {
+      url: process.env.NEXT_PUBLIC_SUPABASE_URL,
+      serviceKeyLoaded: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
     });
 
-    const data = await res.json().catch(() => ({}));
-
-    if (!res.ok) {
+    // Validaciones básicas
+    if (!body.email || !body.password) {
       return NextResponse.json(
-        { error: data.error || "Error en registro", backendStatus: res.status, data },
-        { status: res.status }
+        { error: 'Email y contraseña son requeridos' },
+        { status: 400 }
       );
     }
 
-    // Crear respuesta primero
-    const response = NextResponse.json({ ok: true, data }, { status: res.status });
-
-    // Leer cookie usando headers.get() (funciona mejor que raw() en algunos casos)
-    const setCookie = res.headers.get('set-cookie') || res.headers.get('Set-Cookie');
-
-    if (setCookie) {
-      // Copiar la cookie directamente al navegador
-      response.headers.set("Set-Cookie", setCookie);
-      console.log('✅ [WEB REGISTER] Cookie copiada al navegador:', setCookie.substring(0, 80) + '...');
-    } else {
-      console.error('❌ [WEB REGISTER] ERROR: No se pudo leer la cookie del ERP');
-      // Fallback: intentar con raw()
-      const raw = (res.headers as any).raw?.();
-      const cookies = raw?.["set-cookie"] ?? [];
-      if (cookies.length > 0) {
-        cookies.forEach((cookie: string) => {
-          response.headers.append("Set-Cookie", cookie.trim());
-          console.log('✅ [WEB REGISTER] Cookie copiada (fallback raw):', cookie.substring(0, 80) + '...');
-        });
-      }
+    // Validar formato de email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(body.email)) {
+      return NextResponse.json(
+        { error: 'Email inválido' },
+        { status: 400 }
+      );
     }
 
+    // Verificar si el email ya existe
+    console.log('🔍 [WEB REGISTER] Verificando si email existe...');
+    const existing = await findUserByEmail(body.email);
+    
+    if (existing) {
+      console.log('⚠️ [WEB REGISTER] Email ya existe');
+      return NextResponse.json(
+        { 
+          error: 'EMAIL_EXISTS',
+          message: 'Este email ya está registrado. Por favor, inicia sesión.'
+        },
+        { status: 409 }
+      );
+    }
+
+    // Extraer nombre y apellidos
+    let nombre = body.nombre?.trim() || body.nombre_contacto?.trim() || '';
+    let apellidos = body.apellidos?.trim() || '';
+    
+    if (nombre && !apellidos && nombre.includes(' ')) {
+      const parts = nombre.split(' ');
+      nombre = parts[0] || '';
+      apellidos = parts.slice(1).join(' ') || '';
+    }
+
+    // Crear usuario en Supabase
+    console.log('🔐 [WEB REGISTER] Creando usuario en Supabase...');
+    let user;
+    try {
+      user = await createUser(
+        body.email.trim(),
+        body.password,
+        nombre,
+        body.role || 'client',
+        body.telefono?.trim(),
+        body.pais?.trim(),
+        apellidos
+      );
+      console.log('✅ [WEB REGISTER] Usuario creado:', user.id);
+    } catch (userError: any) {
+      console.error('❌ [WEB REGISTER] Error creando usuario:', userError);
+      return NextResponse.json(
+        { 
+          error: 'Error al crear usuario',
+          details: userError?.message || 'Error desconocido al crear usuario'
+        },
+        { status: 500 }
+      );
+    }
+
+    // Crear sesión JWT
+    let token: string;
+    try {
+      token = await signSession({
+        id: user.id,
+        email: user.email,
+        role: body.role || 'client',
+        name: user.nombre || ''
+      });
+      console.log('✅ [WEB REGISTER] Sesión JWT creada');
+    } catch (sessionError: any) {
+      console.error('❌ [WEB REGISTER] Error creando sesión:', sessionError);
+      return NextResponse.json(
+        { 
+          error: 'Error al crear sesión',
+          details: sessionError?.message || 'Error desconocido al crear sesión'
+        },
+        { status: 500 }
+      );
+    }
+
+    // Crear respuesta con cookie
+    const response = NextResponse.json({
+      ok: true,
+      user_id: user.id,
+      email: user.email,
+      role: body.role || 'client'
+    }, { status: 201 });
+
+    setSessionCookie(response, token);
+    console.log('✅ [WEB REGISTER] Registro completado exitosamente');
+    
     return response;
-  } catch (error) {
-    console.error('❌ [WEB REGISTER] Error en API proxy de registro:', error);
+
+  } catch (error: any) {
+    console.error('🔥 [WEB REGISTER] Error fatal:', error);
     return NextResponse.json(
-      { error: 'Error interno del servidor' },
+      { 
+        error: 'Error interno del servidor',
+        details: error.message
+      },
       { status: 500 }
     );
   }

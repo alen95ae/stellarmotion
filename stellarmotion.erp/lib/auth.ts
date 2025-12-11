@@ -67,10 +67,6 @@ export async function createUserWithRole(
   role: string = "client",
   telefono?: string,
   pais?: string,
-  ciudad?: string,
-  tipo_owner?: string,
-  nombre_empresa?: string,
-  tipo_empresa?: string,
   apellidos?: string
 ) {
   const hash = await bcrypt.hash(password, 10);
@@ -81,10 +77,6 @@ export async function createUserWithRole(
     role,
     telefono,
     pais,
-    ciudad,
-    tipo_owner,
-    nombre_empresa,
-    tipo_empresa,
     apellidos
   );
   return usuarioToUserRecord(usuario);

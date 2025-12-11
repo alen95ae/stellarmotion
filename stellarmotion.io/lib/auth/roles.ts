@@ -1,7 +1,7 @@
 // Helper functions for role management
-// These functions interact with the ERP to get role information
+// These functions interact directly with Supabase (NO ERP dependency)
 
-const ERP_BASE_URL = process.env.NEXT_PUBLIC_ERP_API_URL || process.env.ERP_BASE_URL || 'http://localhost:3000';
+import { getAdminSupabase } from '@/lib/supabase/admin';
 
 export interface Role {
   id: string;
@@ -10,55 +10,53 @@ export interface Role {
 }
 
 /**
- * Get role by ID from ERP
- * This is a proxy function that calls the ERP backend
+ * Get role by ID from Supabase
+ * WEB → Supabase directo (sin ERP)
  */
 export async function getRoleById(rol_id: string): Promise<Role | null> {
   try {
-    const response = await fetch(`${ERP_BASE_URL}/api/roles/${rol_id}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    const supabase = getAdminSupabase();
+    
+    const { data, error } = await supabase
+      .from('roles')
+      .select('id, nombre, descripcion')
+      .eq('id', rol_id)
+      .maybeSingle();
 
-    if (!response.ok) {
+    if (error && error.code !== 'PGRST116') {
+      console.error('❌ [getRoleById] Error:', error);
       return null;
     }
 
-    const data = await response.json();
-    return data;
+    return data || null;
   } catch (error) {
-    console.error('Error getting role by ID:', error);
+    console.error('❌ [getRoleById] Error fatal:', error);
     return null;
   }
 }
 
 /**
- * Get role by name from ERP
- * This is a proxy function that calls the ERP backend
+ * Get role by name from Supabase
+ * WEB → Supabase directo (sin ERP)
  */
 export async function getRoleByName(nombre: string): Promise<Role | null> {
   try {
-    const response = await fetch(`${ERP_BASE_URL}/api/roles?nombre=${encodeURIComponent(nombre)}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    const supabase = getAdminSupabase();
+    
+    const { data, error } = await supabase
+      .from('roles')
+      .select('id, nombre, descripcion')
+      .eq('nombre', nombre)
+      .maybeSingle();
 
-    if (!response.ok) {
+    if (error && error.code !== 'PGRST116') {
+      console.error('❌ [getRoleByName] Error:', error);
       return null;
     }
 
-    const data = await response.json();
-    // If it's an array, return the first match
-    if (Array.isArray(data)) {
-      return data[0] || null;
-    }
-    return data;
+    return data || null;
   } catch (error) {
-    console.error('Error getting role by name:', error);
+    console.error('❌ [getRoleByName] Error fatal:', error);
     return null;
   }
 }

@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { API_ENDPOINTS, fetchFromERP, API_BASE_URL } from "@/lib/api-config";
+
+// Forzar runtime Node.js para acceso a process.env
+export const runtime = 'nodejs';
+
 // Subida de imágenes: delegamos al backend ERP /api/upload
 
 // Función para extraer coordenadas del enlace de Google Maps

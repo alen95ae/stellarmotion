@@ -113,6 +113,8 @@ async function getRoleId(rol: string): Promise<string | undefined> {
 
 /**
  * Crear nuevo usuario
+ * NOTA: Solo campos del paso 1. Los campos del paso 2 (ciudad, tipo_owner, nombre_empresa, tipo_empresa)
+ * van a la tabla owners cuando se completa el paso 2.
  */
 export async function createUserSupabase(
   email: string,
@@ -121,10 +123,6 @@ export async function createUserSupabase(
   rol?: string,
   telefono?: string,
   pais?: string,
-  ciudad?: string,
-  tipo_owner?: string,
-  nombre_empresa?: string,
-  tipo_empresa?: string,
   apellidos?: string
 ): Promise<Usuario> {
   const now = new Date().toISOString()
@@ -149,14 +147,12 @@ export async function createUserSupabase(
     userData.rol_id = rol_id
   }
   
-  // Agregar campos opcionales del paso 1
+  // Agregar campos opcionales del paso 1 (solo los que van en tabla usuarios)
   if (telefono) userData.telefono = telefono.trim()
   if (pais) userData.pais = pais.trim()
-  if (ciudad) userData.ciudad = ciudad.trim()
-  if (tipo_owner) userData.tipo_owner = tipo_owner
-  if (nombre_empresa) userData.nombre_empresa = nombre_empresa.trim()
-  if (tipo_empresa) userData.tipo_empresa = tipo_empresa.trim()
   if (apellidos) userData.apellidos = apellidos.trim()
+  
+  // NOTA: ciudad, tipo_owner, nombre_empresa, tipo_empresa van a tabla owners en el paso 2
   
   console.log('🔐 [createUserSupabase] Usando cliente: supabaseAdmin (SERVICE_ROLE_KEY)')
   console.log('🔐 [createUserSupabase] Schema: public')
@@ -164,13 +160,9 @@ export async function createUserSupabase(
   console.log('📤 [createUserSupabase] Insertando:', {
     email: userData.email,
     nombre: userData.nombre,
+    apellidos: userData.apellidos || 'no proporcionado',
     telefono: userData.telefono || 'no proporcionado',
     pais: userData.pais || 'no proporcionado',
-    ciudad: userData.ciudad || 'no proporcionado',
-    tipo_owner: userData.tipo_owner || 'no proporcionado',
-    nombre_empresa: userData.nombre_empresa || 'no proporcionado',
-    tipo_empresa: userData.tipo_empresa || 'no proporcionado',
-    apellidos: userData.apellidos || 'no proporcionado',
     hasRolId: !!userData.rol_id
   })
   
@@ -275,10 +267,7 @@ export async function getUserByIdSupabase(userId: string): Promise<any | null> {
     apellidos: data.apellidos || null,
     telefono: data.telefono || null,
     pais: data.pais || null,
-    ciudad: data.ciudad || null,
-    tipo_owner: data.tipo_owner || null,
-    nombre_empresa: data.nombre_empresa || null,
-    tipo_empresa: data.tipo_empresa || null,
+    // NOTA: ciudad, tipo_owner, nombre_empresa, tipo_empresa están en tabla owners, no en usuarios
     rol: roleName,
     rol_id: data.rol_id || null,
   }

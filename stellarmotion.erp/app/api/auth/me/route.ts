@@ -62,10 +62,7 @@ export async function GET(request: NextRequest) {
         apellidos: user.apellidos || null,
         telefono: user.telefono || null,
         pais: user.pais || null,
-        ciudad: user.ciudad || null,
-        tipo_owner: user.tipo_owner || null,
-        nombre_empresa: user.nombre_empresa || null,
-        tipo_empresa: user.tipo_empresa || null,
+        // NOTA: ciudad, tipo_owner, nombre_empresa, tipo_empresa están en tabla owners
         rol: roleName,
         role: roleName,
       }

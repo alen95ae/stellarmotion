@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
 
+// Forzar runtime Node.js para acceso a process.env
+export const runtime = 'nodejs';
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();

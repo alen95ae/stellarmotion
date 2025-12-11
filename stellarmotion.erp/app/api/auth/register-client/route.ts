@@ -74,10 +74,6 @@ export async function POST(request: NextRequest) {
         'client',
         data.telefono?.trim(),
         data.pais?.trim(),
-        data.ciudad?.trim(),
-        data.tipo_owner?.trim(),
-        data.nombre_empresa?.trim() || data.empresa?.trim(),
-        data.tipo_empresa?.trim(),
         apellidos
       );
       console.log('✅ [REGISTER CLIENT] Usuario creado:', user.id, {
@@ -85,11 +81,7 @@ export async function POST(request: NextRequest) {
         nombre,
         apellidos: apellidos || 'no proporcionado',
         telefono: data.telefono?.trim() || 'no proporcionado',
-        pais: data.pais?.trim() || 'no proporcionado',
-        ciudad: data.ciudad?.trim() || 'no proporcionado',
-        tipo_owner: data.tipo_owner?.trim() || 'no proporcionado',
-        nombre_empresa: data.nombre_empresa?.trim() || data.empresa?.trim() || 'no proporcionado',
-        tipo_empresa: data.tipo_empresa?.trim() || 'no proporcionado'
+        pais: data.pais?.trim() || 'no proporcionado'
       });
     } catch (userError: any) {
       console.error('❌ [REGISTER CLIENT] Error creando usuario:', userError);

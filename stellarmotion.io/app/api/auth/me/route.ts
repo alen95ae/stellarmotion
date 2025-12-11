@@ -1,10 +1,20 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { verifySession } from '@/lib/auth/session';
+import { getUserById } from '@/lib/auth/users';
+import { getAdminSupabase } from '@/lib/supabase/admin';
 
-const ERP_BASE_URL = process.env.ERP_BASE_URL || process.env.NEXT_PUBLIC_ERP_API_URL || 'http://localhost:3000';
+// Forzar runtime Node.js para acceso completo a process.env
+export const runtime = 'nodejs';
 
 export async function GET() {
   try {
+    // ⚠️ LOGGING OBLIGATORIO PARA VERIFICAR ENV
+    console.log('[ENV CHECK]', {
+      url: process.env.NEXT_PUBLIC_SUPABASE_URL,
+      serviceKeyLoaded: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+    });
+    
     const cookieStore = await cookies();
     const st = cookieStore.get("st_session");
 
@@ -13,65 +23,74 @@ export async function GET() {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
-    console.log('✅ [WEB /api/auth/me] Cookie encontrada, enviando al ERP:', st.value.substring(0, 20) + '...');
+    // Verificar JWT
+    const payload = await verifySession(st.value);
+    
+    if (!payload || !payload.sub) {
+      console.error('❌ [WEB /api/auth/me] JWT inválido o expirado');
+      return NextResponse.json({ error: "Sesión inválida" }, { status: 401 });
+    }
 
-    const backendRes = await fetch(`${ERP_BASE_URL}/api/auth/me`, {
-      method: "GET",
-      headers: {
-        "Cookie": `st_session=${st.value}`, // Reenviar token exacto
-        "Content-Type": "application/json",
-      },
+    // ⚠️ LOGGING: Verificar payload del JWT
+    console.log('🔍 [WEB /api/auth/me] JWT Payload:', {
+      sub: payload.sub,
+      email: payload.email,
+      role: payload.role,
+    });
+    
+    // Obtener usuario de Supabase usando el ID del JWT
+    console.log(`🔍 [WEB /api/auth/me] Buscando usuario con ID: ${payload.sub}`);
+    const user = await getUserById(payload.sub);
+    
+    if (!user) {
+      console.error('❌ [WEB /api/auth/me] Usuario no encontrado en Supabase');
+      console.error('❌ [WEB /api/auth/me] ID buscado (payload.sub):', payload.sub);
+      console.error('❌ [WEB /api/auth/me] Email del JWT:', payload.email);
+      return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
+    }
+
+    console.log('✅ [WEB /api/auth/me] Usuario encontrado en BD:', {
+      id: user.id,
+      email: user.email,
+      nombre: user.nombre,
     });
 
-    if (!backendRes.ok) {
-      const errorData = await backendRes.json().catch(() => ({}));
-      console.error('❌ [WEB /api/auth/me] ERP respondió con error:', backendRes.status, errorData);
-      return NextResponse.json({ error: errorData.error || "Sesión inválida" }, { status: 401 });
-    }
-
-    const data = await backendRes.json().catch(() => ({}));
-    console.log('✅ [WEB /api/auth/me] Usuario obtenido correctamente:', data.user?.email || 'N/A');
-    
-    // Si el usuario existe, sincronizarlo con el ERP para asegurar que esté en la tabla usuarios
-    if (data.success && data.user) {
-      try {
-        console.log('🔄 [WEB /api/auth/me] Sincronizando usuario con ERP...', {
-          id: data.user.id || data.user.sub,
-          email: data.user.email
-        });
-
-        const syncResponse = await fetch(`${ERP_BASE_URL}/api/auth/sync-user`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            id: data.user.id || data.user.sub,
-            email: data.user.email,
-            name: data.user.name || data.user.nombre || '',
-            role: data.user.role || data.user.rol || 'client'
-          }),
-        });
-
-        if (syncResponse.ok) {
-          const syncData = await syncResponse.json();
-          console.log('✅ [WEB /api/auth/me] Usuario sincronizado con ERP:', syncData.message);
-        } else {
-          const syncError = await syncResponse.json().catch(() => ({ error: 'Error desconocido' }));
-          console.warn('⚠️ [WEB /api/auth/me] Error sincronizando usuario (no crítico):', syncError.error);
-          // No fallar si la sincronización falla, solo loguear
-        }
-      } catch (syncErr) {
-        console.warn('⚠️ [WEB /api/auth/me] Error en sincronización (no crítico):', syncErr);
-        // No fallar si la sincronización falla, solo loguear
+    // Obtener nombre del rol
+    let roleName = payload.role || 'client';
+    if (user.rol_id) {
+      const supabase = getAdminSupabase();
+      const { data: roleData } = await supabase
+        .from('roles')
+        .select('nombre')
+        .eq('id', user.rol_id)
+        .maybeSingle();
+      
+      if (roleData?.nombre) {
+        roleName = roleData.nombre;
       }
     }
-    
-    return NextResponse.json(data);
-  } catch (error) {
-    console.error('❌ [WEB /api/auth/me] Error en API proxy de me:', error);
+
+    console.log('✅ [WEB /api/auth/me] Devolviendo usuario con ID:', user.id);
+
+    return NextResponse.json({
+      success: true,
+      user: {
+        id: user.id,
+        sub: user.id,
+        email: user.email || payload.email,
+        name: user.nombre || payload.name,
+        nombre: user.nombre || payload.name,
+        apellidos: user.apellidos || null,
+        telefono: user.telefono || null,
+        pais: user.pais || null,
+        rol: roleName,
+        role: roleName,
+      }
+    });
+  } catch (error: any) {
+    console.error('❌ [WEB /api/auth/me] Error:', error);
     return NextResponse.json(
-      { error: 'Error interno del servidor' },
+      { error: 'Error interno del servidor', details: error.message },
       { status: 500 }
     );
   }

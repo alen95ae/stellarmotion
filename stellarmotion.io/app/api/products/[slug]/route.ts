@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { API_ENDPOINTS, fetchFromERP, API_BASE_URL } from "@/lib/api-config";
 
+// Forzar runtime Node.js para acceso a process.env
+export const runtime = 'nodejs';
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
