@@ -5,11 +5,9 @@ export const ROUTES = {
   HOME: '/',
   LOGIN: '/auth/login',
   SIGNUP: '/auth/signup',
-  OWNER_REGISTER: '/owner/register',
-  OWNER_ONBOARDING: '/owner/onboarding',
+  REGISTER: '/register',
   ACCOUNT: '/account',
   DASHBOARD: '/dashboard',
-  DASHBOARD_OWNER: '/dashboard/owner',
   DASHBOARD_ADMIN: '/dashboard/admin',
 } as const;
 

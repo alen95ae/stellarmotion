@@ -5,13 +5,10 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2, Lock, Mail, Eye, EyeOff } from 'lucide-react'
 import Link from 'next/link'
 import { getNextFromSearchParams } from '@/lib/auth/next'
-import { getRoleFromPayload } from '@/lib/auth/role'
-import { ROUTES } from '@/lib/routes'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -23,10 +20,12 @@ export default function LoginPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  // Prefill email if provided
+  // Prellenar email desde query params si existe
   useEffect(() => {
     const emailParam = searchParams.get('email')
-    if (emailParam) setEmail(emailParam)
+    if (emailParam) {
+      setEmail(emailParam)
+    }
   }, [searchParams])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -34,18 +33,19 @@ export default function LoginPage() {
     setError(null)
     setLoading(true)
 
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 15000)
-
     try {
+      // Validación básica
       if (!email.trim() || !password.trim()) {
         setError('Por favor, completa todos los campos')
+        setLoading(false)
         return
       }
 
+      // Validar formato de email
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
       if (!emailRegex.test(email)) {
         setError('Por favor, ingresa un email válido')
+        setLoading(false)
         return
       }
 
@@ -54,27 +54,29 @@ export default function LoginPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include', // CRÍTICO: Permite que el navegador acepte cookies HttpOnly
+        credentials: 'include',
         body: JSON.stringify({
           email: email.trim(),
           password,
           rememberMe,
         }),
-        signal: controller.signal,
       })
-
-      clearTimeout(timeoutId)
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Error desconocido' }))
         const errorMessage = errorData.error || 'Error al iniciar sesión'
         
         // Mensajes más amigables
-        if (errorMessage.includes('Credenciales inválidas') || errorMessage.includes('Invalid')) {
-          setError('Email o contraseña incorrectos')
+        if (response.status === 401 || response.status === 400) {
+          if (errorMessage.includes('Credenciales inválidas') || errorMessage.includes('Invalid')) {
+            setError('Email o contraseña incorrectos')
+          } else {
+            setError(errorMessage)
+          }
         } else {
           setError(errorMessage)
         }
+        setLoading(false)
         return
       }
 
@@ -82,34 +84,35 @@ export default function LoginPage() {
 
       if (!data.success || !data.user) {
         setError('No se pudo obtener la información del usuario')
+        setLoading(false)
         return
       }
 
-      // Determinar redirección - siempre a HOME excepto si hay parámetro next
+      // Obtener parámetro next de la URL
       const nextParam = getNextFromSearchParams(searchParams)
-      const userRole = getRoleFromPayload(data.user.role)
+      
+      // Determinar redirección
+      let redirectPath = '/'
 
-      let target = ROUTES.HOME
       if (nextParam) {
-        target = nextParam
+        // Si viene de "Conviértete en Owner" → /owner/paso-2
+        if (nextParam === '/owner/paso-2' || nextParam.includes('/owner/paso-2')) {
+          redirectPath = '/owner/paso-2'
+        } else {
+          redirectPath = nextParam
+        }
+      } else {
+        // Redirección normal según el rol
+        redirectPath = '/'
       }
-
-      console.log('🔄 [LOGIN] Redirigiendo a:', target, 'para rol:', userRole)
-      console.log('🔄 [LOGIN] Data recibida:', { success: data.success, user: data.user?.email, role: data.user?.role })
 
       // Pequeño delay para estabilidad de cookies
       await new Promise((r) => setTimeout(r, 300))
       
       // Usar window.location para forzar recarga completa y asegurar que la cookie se lea
-      window.location.href = target
+      window.location.href = redirectPath
     } catch (err: any) {
-      clearTimeout(timeoutId)
-      if (err?.name === 'AbortError') {
-        setError('Request timeout, por favor intenta de nuevo')
-      } else {
-        setError(err?.message || 'Error de conexión. Por favor, intenta nuevamente')
-      }
-    } finally {
+      setError(err.message || 'Error de conexión. Por favor, intenta nuevamente')
       setLoading(false)
     }
   }
@@ -130,7 +133,7 @@ export default function LoginPage() {
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="email" className="text-sm font-medium text-gray-700">Email</Label>
+            <Label htmlFor="email" className="text-sm font-medium text-gray-700">Email *</Label>
             <div className="relative">
               <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5 z-10 pointer-events-none" />
               <Input
@@ -141,7 +144,7 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 disabled={loading}
-                className="pl-12 pr-4 py-3 rounded-2xl border-gray-300 focus:border-[#e94446] focus:ring-2 focus:ring-[#e94446]/20"
+                className="pl-14 pr-4 py-3 rounded-2xl border-gray-300 focus:border-[#e94446] focus:ring-2 focus:ring-[#e94446]/20"
                 autoComplete="email"
               />
             </div>
@@ -149,8 +152,11 @@ export default function LoginPage() {
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label htmlFor="password" className="text-sm font-medium text-gray-700">Contraseña</Label>
-              <Link href="/auth/forgot-password" className="text-sm text-[#e94446] hover:underline">
+              <Label htmlFor="password" className="text-sm font-medium text-gray-700">Contraseña *</Label>
+              <Link 
+                href="/auth/forgot-password" 
+                className="text-sm text-[#e94446] hover:underline"
+              >
                 ¿Olvidaste tu contraseña?
               </Link>
             </div>
@@ -158,22 +164,26 @@ export default function LoginPage() {
               <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5 z-10 pointer-events-none" />
               <Input
                 id="password"
-                type={showPassword ? 'text' : 'password'}
+                type={showPassword ? "text" : "password"}
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 disabled={loading}
-                className="pl-12 pr-12 py-3 rounded-2xl border-gray-300 focus:border-[#e94446] focus:ring-2 focus:ring-[#e94446]/20"
+                className="pl-14 pr-14 py-3 rounded-2xl border-gray-300 focus:border-[#e94446] focus:ring-2 focus:ring-[#e94446]/20"
                 autoComplete="current-password"
               />
               <button
                 type="button"
-                onClick={() => setShowPassword((prev) => !prev)}
+                onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors z-10"
                 tabIndex={-1}
               >
-                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                {showPassword ? (
+                  <EyeOff className="h-5 w-5" />
+                ) : (
+                  <Eye className="h-5 w-5" />
+                )}
               </button>
             </div>
           </div>
@@ -191,27 +201,26 @@ export default function LoginPage() {
             </Label>
           </div>
 
-          <Button
-            type="submit"
-            className="w-full bg-[#e94446] hover:bg-[#d63a3a] text-white font-semibold py-6 text-base rounded-2xl"
-            disabled={loading}
-          >
-            {loading ? (
-              <>
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                Iniciando sesión...
-              </>
-            ) : (
-              'Iniciar sesión'
-            )}
-          </Button>
+          <div className="flex justify-center pt-4">
+            <Button
+              type="submit"
+              className="px-12 py-6 text-lg rounded-2xl bg-[#e94446] hover:bg-[#d63a3a] transition-all shadow-lg hover:shadow-xl"
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Iniciando sesión...
+                </>
+              ) : (
+                'Iniciar sesión'
+              )}
+            </Button>
+          </div>
         </form>
 
-        <div className="text-center text-sm text-gray-600">
-          ¿No tienes una cuenta?{' '}
-          <Link href="/auth/signup" className="text-[#e94446] hover:underline font-medium">
-            Regístrate
-          </Link>
+        <div className="text-center text-sm text-gray-600 pt-8">
+          <p>¿No tienes una cuenta? <Link href="/auth/register" className="text-[#e94446] hover:underline font-medium">Regístrate</Link></p>
         </div>
       </div>
     </div>

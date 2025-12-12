@@ -1,10 +1,7 @@
-export type AppRole = 'admin' | 'owner' | 'client';
+export type AppRole = 'admin' | 'client';
 
 /**
  * Safely extract the normalized application role from a JWT payload or role string.
- * 
- * This function works with the new JWT-based authentication system.
- * It normalizes role strings to the AppRole type.
  */
 export function getRoleFromPayload(role: string | undefined | null): AppRole | undefined {
   if (!role) return undefined;
@@ -12,7 +9,6 @@ export function getRoleFromPayload(role: string | undefined | null): AppRole | u
   const normalized = String(role).toLowerCase();
 
   if (normalized === 'admin') return 'admin';
-  if (normalized === 'owner') return 'owner';
   if (normalized === 'client') return 'client';
 
   return undefined;
@@ -24,6 +20,3 @@ export function getRoleFromPayload(role: string | undefined | null): AppRole | u
 export function getDefaultRole(): AppRole {
   return 'client';
 }
-
-
-

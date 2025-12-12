@@ -8,19 +8,16 @@ const PUBLIC_ROUTES = [
   '/auth/signup',
   '/auth/logout',
   '/auth/error',
-  '/login',
   '/buscar-un-espacio',
   '/product',
   '/propietarios',
-  '/owners/registrarse',
-  '/owner/register',
+  '/register',
 ] as const;
 
 // Rutas que requieren autenticación pero son accesibles para cualquier usuario autenticado
 const AUTHENTICATED_ROUTES = [
-  '/owners/registrarse/info',
-  '/owner/onboarding',
   '/account',
+  '/owner/paso-2',
 ] as const;
 
 // Rutas protegidas por rol
@@ -31,7 +28,6 @@ const ADMIN_ROUTES = [
 
 const OWNER_ROUTES = [
   '/panel',
-  '/owners',
 ] as const;
 
 const CLIENT_ROUTES = [
@@ -94,16 +90,10 @@ export async function middleware(req: NextRequest) {
 
   if (isAdminRoute || isOwnerRoute || isClientRoute) {
     if (!cookie) {
-      console.log('🔒 [Middleware] Ruta protegida sin cookie, redirigiendo a login:', pathname);
       const loginUrl = new URL('/auth/login', req.url);
       loginUrl.searchParams.set('next', pathname);
       return NextResponse.redirect(loginUrl);
     }
-    
-    // Por ahora solo verificamos la existencia de la cookie
-    // La validación del JWT se hace en /api/auth/me
-    // TODO: Una vez confirmado que JWT_SECRET coincide, podemos validar aquí
-    console.log('✅ [Middleware] Cookie encontrada, permitiendo acceso a:', pathname);
   }
 
   // Permitir acceso a otras rutas

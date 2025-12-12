@@ -111,58 +111,21 @@ export default function DashboardPage() {
     monthlyRevenue: 0
   });
   const [loading, setLoading] = useState(true);
-  const [ownerId, setOwnerId] = useState<string | null>(null);
 
-  // Obtener el ownerId del usuario autenticado usando la API
   useEffect(() => {
-    const getOwnerId = async () => {
-      if (!user) return;
-      
-      try {
-        // Obtener owner desde la API
-        const response = await fetch(`/api/me/owner-profile`);
-        if (response.ok) {
-          const ownerData = await response.json();
-          if (ownerData && ownerData.id) {
-            // Si la API devuelve un ID directamente
-            setOwnerId(ownerData.id);
-          } else {
-            // Si necesitamos buscar por user_id
-            const ownersResponse = await fetch(`/api/owners?user_id=${user.id}`);
-            if (ownersResponse.ok) {
-              const owners = await ownersResponse.json();
-              if (Array.isArray(owners) && owners.length > 0) {
-                setOwnerId(owners[0].id);
-              }
-            }
-          }
-        } else {
-          console.warn('No se encontró owner para el usuario:', user.id);
-        }
-      } catch (error) {
-        console.error('Error obteniendo ownerId:', error);
-      }
-    };
-
     if (user && !authLoading) {
-      getOwnerId();
+      fetchDashboardStats();
     }
   }, [user, authLoading]);
 
-  useEffect(() => {
-    if (ownerId) {
-      fetchDashboardStats();
-    }
-  }, [ownerId]);
-
   const fetchDashboardStats = async () => {
-    if (!ownerId) return;
+    if (!user?.id) return;
     
     try {
       setLoading(true);
       
-      // Obtener soportes del owner actual
-      const supportsResponse = await fetch(`/api/soportes?ownerId=${ownerId}`);
+      // Obtener soportes del usuario actual
+      const supportsResponse = await fetch(`/api/soportes?userId=${user.id}`);
       const supportsData = supportsResponse.ok ? await supportsResponse.json() : { soportes: [] };
       const supports = supportsData.soportes || [];
       

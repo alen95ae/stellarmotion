@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 
-// Forzar runtime Node.js para consistencia
 export const runtime = 'nodejs';
 
 export async function POST() {
@@ -14,7 +13,6 @@ export async function POST() {
 
     return res;
   } catch (error) {
-    console.error('Error en logout:', error);
     return NextResponse.json(
       { error: 'Error interno del servidor' },
       { status: 500 }

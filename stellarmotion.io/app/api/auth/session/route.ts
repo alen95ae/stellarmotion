@@ -10,30 +10,42 @@ export async function GET() {
     const st = cookieStore.get("st_session");
 
     if (!st || !st.value) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+      return NextResponse.json(
+        { 
+          success: false,
+          error: "No autorizado" 
+        }, 
+        { status: 401 }
+      );
     }
 
     const payload = await verifySession(st.value);
     
     if (!payload || !payload.sub) {
-      return NextResponse.json({ error: "Sesión inválida" }, { status: 401 });
+      return NextResponse.json(
+        { 
+          success: false,
+          error: "Sesión inválida" 
+        }, 
+        { status: 401 }
+      );
     }
 
     return NextResponse.json({
       success: true,
       user: {
         id: payload.sub,
-        sub: payload.sub,
         email: payload.email,
-        name: payload.name || '',
-        nombre: payload.name || '',
-        role: payload.role || 'client',
         rol: payload.role || 'client',
       }
     });
   } catch (error: any) {
     return NextResponse.json(
-      { error: 'Error interno del servidor', details: error.message },
+      { 
+        success: false,
+        error: 'Error interno del servidor', 
+        details: error.message 
+      },
       { status: 500 }
     );
   }

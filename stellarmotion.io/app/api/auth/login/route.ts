@@ -5,7 +5,6 @@ import { signSession } from '@/lib/auth/session';
 import { setSessionCookie } from '@/lib/auth/cookies';
 import { getAdminSupabase } from '@/lib/supabase/admin';
 
-// Forzar runtime Node.js para acceso completo a process.env
 export const runtime = 'nodejs';
 
 export async function POST(req: Request) {
@@ -20,19 +19,10 @@ export async function POST(req: Request) {
       );
     }
 
-    console.log('🔐 [WEB LOGIN] Iniciando login directo en Supabase');
-    
-    // ⚠️ LOGGING OBLIGATORIO PARA VERIFICAR ENV
-    console.log('[ENV CHECK]', {
-      url: process.env.NEXT_PUBLIC_SUPABASE_URL,
-      serviceKeyLoaded: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
-    });
-
     // Buscar usuario por email
     const user = await findUserByEmail(email);
     
     if (!user) {
-      console.log('❌ [WEB LOGIN] Usuario no encontrado:', email);
       return NextResponse.json(
         { error: 'Credenciales inválidas' },
         { status: 401 }
@@ -41,7 +31,6 @@ export async function POST(req: Request) {
 
     // Verificar contraseña
     if (!user.passwordhash) {
-      console.error('❌ [WEB LOGIN] Usuario sin passwordhash');
       return NextResponse.json(
         { error: 'Error de configuración del usuario' },
         { status: 500 }
@@ -51,7 +40,6 @@ export async function POST(req: Request) {
     const isValidPassword = await bcrypt.compare(password, user.passwordhash);
     
     if (!isValidPassword) {
-      console.log('❌ [WEB LOGIN] Contraseña incorrecta para:', email);
       return NextResponse.json(
         { error: 'Credenciales inválidas' },
         { status: 401 }
@@ -93,11 +81,9 @@ export async function POST(req: Request) {
     }, { status: 200 });
 
     setSessionCookie(response, token);
-    console.log('✅ [WEB LOGIN] Login exitoso:', user.email);
     
     return response;
   } catch (error: any) {
-    console.error('🔥 [WEB LOGIN] Error fatal:', error);
     return NextResponse.json(
       { error: 'Error interno del servidor', details: error.message },
       { status: 500 }

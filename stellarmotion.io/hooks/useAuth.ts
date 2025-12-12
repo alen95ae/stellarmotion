@@ -198,7 +198,7 @@ export function useAuth() {
         loading: false
       })
 
-      router.push('/login')
+      router.push('/auth/login')
     } catch (error: any) {
       console.error('❌ Sign out error:', error)
     }

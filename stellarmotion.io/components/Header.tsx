@@ -44,22 +44,7 @@ export default function Header() {
             console.log('✅ Header: Usuario obtenido:', data.user.email || 'null');
             setUser(data.user);
             
-            // Cargar datos del owner si es owner
-            if (data.user.role === 'owner' && data.user.id) {
-              try {
-                const ownerResponse = await fetch(`/api/me/owner-profile`);
-                if (ownerResponse.ok) {
-                  const ownerData = await ownerResponse.json();
-                  if (ownerData && !isMounted) return;
-                  setOwnerData(ownerData);
-                }
-              } catch (err) {
-                console.error('❌ Header: Error loading owner data:', err);
-                setOwnerData(null);
-              }
-            } else {
-              setOwnerData(null);
-            }
+            setOwnerData(null);
           } else {
             setUser(null);
             setOwnerData(null);
@@ -292,13 +277,13 @@ export default function Header() {
             {!user && !loading && (
               <div className="flex items-center gap-2">
                 <Link
-                  href="/login"
+                  href="/auth/login"
                   className="px-4 py-1.5 rounded-full border border-gray-300 bg-white text-black font-medium hover:bg-gray-50 transition-colors text-sm"
                 >
                   Log in
                 </Link>
                 <Link
-                  href="/owners/registrarse"
+                  href="/auth/register"
                   className="px-4 py-1.5 rounded-full border-2 border-[#e94446] bg-white text-[#e94446] font-medium hover:bg-[#e94446]/5 transition-colors flex items-center gap-1.5 text-sm"
                 >
                   <User className="w-3.5 h-3.5" />

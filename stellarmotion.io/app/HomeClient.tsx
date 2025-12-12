@@ -612,7 +612,23 @@ export default function HomeClient() {
                 Gana dinero con tu terreno o espacio. Arrienda publicidad y maximiza el valor de tus propiedades con nuestra plataforma.
               </p>
               <button
-                onClick={() => router.push('/owners/registrarse?type=owner')}
+                onClick={async () => {
+                  // Verificar si hay sesión
+                  try {
+                    const sessionRes = await fetch('/api/auth/session');
+                    if (sessionRes.ok) {
+                      const sessionData = await sessionRes.json();
+                      if (sessionData.success) {
+                        router.push('/owner/paso-2');
+                        return;
+                      }
+                    }
+                  } catch (err) {
+                    // Si hay error, redirigir a registro
+                  }
+                  // Si no hay sesión, llevar a registro (sign up)
+                  router.push('/auth/register');
+                }}
                 className="px-6 py-3 bg-[#e94446] hover:bg-[#d63a3a] text-white font-semibold rounded-full transition-all duration-300 transform hover:scale-105"
               >
                 Registro Owner
