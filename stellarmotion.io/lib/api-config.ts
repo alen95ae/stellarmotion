@@ -6,6 +6,9 @@
 // URL base del ERP (solo para uso en servidor)
 export const ERP_BASE_URL = process.env.NEXT_PUBLIC_ERP_API_URL || process.env.ERP_BASE_URL || 'http://localhost:3000'
 
+// Alias para compatibilidad con código existente
+export const API_BASE_URL = ERP_BASE_URL
+
 // Validar que la URL del ERP sea válida
 function validateUrl(url: string): boolean {
   try {
@@ -36,7 +39,7 @@ export const ERP_ENDPOINTS = {
   categories: `${ERP_BASE_URL}/api/categories`,
   category: (slug: string) => `${ERP_BASE_URL}/api/categories?slug=${slug}`,
   
-  // Reservas
+  // Alquileres
   reservations: `${ERP_BASE_URL}/api/reservations`,
   reservation: (id: string) => `${ERP_BASE_URL}/api/reservations/${id}`,
   
@@ -57,7 +60,7 @@ export const API_ENDPOINTS = {
   categories: '/api/categories',
   category: (slug: string) => `/api/categories?slug=${slug}`,
   
-  // Reservas - usar API proxy local
+  // Alquileres - usar API proxy local
   reservations: '/api/reservations',
   reservation: (id: string) => `/api/reservations/${id}`,
   

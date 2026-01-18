@@ -1,7 +1,11 @@
-import { Metadata } from 'next';
+'use client';
+
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   Calendar, 
   Plus, 
@@ -15,13 +19,31 @@ import {
   XCircle
 } from 'lucide-react';
 
-export const metadata: Metadata = {
-  title: 'Reservas - Panel de Control | StellarMotion',
-  description: 'Gestión de reservas de espacios publicitarios'
+// Funciones para manejar estados (similar a gestión de soportes)
+const getStatusColor = (status: string) => {
+  const statusColors = {
+    'pendiente': 'bg-yellow-100',
+    'confirmada': 'bg-blue-100',
+    'activa': 'bg-green-100',
+    'completada': 'bg-gray-400',
+    'cancelada': 'bg-red-100'
+  };
+  return statusColors[status as keyof typeof statusColors] || 'bg-gray-400';
+};
+
+const getStatusLabel = (status: string) => {
+  const statusLabels = {
+    'pendiente': 'Pendiente',
+    'confirmada': 'Confirmada',
+    'activa': 'Activa',
+    'completada': 'Completada',
+    'cancelada': 'Cancelada'
+  };
+  return statusLabels[status as keyof typeof statusLabels] || status;
 };
 
 // Mock data
-const reservas = [
+const alquileres = [
   {
     id: '1',
     numero: 'RES-2025-001',
@@ -95,26 +117,38 @@ const estadoIcons = {
   cancelada: XCircle
 };
 
-export default function ReservasPage() {
-  const totalReservas = reservas.length;
-  const reservasActivas = reservas.filter(r => r.estado === 'activa').length;
-  const ingresosTotales = reservas
+export default function AlquileresPage() {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState('all');
+  
+  const totalAlquileres = alquileres.length;
+  const alquileresActivos = alquileres.filter(r => r.estado === 'activa').length;
+  const ingresosTotales = alquileres
     .filter(r => r.estado !== 'cancelada')
     .reduce((sum, r) => sum + r.monto, 0);
+  
+  // Filtrar alquileres
+  const filteredAlquileres = alquileres.filter(alquiler => {
+    const matchesSearch = searchTerm === '' || 
+      alquiler.numero.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      alquiler.cliente.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = filterStatus === 'all' || alquiler.estado === filterStatus;
+    return matchesSearch && matchesStatus;
+  });
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Reservas</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Alquileres</h1>
           <p className="mt-2 text-gray-600">
-            Gestiona las reservas de tus espacios publicitarios
+            Gestiona los alquileres de tus espacios publicitarios
           </p>
         </div>
-        <Button className="bg-blue-600 hover:bg-blue-700">
+        <Button className="bg-[#e94446] hover:bg-[#d63a3a]">
           <Plus className="w-4 h-4 mr-2" />
-          Nueva Reserva
+          Nuevo Alquiler
         </Button>
       </div>
 
@@ -122,11 +156,11 @@ export default function ReservasPage() {
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Reservas</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Alquileres</CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalReservas}</div>
+            <div className="text-2xl font-bold">{totalAlquileres}</div>
             <p className="text-xs text-muted-foreground">
               Este mes
             </p>
@@ -135,11 +169,11 @@ export default function ReservasPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Reservas Activas</CardTitle>
+            <CardTitle className="text-sm font-medium">Alquileres Activos</CardTitle>
             <CheckCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{reservasActivas}</div>
+            <div className="text-2xl font-bold">{alquileresActivos}</div>
             <p className="text-xs text-muted-foreground">
               En curso actualmente
             </p>
@@ -154,44 +188,86 @@ export default function ReservasPage() {
           <CardContent>
             <div className="text-2xl font-bold">Bs. {ingresosTotales.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">
-              Reservas confirmadas
+              Alquileres confirmados
             </p>
           </CardContent>
         </Card>
       </div>
 
       {/* Filters */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-wrap gap-4 items-center">
-            <div className="flex items-center space-x-2">
-              <Search className="w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Buscar por cliente o número..."
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-            <Button variant="outline" size="sm">
-              <Filter className="w-4 h-4 mr-2" />
-              Filtros
-            </Button>
-            <select className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
-              <option value="">Todos los estados</option>
-              <option value="pendiente">Pendiente</option>
-              <option value="confirmada">Confirmada</option>
-              <option value="activa">Activa</option>
-              <option value="completada">Completada</option>
-              <option value="cancelada">Cancelada</option>
-            </select>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative w-full sm:w-[300px]">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <Input
+            placeholder="Buscar por cliente o número..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <div className="flex gap-2">
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Todos los estados" className="truncate">
+                {filterStatus === 'all' ? (
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Filter className="h-4 w-4 text-gray-500 shrink-0" />
+                    <span className="truncate">Todos los estados</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className={`w-2 h-2 rounded-full shrink-0 ${getStatusColor(filterStatus)}`}></span>
+                    <span className="truncate">{getStatusLabel(filterStatus)}</span>
+                  </div>
+                )}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">
+                <div className="flex items-center gap-2">
+                  <Filter className="h-4 w-4 text-gray-500" />
+                  <span>Todos los estados</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="pendiente">
+                <span className="flex items-center gap-2">
+                  <span className={`w-2 h-2 rounded-full ${getStatusColor('pendiente')}`}></span>
+                  <span>{getStatusLabel('pendiente')}</span>
+                </span>
+              </SelectItem>
+              <SelectItem value="confirmada">
+                <span className="flex items-center gap-2">
+                  <span className={`w-2 h-2 rounded-full ${getStatusColor('confirmada')}`}></span>
+                  <span>{getStatusLabel('confirmada')}</span>
+                </span>
+              </SelectItem>
+              <SelectItem value="activa">
+                <span className="flex items-center gap-2">
+                  <span className={`w-2 h-2 rounded-full ${getStatusColor('activa')}`}></span>
+                  <span>{getStatusLabel('activa')}</span>
+                </span>
+              </SelectItem>
+              <SelectItem value="completada">
+                <span className="flex items-center gap-2">
+                  <span className={`w-2 h-2 rounded-full ${getStatusColor('completada')}`}></span>
+                  <span>{getStatusLabel('completada')}</span>
+                </span>
+              </SelectItem>
+              <SelectItem value="cancelada">
+                <span className="flex items-center gap-2">
+                  <span className={`w-2 h-2 rounded-full ${getStatusColor('cancelada')}`}></span>
+                  <span>{getStatusLabel('cancelada')}</span>
+                </span>
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
 
-      {/* Reservas Table */}
+      {/* Alquileres Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Lista de Reservas</CardTitle>
+          <CardTitle>Lista de Alquileres</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
@@ -211,7 +287,7 @@ export default function ReservasPage() {
                     Período
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Monto
+                    Precio
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Estado
@@ -222,29 +298,29 @@ export default function ReservasPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {reservas.map((reserva) => {
-                  const IconComponent = estadoIcons[reserva.estado as keyof typeof estadoIcons];
+                {filteredAlquileres.map((alquiler) => {
+                  const IconComponent = estadoIcons[alquiler.estado as keyof typeof estadoIcons];
                   return (
-                    <tr key={reserva.id} className="hover:bg-gray-50">
+                    <tr key={alquiler.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {reserva.numero}
+                        {alquiler.numero}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {reserva.cliente}
+                        {alquiler.cliente}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {reserva.soporte}
+                        {alquiler.soporte}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {new Date(reserva.fechaInicio).toLocaleDateString('es-ES')} - {new Date(reserva.fechaFin).toLocaleDateString('es-ES')}
+                        {new Date(alquiler.fechaInicio).toLocaleDateString('es-ES')} - {new Date(alquiler.fechaFin).toLocaleDateString('es-ES')}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        Bs. {reserva.monto.toLocaleString()}
+                        Bs. {alquiler.monto.toLocaleString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <Badge className={`inline-flex items-center ${estadoColors[reserva.estado as keyof typeof estadoColors]}`}>
+                        <Badge className={`inline-flex items-center ${estadoColors[alquiler.estado as keyof typeof estadoColors]}`}>
                           <IconComponent className="w-3 h-3 mr-1" />
-                          {reserva.estado.charAt(0).toUpperCase() + reserva.estado.slice(1)}
+                          {alquiler.estado.charAt(0).toUpperCase() + alquiler.estado.slice(1)}
                         </Badge>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -280,7 +356,7 @@ export default function ReservasPage() {
               <Calendar className="w-12 h-12 mx-auto mb-4" />
               <h3 className="text-lg font-medium mb-2">Vista de Calendario</h3>
               <p className="text-sm">
-                Aquí se mostrará un calendario interactivo con las reservas
+                Aquí se mostrará un calendario interactivo con los alquileres
               </p>
             </div>
           </div>

@@ -15,3 +15,6 @@ COMMENT ON COLUMN usuarios.apellidos IS 'Apellidos del usuario (del paso 1 del r
 -- Índice opcional para búsquedas frecuentes
 CREATE INDEX IF NOT EXISTS idx_usuarios_pais ON usuarios(pais) WHERE pais IS NOT NULL;
 
+
+
+

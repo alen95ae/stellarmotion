@@ -3,63 +3,10 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Switch } from '@/components/ui/switch';
+import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
-import { Upload, MapPin, DollarSign, Ruler, Lightbulb, Pencil, Eye, Globe, Link, Hash } from 'lucide-react';
-
-interface FormData {
-  title: string;
-  pricePerMonth: string;
-  images: File[];
-  city: string;
-  country: string;
-  width: string;
-  height: string;
-  lighting: boolean;
-  type: string;
-  code: string;
-  dailyImpressions: string;
-  description: string;
-  googleMapsLink: string;
-}
-
-const TYPES = [
-  'Parada de bus',
-  'Mupi',
-  'Valla',
-  'Pantalla',
-  'Display',
-  'Cartelera',
-  'Mural',
-  'Letrero'
-];
-
-const COUNTRIES = [
-  'Argentina',
-  'Bolivia',
-  'Chile',
-  'Colombia',
-  'Costa Rica',
-  'Ecuador',
-  'El Salvador',
-  'España',
-  'Estados Unidos',
-  'Guatemala',
-  'Honduras',
-  'México',
-  'Nicaragua',
-  'Panamá',
-  'Paraguay',
-  'Perú',
-  'República Dominicana',
-  'Uruguay'
-];
+import { SoporteForm, FormData } from '@/components/SoporteForm';
 
 const CITIES_BY_COUNTRY: Record<string, string[]> = {
   'Argentina': ['Buenos Aires', 'Córdoba', 'Rosario', 'Mendoza', 'La Plata', 'Mar del Plata', 'Salta', 'Tucumán', 'Santa Fe', 'Neuquén'],
@@ -101,6 +48,7 @@ export function PublicarEspacioClient() {
     dailyImpressions: '',
     description: '',
     googleMapsLink: '',
+    status: 'all',
   });
 
   const handleInputChange = (field: keyof FormData, value: string | boolean | File[]) => {
@@ -317,9 +265,10 @@ export function PublicarEspacioClient() {
       formDataToSend.append('dailyImpressions', formData.dailyImpressions || '0');
       formDataToSend.append('description', formData.description);
       formDataToSend.append('googleMapsLink', formData.googleMapsLink);
+      formDataToSend.append('status', formData.status === 'all' ? 'DISPONIBLE' : (formData.status || 'DISPONIBLE'));
       
-      // Agregar ownerId por defecto (ID del owner creado en el seed)
-      formDataToSend.append('ownerId', 'cmfskhuda0004sj2w46q3g7rc');
+      // Agregar usuarioId por defecto (ID del usuario creado en el seed)
+      formDataToSend.append('usuarioId', 'cmfskhuda0004sj2w46q3g7rc');
       
       // Agregar coordenadas extraídas (si están disponibles)
       if (coordinates.lat !== null && coordinates.lng !== null) {
@@ -389,314 +338,30 @@ export function PublicarEspacioClient() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-4xl mx-auto">
+        <div className="mb-8 text-center">
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">
           Publicar un Soporte
         </h1>
-        <p className="text-gray-600">
+          <p className="text-lg text-gray-600">
           Completa la información de tu soporte publicitario para que otros puedan encontrarlo y reservarlo.
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">
-        {/* Información Básica */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Pencil className="h-5 w-5" />
-              Información Básica
-            </CardTitle>
-            <CardDescription>
-              Datos principales de tu soporte publicitario
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="title" className="block mb-2">Título del Soporte *</Label>
-              <Input
-                id="title"
-                value={formData.title}
-                onChange={(e) => handleInputChange('title', e.target.value)}
-                placeholder="Ej: Valla publicitaria en Av. Corrientes"
-                required
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="pricePerMonth" className="block mb-2">Precio por Mes (USD) *</Label>
-                <div className="relative">
-                  <DollarSign className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="pricePerMonth"
-                    type="text"
-                    value={formatPriceInput(formData.pricePerMonth)}
-                    onChange={(e) => handlePriceInputChange(e.target.value)}
-                    placeholder="00.0"
-                    className="pl-10"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="dailyImpressions" className="block mb-2">Impactos Diarios</Label>
-                <div className="relative">
-                  <Eye className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="dailyImpressions"
-                    type="number"
-                    value={formData.dailyImpressions}
-                    onChange={(e) => handleInputChange('dailyImpressions', e.target.value)}
-                    placeholder="65000"
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="type" className="block mb-2">Tipo de Soporte *</Label>
-                <Select value={formData.type} onValueChange={(value) => handleInputChange('type', value)}>
-                  <SelectTrigger className="bg-white">
-                    <SelectValue placeholder="Selecciona el tipo" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white">
-                    {TYPES.map((type) => (
-                      <SelectItem key={type} value={type}>
-                        {type}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="code" className="block mb-2">Código</Label>
-                <div className="relative">
-                  <Hash className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="code"
-                    value={formData.code}
-                    onChange={(e) => handleInputChange('code', e.target.value)}
-                    placeholder="Ej: VLL-001, MUP-A23"
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Ubicación */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MapPin className="h-5 w-5" />
-              Ubicación
-            </CardTitle>
-            <CardDescription>
-              Información sobre la ubicación del espacio
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="country" className="block mb-2">País *</Label>
-                <Select value={formData.country} onValueChange={handleCountryChange}>
-                  <SelectTrigger className="bg-white">
-                    <SelectValue placeholder="Selecciona un país" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white">
-                    {COUNTRIES.map((country) => (
-                      <SelectItem key={country} value={country}>
-                        {country}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="city" className="block mb-2">Ciudad *</Label>
-                <Select 
-                  value={formData.city} 
-                  onValueChange={(value) => handleInputChange('city', value)}
-                  disabled={!formData.country}
-                >
-                  <SelectTrigger className="bg-white">
-                    <SelectValue placeholder={formData.country ? "Selecciona una ciudad" : "Primero selecciona un país"} />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white">
-                    {availableCities.map((city) => (
-                      <SelectItem key={city} value={city}>
-                        {city}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="googleMapsLink" className="block mb-2">Enlace de Google Maps (opcional)</Label>
-              <div className="relative">
-                <Link className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                <Input
-                  id="googleMapsLink"
-                  type="url"
-                  value={formData.googleMapsLink}
-                  onChange={(e) => handleInputChange('googleMapsLink', e.target.value)}
-                  placeholder="https://maps.google.com/..."
-                  className="pl-10"
-                />
-              </div>
-              <p className="text-sm text-gray-500 mt-1">
-                Ve a Google Maps, busca tu ubicación, haz clic en "Compartir" y pega el enlace aquí
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Características Técnicas */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Ruler className="h-5 w-5" />
-              Características Técnicas
-            </CardTitle>
-            <CardDescription>
-              Especificaciones técnicas del espacio
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="width" className="block mb-2">Ancho (m) *</Label>
-                <Input
-                  id="width"
-                  type="text"
-                  value={formatPriceInput(formData.width)}
-                  onChange={(e) => handleDimensionInputChange('width', e.target.value)}
-                  placeholder="00.0"
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="height" className="block mb-2">Alto (m) *</Label>
-                <Input
-                  id="height"
-                  type="text"
-                  value={formatPriceInput(formData.height)}
-                  onChange={(e) => handleDimensionInputChange('height', e.target.value)}
-                  placeholder="00.0"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <Lightbulb className="h-4 w-4 text-gray-600" />
-              <span className="text-sm font-medium text-gray-700">Iluminación</span>
-              <button
-                type="button"
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#D7514C] ${formData.lighting ? 'bg-[#D7514C]' : 'bg-gray-300'}`}
-                onClick={() => handleInputChange('lighting', !formData.lighting)}
-              >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${formData.lighting ? 'translate-x-6' : 'translate-x-1'}`}
-                />
-              </button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Imágenes */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Upload className="h-5 w-5" />
-              Imágenes
-            </CardTitle>
-            <CardDescription>
-              Sube imágenes de tu espacio publicitario
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <Label htmlFor="images" className="block">Seleccionar Imágenes</Label>
-                <span className="text-sm text-gray-500">
-                  {formData.images.length}/5 imágenes
-                </span>
-              </div>
-              <Input
-                id="images"
-                type="file"
-                multiple
-                accept="image/*"
-                onChange={handleImageUpload}
-                className="cursor-pointer"
-                disabled={formData.images.length >= 5}
-              />
-              <p className="text-sm text-gray-500 mt-1">
-                Máximo 5 imágenes, 5MB por imagen. Formatos: JPG, PNG, GIF, WebP
-              </p>
-            </div>
-
-            {formData.images.length > 0 && (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {formData.images.map((image, index) => (
-                  <div key={index} className="relative">
-                    <img
-                      src={URL.createObjectURL(image)}
-                      alt={`Preview ${index + 1}`}
-                      className="w-full h-32 object-cover rounded-lg"
-                    />
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="sm"
-                      className="absolute top-2 right-2"
-                      onClick={() => removeImage(index)}
-                    >
-                      ×
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Descripción */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Descripción</CardTitle>
-            <CardDescription>
-              Describe tu soporte publicitario
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="description" className="block mb-2">Descripción (máximo 500 caracteres)</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => handleInputChange('description', e.target.value)}
-                placeholder="Descripción detallada del soporte, ubicación, características especiales, etc."
-                rows={4}
-                maxLength={500}
-                className="focus:ring-[#D7514C] focus:border-[#D7514C]"
-              />
-              <p className="text-sm text-gray-500 mt-1">
-                {formData.description.length}/500 caracteres
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+          <SoporteForm
+            formData={formData}
+            onInputChange={handleInputChange}
+            onCountryChange={handleCountryChange}
+            onImageUpload={handleImageUpload}
+            onRemoveImage={removeImage}
+            onDimensionInputChange={handleDimensionInputChange}
+            onPriceInputChange={handlePriceInputChange}
+            formatPriceInput={formatPriceInput}
+            availableCities={availableCities}
+            isEditMode={false}
+          />
 
         {/* Indicador de Progreso */}
         {isSubmitting && (
@@ -714,31 +379,35 @@ export function PublicarEspacioClient() {
         )}
 
         {/* Botones de Acción */}
-        <div className="flex justify-end space-x-4">
+          <div className="flex justify-center pt-8 pb-8">
+            <div className="flex gap-4">
           <Button
             type="button"
             variant="outline"
             onClick={() => router.back()}
             disabled={isSubmitting}
+                className="px-8 py-6 text-lg rounded-2xl"
           >
             Cancelar
           </Button>
           <Button
             type="submit"
             disabled={isSubmitting}
-            className="min-w-[120px] bg-[#D7514C] hover:bg-[#D7514C]/90 text-white transition-all duration-200 transform hover:scale-105 active:scale-95"
+                className="px-12 py-6 text-lg rounded-2xl bg-[#e94446] hover:bg-[#d63a3a] transition-all shadow-lg hover:shadow-xl"
           >
             {isSubmitting ? (
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                 Publicando...
               </div>
             ) : (
               'Publicar Espacio'
             )}
           </Button>
+            </div>
         </div>
       </form>
+      </div>
     </div>
   );
 }

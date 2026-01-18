@@ -99,8 +99,8 @@ interface Support {
   areaM2: number | null
   pricePerM2: number | null
   productionCost: number | null
-  ownerId: string | null
-  owner: {
+  usuarioId: string | null
+  usuario: {
     id: string
     name: string
     companyName: string | null
@@ -213,8 +213,8 @@ export default function SoportesPage() {
           areaM2: soporte.dimensiones?.area || null,
           pricePerM2: null,
           productionCost: null,
-          ownerId: soporte.ownerId || null,
-          owner: soporte.owner || null,
+          usuarioId: soporte.usuarioId || null,
+          usuario: soporte.usuario || null,
           imageUrl: soporte.imagenes?.[0] || null,
           company: { name: soporte.categoria || 'N/A' }
         }))

@@ -94,3 +94,6 @@ FROM usuarios u
 LEFT JOIN roles r ON u.rol_id = r.id
 WHERE u.email IN ('test@stellarmotion.com', 'client@stellarmotion.com')
 ORDER BY u.email;
+
+
+

@@ -1,6 +1,8 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { verifySession } from '@/lib/auth/session';
+import { findUserByEmail } from '@/lib/auth/users';
+import { getAdminSupabase } from '@/lib/supabase/admin';
 
 export const runtime = 'nodejs';
 
@@ -19,16 +21,38 @@ export async function GET() {
       return NextResponse.json({ error: "Sesión inválida" }, { status: 401 });
     }
 
+    // Obtener información actualizada del usuario desde la base de datos
+    // Esto asegura que el nombre siempre esté actualizado
+    const user = await findUserByEmail(payload.email);
+    
+    // Obtener nombre del rol actualizado
+    let roleName = payload.role || 'client';
+    if (user?.rol_id) {
+      const supabase = getAdminSupabase();
+      const { data: roleData } = await supabase
+        .from('roles')
+        .select('nombre')
+        .eq('id', user.rol_id)
+        .maybeSingle();
+      
+      if (roleData?.nombre) {
+        roleName = roleData.nombre;
+      }
+    }
+
+    // Usar el nombre de la base de datos (actualizado) en lugar del JWT (puede estar desactualizado)
+    const userName = user?.nombre || payload.name || '';
+
     return NextResponse.json({
       success: true,
       user: {
         id: payload.sub,
         sub: payload.sub,
         email: payload.email,
-        name: payload.name || '',
-        nombre: payload.name || '',
-        role: payload.role || 'client',
-        rol: payload.role || 'client',
+        name: userName,
+        nombre: userName,
+        role: roleName,
+        rol: roleName,
       }
     });
   } catch (error: any) {

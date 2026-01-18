@@ -7,7 +7,7 @@ import { getAdminSupabase } from '@/lib/supabase/admin';
 export const runtime = 'nodejs';
 
 type OwnerCompleteBody = {
-  tipo_contacto?: 'persona' | 'empresa' | 'agencia' | 'gobierno';
+  tipo_contacto?: 'persona' | 'empresa' | 'gobierno';
   empresa?: string;
   tipo_empresa?: string;
   representante_legal?: string;
@@ -153,3 +153,5 @@ export async function POST(req: Request) {
     );
   }
 }
+
+

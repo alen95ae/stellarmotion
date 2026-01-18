@@ -338,7 +338,7 @@ const normalizeSupport = async (support: any) => {
     address: support?.ubicacion ?? support?.address ?? '',
     googleMapsLink: support?.googleMapsLink ?? support?.googleMapsLink ?? '',
     ownerName,
-    ownerId: support?.ownerId ?? support?.owner?.id ?? null,
+    usuarioId: support?.usuarioId ?? support?.usuario?.id ?? null,
     createdAt: support?.createdAt,
     updatedAt: support?.updatedAt,
   };
@@ -507,9 +507,9 @@ export async function POST(req: NextRequest) {
       );
     }
     
-    if (!data.ownerId) {
+    if (!data.usuarioId) {
       return NextResponse.json(
-        { error: 'Owner ID es requerido' },
+        { error: 'Usuario ID es requerido' },
         { status: 400 }
       );
     }
@@ -660,7 +660,7 @@ export async function POST(req: NextRequest) {
       priceMonth: data.pricePerMonth,
       available: true,
       status: 'DISPONIBLE',
-      ownerId: data.ownerId,
+      usuarioId: data.usuarioId,
       dimensions: data.dimensions,
       widthM,
       heightM,

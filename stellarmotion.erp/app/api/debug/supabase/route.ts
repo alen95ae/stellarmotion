@@ -222,3 +222,6 @@ export async function GET() {
     status: diagnostics.summary.allPassed ? 200 : 500 
   });
 }
+
+
+

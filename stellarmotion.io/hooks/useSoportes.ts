@@ -26,7 +26,7 @@ export interface Soporte {
   impactosDiarios?: number;
   impactosDiariosPorM2?: number;
   resumenAutomatico?: string;
-  ownerId?: string;
+  usuarioId?: string;
   owner?: {
     id: string;
     name: string;

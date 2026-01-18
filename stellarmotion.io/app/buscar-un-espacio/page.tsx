@@ -8,10 +8,11 @@ import { useQuerySync } from '@/hooks/useQuerySync';
 import { useCategories } from '@/hooks/useCategories';
 import { useSoportes, Soporte } from '@/hooks/useSoportes';
 import SearchBarGooglePlaces from '@/components/SearchBarGooglePlaces';
-import { Ruler, MapPin, Eye, EyeOff, Building, Lightbulb, Printer, Car } from 'lucide-react';
+import { Ruler, MapPin, Eye, EyeOff, Building, Lightbulb, Printer, Car, SlidersHorizontal, Heart, ChevronRight, ChevronLeft } from 'lucide-react';
 import MapViewerGoogleMaps from '@/components/MapViewerGoogleMaps';
 import Link from 'next/link';
 import Image from 'next/image';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 
 export default function BuscarEspacioPage() {
   const searchParams = useSearchParams();
@@ -35,6 +36,7 @@ export default function BuscarEspacioPage() {
   const [mobile, setMobile] = useState(false);
   const [searchLocation, setSearchLocation] = useState<{ lat: number; lng: number; label?: string; types?: string[] } | null>(null);
   const [showMap, setShowMap] = useState(true);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [mapConfig, setMapConfig] = useState({
     lat: 40.4637,
     lng: -3.7492,
@@ -186,214 +188,198 @@ export default function BuscarEspacioPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Buscar un espacio</h1>
-          <p className="text-gray-600">Encuentra el soporte publicitario perfecto para tu campaña</p>
-        </div>
+    <div className="min-h-screen bg-white">
+      {/* Search Bar Header - Fixed at top */}
+      <div className="sticky top-16 z-40 bg-white border-b border-gray-200 shadow-sm">
+        <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center gap-4">
+            {/* Compact Search Bar */}
+            <div className="flex-1 max-w-4xl">
+              <SearchBarGooglePlaces />
+            </div>
+            
+            {/* Filters Button */}
+            <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
+              <SheetTrigger asChild>
+                <button className="flex items-center gap-2 px-4 py-2.5 border border-gray-300 rounded-full hover:bg-gray-50 transition-colors whitespace-nowrap">
+                  <SlidersHorizontal className="w-4 h-4" />
+                  <span className="hidden sm:inline">Filtros</span>
+                </button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-[400px] sm:w-[540px] overflow-y-auto">
+                <SheetHeader>
+                  <SheetTitle>Filtros</SheetTitle>
+                </SheetHeader>
+                <div className="mt-6 space-y-6">
+                  {/* Categories */}
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-700 mb-3">Categorías</h3>
+                    {categoriesLoading ? (
+                      <div className="h-10 bg-gray-200 rounded-md animate-pulse"></div>
+                    ) : (
+                      <Select value={category || "all"} onValueChange={(value) => handleCategoryClick(value === "all" ? "" : value)}>
+                        <SelectTrigger className="w-full bg-white">
+                          <SelectValue placeholder="Seleccionar categoría" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-white">
+                          <SelectItem value="all">Todas las categorías</SelectItem>
+                          {categories.map((cat) => (
+                            <SelectItem key={cat.slug} value={cat.slug}>
+                              {cat.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
 
-        {/* Search Bar */}
-        <div className="mb-8">
-          <SearchBarGooglePlaces />
-        </div>
+                  {/* Price Range */}
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-700 mb-3">Rango de precio</h3>
+                    <div className="px-2">
+                      <div className="mb-4">
+                        <RedSlider
+                          value={priceRange}
+                          onValueChange={handlePriceChange}
+                          onValueCommit={handlePriceCommit}
+                          min={0}
+                          max={5000}
+                          step={10}
+                        />
+                      </div>
+                      <div className="flex justify-between text-sm text-gray-600">
+                        <span>${priceRange[0]}</span>
+                        <span>${priceRange[1]}</span>
+                      </div>
+                    </div>
+                  </div>
 
-        {/* Filters and Map Section - Side by side */}
-        <div className={`flex gap-6 mb-8 ${!showMap ? 'hidden' : ''}`}>
-          {/* Filters Sidebar - 1/4 width */}
-          <div className="w-1/4 flex-shrink-0">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 h-[500px]">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Filtros</h2>
+                  {/* Filter Icons */}
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-700 mb-3">Filtros adicionales</h3>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        onClick={() => setLighting(!lighting)}
+                        className={`flex items-center justify-center p-3 rounded-lg border-2 transition-all hover:scale-105 ${
+                          lighting 
+                            ? 'border-[#e94446] bg-[#e94446]/10 text-[#e94446]' 
+                            : 'border-gray-200 bg-white text-gray-400 hover:border-gray-300'
+                        }`}
+                        title="Iluminación"
+                      >
+                        <Lightbulb className="w-5 h-5" />
+                      </button>
+                      
+                      <button
+                        onClick={() => setPrinting(!printing)}
+                        className={`flex items-center justify-center p-3 rounded-lg border-2 transition-all hover:scale-105 ${
+                          printing 
+                            ? 'border-[#e94446] bg-[#e94446]/10 text-[#e94446]' 
+                            : 'border-gray-200 bg-white text-gray-400 hover:border-gray-300'
+                        }`}
+                        title="Incluye impresión"
+                      >
+                        <Printer className="w-5 h-5" />
+                      </button>
+                      
+                      <button
+                        onClick={() => setCenterZone(!centerZone)}
+                        className={`flex items-center justify-center p-3 rounded-lg border-2 transition-all hover:scale-105 ${
+                          centerZone 
+                            ? 'border-[#e94446] bg-[#e94446]/10 text-[#e94446]' 
+                            : 'border-gray-200 bg-white text-gray-400 hover:border-gray-300'
+                        }`}
+                        title="Zona centro"
+                      >
+                        <Building className="w-5 h-5" />
+                      </button>
+                      
+                      <button
+                        onClick={() => setMobile(!mobile)}
+                        className={`flex items-center justify-center p-3 rounded-lg border-2 transition-all hover:scale-105 ${
+                          mobile 
+                            ? 'border-[#e94446] bg-[#e94446]/10 text-[#e94446]' 
+                            : 'border-gray-200 bg-white text-gray-400 hover:border-gray-300'
+                        }`}
+                        title="Móvil"
+                      >
+                        <Car className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Clear Filters */}
+                  <button
+                    onClick={() => {
+                      setQuery({ category: null, q: null, priceMin: null, priceMax: null, city: null });
+                      setLighting(false);
+                      setPrinting(false);
+                      setCenterZone(false);
+                      setMobile(false);
+                      setPriceRange([0, 5000]);
+                    }}
+                    className="w-full px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                  >
+                    Limpiar filtros
+                  </button>
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content - Split Layout */}
+      <div className="flex h-[calc(100vh-8rem)] max-w-[1920px] mx-auto">
+        {/* Left Side - Soportes Grid */}
+        <div className={`${showMap ? 'w-1/2' : 'w-full'} overflow-y-auto ${showMap ? 'lg:pr-0' : ''}`}>
+          <div className="px-4 sm:px-6 lg:px-8 py-6">
+            {/* Results Header */}
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">
+                  {soportesLoading ? 'Cargando...' : soportesError ? 'Error al cargar soportes' : `${soportes.length} soportes encontrados`}
+                </h2>
+              </div>
               
-              {/* Categories - Dropdown */}
-              <div className="mb-6">
-                <h3 className="text-sm font-medium text-gray-700 mb-3">Categorías</h3>
-                {categoriesLoading ? (
-                  <div className="h-10 bg-gray-200 rounded-md animate-pulse"></div>
-                ) : (
-                  <Select value={category || "all"} onValueChange={(value) => handleCategoryClick(value === "all" ? "" : value)}>
-                    <SelectTrigger className="w-full bg-white">
-                      <SelectValue placeholder="Seleccionar categoría" />
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setShowMap(!showMap)}
+                  className="flex items-center gap-2 px-3 py-1.5 border border-gray-300 rounded-full hover:bg-gray-50 transition-colors text-sm whitespace-nowrap"
+                >
+                  {showMap ? (
+                    <>
+                      <EyeOff className="w-4 h-4 flex-shrink-0" />
+                      <span className="hidden sm:inline">Ocultar mapa</span>
+                    </>
+                  ) : (
+                    <>
+                      <Eye className="w-4 h-4 flex-shrink-0" />
+                      <span className="hidden sm:inline">Mostrar mapa</span>
+                    </>
+                  )}
+                </button>
+                
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-gray-600 hidden sm:inline">Ordenar:</span>
+                  <Select defaultValue="featured">
+                    <SelectTrigger className="w-[140px] sm:w-[180px] bg-white border-gray-300">
+                      <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-white">
-                      <SelectItem value="all">Todas las categorías</SelectItem>
-                      {categories.map((cat) => (
-                        <SelectItem key={cat.slug} value={cat.slug}>
-                          {cat.label}
-                        </SelectItem>
-                      ))}
+                      <SelectItem value="featured">Destacados</SelectItem>
+                      <SelectItem value="price-low">Precio: menor a mayor</SelectItem>
+                      <SelectItem value="price-high">Precio: mayor a menor</SelectItem>
+                      <SelectItem value="rating">Mejor valorados</SelectItem>
+                      <SelectItem value="newest">Más recientes</SelectItem>
                     </SelectContent>
                   </Select>
-                )}
-              </div>
-
-              {/* Price Range */}
-              <div className="mb-6">
-                <h3 className="text-sm font-medium text-gray-700 mb-3">Rango de precio</h3>
-                <div className="px-2">
-                  <div className="mb-4">
-                    <RedSlider
-                      value={priceRange}
-                      onValueChange={handlePriceChange}
-                      onValueCommit={handlePriceCommit}
-                      min={0}
-                      max={5000}
-                      step={10}
-                    />
-                  </div>
-                  <div className="flex justify-between text-sm text-gray-600">
-                    <span>${priceRange[0]}</span>
-                    <span>${priceRange[1]}</span>
-                  </div>
                 </div>
               </div>
-
-              {/* Filter Icons */}
-              <div className="mb-6">
-                <h3 className="text-sm font-medium text-gray-700 mb-3">Filtros adicionales</h3>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    onClick={() => setLighting(!lighting)}
-                    className={`flex items-center justify-center p-3 rounded-lg border-2 transition-all hover:scale-105 ${
-                      lighting 
-                        ? 'border-red-500 bg-red-50 text-red-600' 
-                        : 'border-gray-200 bg-white text-gray-400 hover:border-gray-300'
-                    }`}
-                    title="Iluminación"
-                  >
-                    <Lightbulb className="w-5 h-5" />
-                  </button>
-                  
-                  <button
-                    onClick={() => setPrinting(!printing)}
-                    className={`flex items-center justify-center p-3 rounded-lg border-2 transition-all hover:scale-105 ${
-                      printing 
-                        ? 'border-red-500 bg-red-50 text-red-600' 
-                        : 'border-gray-200 bg-white text-gray-400 hover:border-gray-300'
-                    }`}
-                    title="Incluye impresión"
-                  >
-                    <Printer className="w-5 h-5" />
-                  </button>
-                  
-                  <button
-                    onClick={() => setCenterZone(!centerZone)}
-                    className={`flex items-center justify-center p-3 rounded-lg border-2 transition-all hover:scale-105 ${
-                      centerZone 
-                        ? 'border-red-500 bg-red-50 text-red-600' 
-                        : 'border-gray-200 bg-white text-gray-400 hover:border-gray-300'
-                    }`}
-                    title="Zona centro"
-                  >
-                    <Building className="w-5 h-5" />
-                  </button>
-                  
-                  <button
-                    onClick={() => setMobile(!mobile)}
-                    className={`flex items-center justify-center p-3 rounded-lg border-2 transition-all hover:scale-105 ${
-                      mobile 
-                        ? 'border-red-500 bg-red-50 text-red-600' 
-                        : 'border-gray-200 bg-white text-gray-400 hover:border-gray-300'
-                    }`}
-                    title="Móvil"
-                  >
-                    <Car className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Clear Filters */}
-              <button
-                onClick={() => {
-                  setQuery({ category: null, q: null, priceMin: null, priceMax: null, city: null });
-                  setLighting(false);
-                  setPrinting(false);
-                  setCenterZone(false);
-                  setMobile(false);
-                  setPriceRange([0, 5000]);
-                }}
-                className="w-full px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-              >
-                Limpiar filtros
-              </button>
             </div>
-          </div>
 
-          {/* Map Section - 3/4 width */}
-          <div className="w-3/4">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 h-[500px]">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Ubicaciones en el mapa</h2>
-              <div className="h-[440px]">
-                <MapViewerGoogleMaps 
-                  points={mapPoints}
-                  height={440}
-                  lat={mapConfig.lat}
-                  lng={mapConfig.lng}
-                  zoom={mapConfig.zoom}
-                  style="streets"
-                  showControls={true}
-                  searchLocation={searchLocation}
-                  onMarkerClick={(point) => {
-                    // Marcador clickeado
-                  }}
-                  onMapClick={(lat, lng) => {
-                    // Mapa clickeado
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Supports Grid Section */}
-        <div className="mb-8">
-          <div className="relative flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Soportes Disponibles</h2>
-              <p className="text-gray-600">
-                {soportesLoading ? 'Cargando...' : soportesError ? 'Error al cargar soportes' : `${soportes.length} soportes encontrados`}
-              </p>
-            </div>
-            
-            {/* Toggle Map Button - Centered horizontally, same height as Order by */}
-            <div className="absolute left-1/2 transform -translate-x-1/2">
-              <button
-                onClick={() => setShowMap(!showMap)}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
-              >
-                {showMap ? (
-                  <>
-                    <EyeOff className="w-4 h-4" />
-                    Ocultar mapa
-                  </>
-                ) : (
-                  <>
-                    <Eye className="w-4 h-4" />
-                    Mostrar mapa
-                  </>
-                )}
-              </button>
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <span className="text-sm text-gray-600">Ordenar por:</span>
-              <Select defaultValue="featured">
-                <SelectTrigger className="w-48 bg-white">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-white">
-                  <SelectItem value="featured">Destacados</SelectItem>
-                  <SelectItem value="price-low">Precio: menor a mayor</SelectItem>
-                  <SelectItem value="price-high">Precio: mayor a menor</SelectItem>
-                  <SelectItem value="rating">Mejor valorados</SelectItem>
-                  <SelectItem value="newest">Más recientes</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+            {/* Soportes Grid */}
+            <div className={`grid gap-6 ${showMap ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'}`}>
             {soportesLoading ? (
               // Loading skeleton
               Array.from({ length: 6 }).map((_, i) => (
@@ -423,139 +409,202 @@ export default function BuscarEspacioPage() {
                   window.location.href = `/product/${soporte.id}`;
                 };
 
+                const getStatusConfig = (status: string) => {
+                  const normalizedStatus = status?.toLowerCase() || '';
+                  switch (normalizedStatus) {
+                    case 'disponible':
+                      return { label: 'Disponible', className: 'bg-blue-500 text-white' };
+                    case 'reservado':
+                      return { label: 'Reservado', className: 'bg-yellow-500 text-white' };
+                    case 'ocupado':
+                      return { label: 'Ocupado', className: 'bg-red-500 text-white' };
+                    case 'mantenimiento':
+                      return { label: 'Mantenimiento', className: 'bg-orange-500 text-white' };
+                    default:
+                      return { label: status || 'Desconocido', className: 'bg-gray-500 text-white' };
+                  }
+                };
+
+                const statusConfig = getStatusConfig(soporte.status);
+                const images = soporte.images?.filter(img => img?.trim()) || [];
+                const hasMultipleImages = images.length > 1;
+
                 return (
-                  <div
+                  <SoporteCard
                     key={soporte.id}
-                    className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
-                  >
-                    <div className="relative cursor-pointer" onClick={handleCardClick}>
-                      <Image
-                        src={soporte.images?.[0] && soporte.images[0].trim() ? soporte.images[0] : '/placeholder.svg'}
-                        alt={soporte.title}
-                        width={250}
-                        height={150}
-                        className="w-full h-[150px] object-cover"
-                      />
-                  <div className="absolute top-3 left-3 flex flex-col gap-2">
-                    {(() => {
-                      // Función para obtener el color y texto del estado
-                      const getStatusConfig = (status: string) => {
-                        const normalizedStatus = status?.toLowerCase() || '';
-                        
-                        switch (normalizedStatus) {
-                          case 'disponible':
-                            return {
-                              label: 'Disponible',
-                              className: 'bg-green-500 text-white'
-                            };
-                          case 'reservado':
-                            return {
-                              label: 'Reservado',
-                              className: 'bg-yellow-500 text-white'
-                            };
-                          case 'ocupado':
-                            return {
-                              label: 'Ocupado',
-                              className: 'bg-red-500 text-white'
-                            };
-                          case 'mantenimiento':
-                            return {
-                              label: 'Mantenimiento',
-                              className: 'bg-orange-500 text-white'
-                            };
-                          default:
-                            return {
-                              label: status || 'Desconocido',
-                              className: 'bg-gray-500 text-white'
-                            };
-                        }
-                      };
-                      
-                      const statusConfig = getStatusConfig(soporte.status);
-                      
-                      return (
-                        <span className={`text-xs font-medium px-2 py-1 rounded-full ${statusConfig.className}`}>
-                          {statusConfig.label}
-                        </span>
-                      );
-                    })()}
-                    </div>
-                  </div>
-                
-                <div className="p-4">
-                  <h3 className="font-semibold text-gray-900 mb-2 text-lg line-clamp-2">{soporte.title}</h3>
-                  
-                  {/* Características con iconos - 2 columnas */}
-                  <div className="grid grid-cols-2 gap-2 mb-4">
-                    {/* Tipo */}
-                    <div className="flex items-center space-x-1.5">
-                      <div className="w-3 h-3 flex items-center justify-center flex-shrink-0">
-                        <Building className="w-2.5 h-2.5 text-gray-500" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs text-gray-500 truncate">Tipo</p>
-                        <p className="text-xs font-medium text-gray-900 truncate">{soporte.type}</p>
-                      </div>
-                    </div>
-                    
-                    {/* Iluminación */}
-                    <div className="flex items-center space-x-1.5">
-                      <div className="w-3 h-3 flex items-center justify-center flex-shrink-0">
-                        <Lightbulb className={`w-2.5 h-2.5 ${soporte.lighting ? 'text-yellow-500' : 'text-gray-400'}`} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs text-gray-500 truncate">Iluminación</p>
-                        <p className="text-xs font-medium text-gray-900 truncate">{soporte.lighting ? 'Sí' : 'No'}</p>
-                      </div>
-                    </div>
-                    
-                    {/* Medidas */}
-                    <div className="flex items-center space-x-1.5">
-                      <div className="w-3 h-3 flex items-center justify-center flex-shrink-0">
-                        <Ruler className="w-2.5 h-2.5 text-gray-500" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs text-gray-500 truncate">Medidas</p>
-                        <p className="text-xs font-medium text-gray-900 truncate">{soporte.dimensions}</p>
-                      </div>
-                    </div>
-                    
-                    {/* Ciudad */}
-                    <div className="flex items-center space-x-1.5">
-                      <div className="w-3 h-3 flex items-center justify-center flex-shrink-0">
-                        <MapPin className="w-2.5 h-2.5 text-gray-500" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs text-gray-500 truncate">Ciudad</p>
-                        <p className="text-xs font-medium text-gray-900 truncate">{soporte.city || soporte.address}</p>
-                      </div>
-                    </div>
-                  </div>
-                
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-lg font-bold text-[#e94446]">${soporte.pricePerMonth.toLocaleString()}</span>
-                      <span className="text-gray-600 text-xs"> / mes</span>
-                    </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        window.location.href = `/product/${soporte.id}`;
-                      }}
-                      className="flex items-center px-3 py-1.5 rounded-lg text-sm bg-[#e94446] text-white font-medium hover:bg-[#D7514C] transition-colors"
-                    >
-                      <Eye className="w-3 h-3 mr-1" />
-                      Ver
-                    </button>
-                  </div>
-                </div>
-                  </div>
+                    soporte={soporte}
+                    statusConfig={statusConfig}
+                    images={images}
+                    hasMultipleImages={hasMultipleImages}
+                    onClick={handleCardClick}
+                  />
                 );
               })
             )}
+            </div>
           </div>
         </div>
-      </main>
+
+        {/* Right Side - Map Sidebar */}
+        {showMap ? (
+          <div className="hidden lg:flex w-1/2 border-l border-gray-200 bg-white flex flex-col">
+            <div className="flex-1 relative rounded-xl overflow-hidden m-4 mt-0 mb-0">
+              <MapViewerGoogleMaps 
+                points={mapPoints}
+                height="100%"
+                lat={mapConfig.lat}
+                lng={mapConfig.lng}
+                zoom={mapConfig.zoom}
+                style="streets"
+                showControls={true}
+                searchLocation={searchLocation}
+                onMarkerClick={(point) => {
+                  // Scroll to soporte in list
+                  const element = document.querySelector(`[data-soporte-id="${point.id}"]`);
+                  if (element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  }
+                }}
+                onMapClick={(lat, lng) => {
+                  // Mapa clickeado
+                }}
+              />
+            </div>
+          </div>
+        ) : (
+          <button
+            onClick={() => setShowMap(true)}
+            className="hidden lg:flex fixed right-0 top-1/2 -translate-y-1/2 z-30 p-3 bg-white border-l border-t border-b border-gray-200 rounded-l-lg shadow-lg hover:bg-gray-50 transition-colors"
+            aria-label="Mostrar mapa"
+          >
+            <ChevronLeft className="w-5 h-5 text-gray-600" />
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Soporte Card Component
+function SoporteCard({ 
+  soporte, 
+  statusConfig, 
+  images, 
+  hasMultipleImages, 
+  onClick 
+}: { 
+  soporte: Soporte; 
+  statusConfig: { label: string; className: string }; 
+  images: string[]; 
+  hasMultipleImages: boolean; 
+  onClick: () => void;
+}) {
+  const [imageIndex, setImageIndex] = useState(0);
+
+  return (
+    <div
+      data-soporte-id={soporte.id}
+      className="group cursor-pointer"
+      onClick={onClick}
+    >
+      <div className="relative rounded-xl overflow-hidden bg-white">
+        {/* Image Container */}
+        <div className="relative aspect-[4/3] overflow-hidden">
+          <Image
+            src={images[imageIndex] || '/placeholder.svg'}
+            alt={soporte.title}
+            fill
+            className="object-cover group-hover:scale-105 transition-transform duration-300"
+          />
+          
+          {/* Image Navigation */}
+          {hasMultipleImages && (
+            <>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+                }}
+                className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 hover:bg-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
+              >
+                <ChevronLeft className="w-4 h-4 text-gray-700" />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+                }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 hover:bg-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
+              >
+                <ChevronRight className="w-4 h-4 text-gray-700" />
+              </button>
+              {/* Pagination Dots */}
+              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                {images.map((_, idx) => (
+                  <div
+                    key={idx}
+                    className={`h-1.5 rounded-full transition-all ${
+                      idx === imageIndex ? 'w-6 bg-white' : 'w-1.5 bg-white/50'
+                    }`}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+          
+          {/* Status Badge */}
+          <div className="absolute top-3 left-3">
+            <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${statusConfig.className}`}>
+              {statusConfig.label}
+            </span>
+          </div>
+          
+          {/* Favorite Button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              // TODO: Implement favorite functionality
+            }}
+            className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/90 hover:bg-white flex items-center justify-center transition-all shadow-md hover:scale-110"
+          >
+            <Heart className="w-4 h-4 text-gray-700" />
+          </button>
+        </div>
+        
+        {/* Card Content */}
+        <div className="p-4">
+          <h3 className="font-semibold text-gray-900 mb-1 text-base line-clamp-1 group-hover:text-[#e94446] transition-colors">
+            {soporte.title}
+          </h3>
+          
+          <p className="text-sm text-gray-600 mb-3 line-clamp-1">
+            {soporte.city || soporte.address}
+          </p>
+          
+          {/* Features */}
+          <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
+            <span className="flex items-center gap-1">
+              <Building className="w-4 h-4" />
+              <span className="line-clamp-1">{soporte.type}</span>
+            </span>
+            {soporte.lighting && (
+              <span className="flex items-center gap-1">
+                <Lightbulb className="w-4 h-4 text-yellow-500" />
+              </span>
+            )}
+          </div>
+          
+          {/* Price */}
+          <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+            <div>
+              <span className="text-lg font-semibold text-gray-900">
+                ${soporte.pricePerMonth.toLocaleString()}
+              </span>
+              <span className="text-sm text-gray-600"> / mes</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

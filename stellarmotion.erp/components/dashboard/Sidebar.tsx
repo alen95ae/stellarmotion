@@ -113,6 +113,7 @@ export default function Sidebar({ children }: SidebarProps) {
   // Determinar el módulo activo basado en la ruta actual
   const getActiveModule = () => {
     if (pathname === '/dashboard') return 'dashboard'
+    if (pathname.startsWith('/panel/crm')) return 'crm'
     if (pathname.startsWith('/panel/soportes')) return 'soportes'
     if (pathname.startsWith('/panel/clientes')) return 'clientes'
     if (pathname.startsWith('/panel/ventas')) return 'ventas'

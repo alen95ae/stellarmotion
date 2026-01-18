@@ -221,7 +221,7 @@ export default function MapViewerGoogleMaps({
       {/* Contenedor del mapa */}
       <div 
         ref={mapContainer}
-        className="w-full h-full rounded-lg overflow-hidden" 
+        className="w-full h-full rounded-xl overflow-hidden" 
         style={{ minHeight: "300px" }}
       />
 

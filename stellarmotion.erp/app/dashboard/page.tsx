@@ -172,6 +172,9 @@ export default function DashboardPage() {
       case 'owners':
         router.push('/panel/owners')
         break
+      case 'crm':
+        router.push('/panel/crm')
+        break
       // Agregar más casos según sea necesario
       default:
         // Para el dashboard y otros módulos que no tienen página específica

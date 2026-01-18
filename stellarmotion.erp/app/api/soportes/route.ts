@@ -34,7 +34,7 @@ export async function GET(request: Request) {
     // El frontend envía 'status' pero también puede venir como 'estado'
     const estado = searchParams.get("estado") || searchParams.get("status") || ""
     const tipo = searchParams.get("tipo") || ""
-    const ownerId = searchParams.get("ownerId") || ""
+    const usuarioId = searchParams.get("usuarioId") || ""
     const page = parseInt(searchParams.get("page") || "1")
     const limit = parseInt(searchParams.get("limit") || "10")
 
@@ -43,7 +43,7 @@ export async function GET(request: Request) {
       categoria, 
       estado, 
       tipo, 
-      ownerId,
+      usuarioId,
       page, 
       limit,
       allParams: Object.fromEntries(searchParams.entries())
@@ -59,7 +59,7 @@ export async function GET(request: Request) {
       categoria: categoria || undefined,
       estado: estadoFilter,
       tipo: tipo || undefined,
-      ownerId: ownerId || undefined,
+      usuarioId: usuarioId || undefined,
       page,
       limit
     })

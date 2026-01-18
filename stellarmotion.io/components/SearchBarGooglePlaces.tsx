@@ -440,29 +440,32 @@ export default function SearchBarGooglePlaces({
 
   return (
     <form onSubmit={onSubmit} className={`w-full ${className}`}>
-      <div className="bg-white rounded-2xl shadow-lg p-4 md:p-6 max-w-5xl mx-auto">
-        <div className="flex flex-col md:flex-row gap-4 items-stretch">
+      <div className="bg-white rounded-full shadow-md border border-gray-200 p-1.5 flex items-center gap-2">
+        <div className="flex-1 flex items-center gap-2">
           {/* Palabras clave */}
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <Input
               value={keywords}
               onChange={(e) => setKeywords(e.target.value)}
               placeholder="Palabras clave"
-              className="h-12 text-base border-0 focus:ring-0 bg-gray-50"
+              className="h-10 text-sm border-0 focus:ring-0 bg-transparent px-4"
             />
           </div>
 
+          {/* Divider */}
+          <div className="w-px h-6 bg-gray-300"></div>
+
           {/* Ubicación con Google Places Autocomplete */}
-          <div className="flex-1 relative">
-            <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+          <div className="flex-1 min-w-0 relative">
+            <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             <Input
               ref={inputRef}
               value={location}
               onChange={handleLocationChange}
               onFocus={handleLocationFocus}
               onBlur={handleLocationBlur}
-              placeholder="Ubicación (ciudad o país)"
-              className="h-12 text-base border-0 focus:ring-0 bg-gray-50 pl-10 pr-12"
+              placeholder="Ubicación"
+              className="h-10 text-sm border-0 focus:ring-0 bg-transparent pl-9 pr-10"
               aria-autocomplete="list"
               aria-expanded={showSuggestions}
               aria-controls="loc-listbox"
@@ -470,19 +473,34 @@ export default function SearchBarGooglePlaces({
               autoComplete="off"
             />
             {isLoadingSuggestions && (
-              <div className="absolute right-12 top-1/2 transform -translate-y-1/2">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#e94446]"></div>
+              <div className="absolute right-10 top-1/2 transform -translate-y-1/2">
+                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-[#e94446]"></div>
               </div>
+            )}
+            {location && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setLocation('');
+                  setSuggestions([]);
+                  setShowSuggestions(false);
+                }}
+                className="absolute right-8 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                title="Limpiar ubicación"
+              >
+                <span className="text-xs">×</span>
+              </button>
             )}
             <button
               type="button"
               onClick={useMyLocation}
               disabled={loadingLoc || !googleMapsLoaded}
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-gray-500 hover:text-gray-700 transition-colors disabled:opacity-50"
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-gray-500 hover:text-gray-700 transition-colors disabled:opacity-50 rounded-full hover:bg-gray-100"
               title="Usar mi ubicación"
               aria-label="Usar mi ubicación"
             >
-              <Crosshair className={`w-5 h-5 ${loadingLoc ? 'animate-spin' : ''}`} />
+              <Crosshair className={`w-4 h-4 ${loadingLoc ? 'animate-spin' : ''}`} />
             </button>
 
             {/* Google Places Suggestions dropdown */}
@@ -490,7 +508,7 @@ export default function SearchBarGooglePlaces({
               <ul
                 id="loc-listbox"
                 role="listbox"
-                className="absolute z-50 mt-1 w-full bg-white border rounded-xl shadow-lg max-h-64 overflow-auto"
+                className="absolute z-50 mt-2 w-full bg-white border rounded-xl shadow-lg max-h-64 overflow-auto"
                 onMouseDown={(e) => e.preventDefault()} // Prevent input blur
               >
                 {suggestions.map((s, i) => (
@@ -520,22 +538,22 @@ export default function SearchBarGooglePlaces({
             
             {/* No results message */}
             {showSuggestions && suggestions.length === 0 && !isLoadingSuggestions && location.length > 2 && (
-              <div className="absolute z-50 mt-1 w-full bg-white border rounded-xl shadow-lg p-3 text-sm text-gray-500">
+              <div className="absolute z-50 mt-2 w-full bg-white border rounded-xl shadow-lg p-3 text-sm text-gray-500">
                 No se encontraron coincidencias
               </div>
             )}
           </div>
-
-          {/* Botón buscar */}
-          <Button
-            type="submit"
-            variant="brand"
-            className="h-12 px-6 rounded-full flex-shrink-0 gap-2"
-          >
-            <Search className="w-5 h-5" />
-            Buscar
-          </Button>
         </div>
+
+        {/* Botón buscar */}
+        <Button
+          type="submit"
+          variant="brand"
+          className="h-10 px-5 rounded-full flex-shrink-0 gap-2 bg-[#e94446] hover:bg-[#D7514C]"
+        >
+          <Search className="w-4 h-4" />
+          <span className="hidden sm:inline">Buscar</span>
+        </Button>
       </div>
     </form>
   );

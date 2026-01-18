@@ -1,4 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { verifySession } from '@/lib/auth/session';
+import { getRoleFromPayload } from '@/lib/auth/role';
 
 // Rutas públicas que no requieren autenticación
 const PUBLIC_ROUTES = [
@@ -26,11 +28,19 @@ const ADMIN_ROUTES = [
   '/dashboard/admin',
 ] as const;
 
-const OWNER_ROUTES = [
+// Rutas accesibles para admin y owner
+const ADMIN_OR_OWNER_ROUTES = [
   '/panel',
 ] as const;
 
+// Rutas específicas de owner (admin, owner, seller)
+const OWNER_ROUTES = [
+  '/panel/owner',
+] as const;
+
+// Rutas específicas de cliente
 const CLIENT_ROUTES = [
+  '/panel/cliente',
   '/dashboard',
 ] as const;
 
@@ -80,6 +90,10 @@ export async function middleware(req: NextRequest) {
     pathname.startsWith(route)
   );
 
+  const isAdminOrOwnerRoute = ADMIN_OR_OWNER_ROUTES.some(route =>
+    pathname.startsWith(route)
+  );
+
   const isOwnerRoute = OWNER_ROUTES.some(route =>
     pathname.startsWith(route)
   );
@@ -88,8 +102,60 @@ export async function middleware(req: NextRequest) {
     pathname.startsWith(route)
   );
 
-  if (isAdminRoute || isOwnerRoute || isClientRoute) {
+  if (isAdminRoute || isAdminOrOwnerRoute || isOwnerRoute || isClientRoute) {
     if (!cookie) {
+      const loginUrl = new URL('/auth/login', req.url);
+      loginUrl.searchParams.set('next', pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+
+    // Verificar el rol del usuario para rutas protegidas por rol
+    try {
+      const payload = await verifySession(cookie.value);
+      
+      if (!payload) {
+        const loginUrl = new URL('/auth/login', req.url);
+        loginUrl.searchParams.set('next', pathname);
+        return NextResponse.redirect(loginUrl);
+      }
+
+      // Normalizar el rol usando el helper centralizado
+      const normalizedRole = getRoleFromPayload(payload.role);
+      const userRole = normalizedRole || 'client';
+
+      // Debug logs para rutas de cliente
+      if (isClientRoute) {
+        console.log('🔍 Middleware - Verificando acceso:', {
+          pathname,
+          userRole,
+          rawRole: payload.role,
+          isClientRoute,
+        });
+      }
+
+      // Validar acceso según el rol
+      if (isAdminRoute && userRole !== 'admin') {
+        // Solo admin puede acceder a rutas de admin
+        return NextResponse.redirect(new URL('/', req.url));
+      }
+
+      if (isAdminOrOwnerRoute && userRole !== 'admin' && userRole !== 'owner' && userRole !== 'seller') {
+        // Solo admin, owner y seller pueden acceder a /panel (ruta raíz)
+        // Pero las rutas específicas se validan por separado
+        if (!pathname.startsWith('/panel/owner') && !pathname.startsWith('/panel/cliente')) {
+          return NextResponse.redirect(new URL('/', req.url));
+        }
+      }
+
+      // ✅ DEV: todos los usuarios autenticados pueden ver Owner y Cliente.
+      // El middleware solo exige sesión para estas rutas.
+
+      // Si llegamos aquí, el acceso está permitido
+      if (isClientRoute) {
+        console.log('✅ Middleware - Acceso permitido para:', userRole, 'a', pathname);
+      }
+    } catch (error) {
+      console.error('Error verifying session in middleware:', error);
       const loginUrl = new URL('/auth/login', req.url);
       loginUrl.searchParams.set('next', pathname);
       return NextResponse.redirect(loginUrl);

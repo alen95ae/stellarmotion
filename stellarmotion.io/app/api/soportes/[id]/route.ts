@@ -53,9 +53,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     }
     
     // Procesar coordenadas del googleMapsLink si está disponible
-    const coords = await getSoporteCoordinates(support);
-    const finalLat = coords?.lat || support.latitude || 0;
-    const finalLng = coords?.lng || support.longitude || 0;
+    let coords = null;
+    try {
+      coords = await getSoporteCoordinates(support);
+    } catch (error) {
+      console.warn('⚠️ API soportes/[id]: Error obteniendo coordenadas de Google Maps:', error);
+      // Continuar sin coordenadas de Google Maps, usar las del soporte
+    }
+    const finalLat = coords?.lat || support.latitude || support.latitud || 0;
+    const finalLng = coords?.lng || support.longitude || support.longitud || 0;
     
     console.log('ProductClient - soporte data:', {
       latitud: finalLat,
@@ -114,7 +120,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       impactosDiarios: support.impactosDiarios,
       impactosDiariosPorM2: support.impactosDiariosPorM2,
       resumenAutomatico: support.resumenAutomatico,
-      ownerId: support.ownerId,
+      usuarioId: support.usuarioId,
       owner: support.owner,
       iluminacion: support.iluminacion,
       destacado: support.destacado

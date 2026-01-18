@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, Building2, MapPin, CheckCircle2, User, Briefcase, Globe, Key } from 'lucide-react';
 
-type TipoOwner = 'persona' | 'empresa' | 'gobierno' | 'agencia';
+type TipoOwner = 'persona' | 'empresa' | 'gobierno';
 
 export default function OwnerPaso2Page() {
   const router = useRouter();
@@ -97,7 +97,7 @@ export default function OwnerPaso2Page() {
         setError('Por favor, completa la dirección y ciudad');
         return false;
       }
-    } else if (['empresa', 'agencia', 'gobierno'].includes(tipoOwner)) {
+    } else if (['empresa', 'gobierno'].includes(tipoOwner)) {
       if (!formData.razon_social?.trim()) {
         setError('La Razón Social / Empresa es obligatoria.');
         return false;
@@ -148,7 +148,7 @@ export default function OwnerPaso2Page() {
       if (tipo_contacto === 'persona') {
         registrationData.direccion = formData.direccion?.trim() || null;
         registrationData.ciudad = formData.ciudad?.trim() || null;
-      } else if (['empresa', 'agencia', 'gobierno'].includes(tipo_contacto)) {
+    } else if (['empresa', 'gobierno'].includes(tipo_contacto)) {
         registrationData.empresa = formData.razon_social?.trim();
         registrationData.direccion = formData.direccion_fiscal?.trim() || null;
         registrationData.ciudad = formData.ciudad?.trim() || null;
@@ -269,7 +269,6 @@ export default function OwnerPaso2Page() {
                   <SelectItem value="persona">Persona</SelectItem>
                   <SelectItem value="empresa">Empresa</SelectItem>
                   <SelectItem value="gobierno">Gobierno</SelectItem>
-                  <SelectItem value="agencia">Agencia</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -399,7 +398,7 @@ export default function OwnerPaso2Page() {
               </>
             )}
 
-            {(tipoOwner === 'empresa' || tipoOwner === 'agencia' || tipoOwner === 'gobierno') && (
+            {(tipoOwner === 'empresa' || tipoOwner === 'gobierno') && (
               <>
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="direccion_fiscal" className="text-sm font-medium text-gray-700">Dirección Fiscal *</Label>
@@ -509,3 +508,5 @@ export default function OwnerPaso2Page() {
     </div>
   );
 }
+
+

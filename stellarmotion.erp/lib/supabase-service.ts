@@ -56,8 +56,8 @@ export interface Soporte {
   impactosDiarios?: number;
   impactosDiariosPorM2?: number;
   resumenAutomatico?: string;
-  ownerId?: string;
-  owner?: {
+  usuarioId?: string;
+  usuario?: {
     id: string;
     name: string;
     companyName?: string;
@@ -259,12 +259,12 @@ function mapSoporteFromSupabase(record: any): Soporte {
     impactosDiarios: record.impactos_diarios || 0,
     impactosDiariosPorM2: record.impactos_diarios_m2 || 0,
     resumenAutomatico: record.resumen || '',
-    ownerId: record.owner_id || null,
-    owner: record.owner ? {
-      id: record.owner.id || record.owner_id || '',
-      name: record.owner.name || '',
-      companyName: record.owner.company_name || null,
-      email: record.owner.email || ''
+    usuarioId: record.usuario_id || null,
+    usuario: record.usuario ? {
+      id: record.usuario.id || record.usuario_id || '',
+      name: record.usuario.nombre || record.usuario.name || '',
+      companyName: record.usuario.company_name || record.usuario.empresa || null,
+      email: record.usuario.email || ''
     } : undefined,
     iluminacion: record.iluminacion || false,
     destacado: record.destacado || false,
@@ -309,7 +309,7 @@ export class SupabaseService {
     tipo?: string;
     page?: number;
     limit?: number;
-    ownerId?: string;
+    usuarioId?: string;
   }): Promise<{ soportes: Soporte[]; total: number }> {
     try {
       console.log('🔍 Fetching soportes from Supabase with filters:', filters);
@@ -371,8 +371,8 @@ export class SupabaseService {
         query = query.eq('categoria_ubicacion', filters.categoria);
       }
 
-      if (filters?.ownerId) {
-        query = query.eq('owner_id', filters.ownerId);
+      if (filters?.usuarioId) {
+        query = query.eq('usuario_id', filters.usuarioId);
       }
 
       // Búsqueda por texto (si se proporciona)
@@ -535,7 +535,7 @@ export class SupabaseService {
         // propietario: NO existe en tabla soportes
         iluminacion: data['Iluminación'] !== undefined ? data['Iluminación'] : (data.iluminacion !== undefined ? data.iluminacion : false),
         destacado: data['Destacado'] !== undefined ? data['Destacado'] : (data.destacado !== undefined ? data.destacado : false),
-        owner_id: data.ownerId || null,
+        usuario_id: data.usuarioId || null,
         resumen: data['Resumen automático'] || data.resumenAutomatico || null,
         // Usar SOLO campo JSONB imagenes (no usar imagen_1, imagen_2, imagen_3)
         imagenes: imagenesPaths.length > 0 ? imagenesPaths : []

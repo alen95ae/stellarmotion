@@ -30,7 +30,14 @@
     @apply border-gray-200;
   }
   body {
-    @apply bg-white text-gray-900;
+    @apply bg-white text-gray-900 font-sans;
+    font-family: var(--font-poppins), system-ui, sans-serif;
+  }
+  
+  /* Aplicar Poppins a todos los elementos de texto */
+  h1, h2, h3, h4, h5, h6,
+  p, span, div, a, button, input, textarea, select, label {
+    font-family: var(--font-poppins), system-ui, sans-serif;
   }
 }
 

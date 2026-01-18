@@ -303,9 +303,9 @@ export default function HomeClient() {
                   <line x1="3" y1="10" x2="21" y2="10" />
                 </svg>
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">Reserva fácil</h3>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">Alquiler fácil</h3>
               <p className="text-gray-600 leading-relaxed">
-                Gestiona tus reservas de soportes de forma sencilla y rápida
+                Gestiona tus alquileres de soportes de forma sencilla y rápida
               </p>
             </div>
 

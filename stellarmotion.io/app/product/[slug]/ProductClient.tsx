@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { MapPin, Heart, Eye, Ruler, Building, Globe, Lightbulb, Star, Calendar, Send, MessageSquare, Edit } from 'lucide-react';
+import { MapPin, Heart, Eye, Ruler, Building, Globe, Lightbulb, Star, Calendar, Send, MessageSquare, Edit, CheckCircle, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { IconBox } from '@/components/ui/IconBox';
 import { FEATURE_ICONS } from '@/lib/icons';
@@ -60,6 +60,11 @@ export default function ProductClient({ productId }: ProductClientProps) {
   });
   const [soporteCoords, setSoporteCoords] = useState<{ lat: number; lng: number } | null>(null);
   const router = useRouter();
+  
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [successNumber, setSuccessNumber] = useState<string | null>(null);
 
 
   // Estado para searchLocation
@@ -278,10 +283,10 @@ export default function ProductClient({ productId }: ProductClientProps) {
     if (selectedServices.installation) servicesTotal += servicePrices.installation;
     if (selectedServices.graphicDesign) servicesTotal += servicePrices.graphicDesign;
     
-    const subtotal = rentalTotal + servicesTotal;
-    const platformCommission = subtotal * 0.03; // 3% de comisión
+    // La comisión es 3% del precio_alquiler (no del subtotal)
+    const platformCommission = rentalTotal * 0.03; // 3% de comisión sobre el alquiler
     
-    return subtotal + platformCommission;
+    return rentalTotal + platformCommission + servicesTotal;
   };
 
   // Calcular subtotal (sin comisión)
@@ -296,6 +301,124 @@ export default function ProductClient({ productId }: ProductClientProps) {
     if (selectedServices.graphicDesign) servicesTotal += servicePrices.graphicDesign;
     
     return rentalTotal + servicesTotal;
+  };
+
+  // Calcular comisión (3% del precio_alquiler)
+  const calculateCommission = () => {
+    const basePrice = isNaN(soporte?.precio) || soporte?.precio <= 0 ? 350 : soporte.precio;
+    const months = selectedDates.months || 0;
+    const rentalTotal = basePrice * months;
+    return rentalTotal * 0.03; // 3% de comisión sobre el alquiler
+  };
+
+  // Validar formulario
+  const isFormValid = () => {
+    return (
+      selectedDates.start &&
+      selectedDates.months &&
+      selectedDates.months > 0 &&
+      soporte?.id
+    );
+  };
+
+  // Mapear servicios seleccionados a IDs del backend
+  const getSelectedServiceIds = (): string[] => {
+    const services: string[] = [];
+    if (selectedServices.printing) services.push('impresion');
+    if (selectedServices.installation) services.push('instalacion');
+    if (selectedServices.graphicDesign) services.push('diseno');
+    return services;
+  };
+
+  // Manejar creación de alquiler
+  const handleCreateAlquiler = async () => {
+    if (!isFormValid() || !soporte?.id) {
+      setSubmitError('Por favor completa todos los campos requeridos');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setSubmitError(null);
+    setSubmitSuccess(false);
+
+    try {
+      // Calcular fecha_fin
+      const fechaInicio = new Date(selectedDates.start!);
+      const fechaFin = new Date(fechaInicio);
+      fechaFin.setMonth(fechaFin.getMonth() + selectedDates.months!);
+
+      // Preparar datos para enviar
+      // El usuario_id se obtiene automáticamente del JWT en el backend
+      const alquilerData = {
+        soporte_id: soporte.id,
+        fecha_inicio: fechaInicio.toISOString().split('T')[0],
+        meses: selectedDates.months!,
+        servicios_adicionales: getSelectedServiceIds()
+      };
+
+      const response = await fetch('/api/alquileres/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(alquilerData),
+      });
+
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        console.error('Error parsing JSON response:', jsonError);
+        throw new Error('Error al procesar la respuesta del servidor');
+      }
+
+      if (!response.ok) {
+        console.error('Error response:', {
+          status: response.status,
+          statusText: response.statusText,
+          data
+        });
+        const errorMessage = data?.error || data?.details || data?.message || `Error al crear el alquiler (${response.status})`;
+        throw new Error(errorMessage);
+      }
+
+      if (data.success) {
+        setSubmitSuccess(true);
+        setSuccessNumber(data.numero);
+        setSubmitError(null);
+        // Limpiar formulario pero mantenerlo abierto
+        setSelectedDates({});
+        setSelectedServices({
+          printing: false,
+          installation: false,
+          graphicDesign: false
+        });
+        // NO cerrar el formulario - mantenerlo abierto para ver el mensaje
+        // setShowCalendar(false); // Comentado para mantener el formulario visible
+        
+        // Scroll suave hacia el mensaje de éxito
+        setTimeout(() => {
+          const successElement = document.getElementById('success-message');
+          if (successElement) {
+            successElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }, 100);
+      } else {
+        throw new Error(data.message || 'Error al crear el alquiler');
+      }
+    } catch (error: any) {
+      console.error('Error creando alquiler:', error);
+      const errorMessage = error?.message || error?.toString() || 'Error al crear el alquiler. Por favor intenta de nuevo.';
+      setSubmitError(errorMessage);
+      // También mostrar en consola para debugging
+      console.error('Detalles del error:', {
+        message: error?.message,
+        stack: error?.stack,
+        error
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Calcular pago inicial (primer mes + servicios + comisión)
@@ -647,10 +770,14 @@ export default function ProductClient({ productId }: ProductClientProps) {
                         </label>
                         <input
                           type="date"
+                          value={selectedDates.start ? selectedDates.start.toISOString().split('T')[0] : ''}
+                          min={new Date().toISOString().split('T')[0]}
                           className="w-full px-4 py-3 border-2 border-red-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D7514C] focus:border-[#D7514C] bg-white shadow-sm"
                           onChange={(e) => {
-                            const startDate = new Date(e.target.value);
-                            setSelectedDates(prev => ({...prev, start: startDate}));
+                            if (e.target.value) {
+                              const startDate = new Date(e.target.value);
+                              setSelectedDates(prev => ({...prev, start: startDate}));
+                            }
                           }}
                         />
                       </div>
@@ -659,9 +786,10 @@ export default function ProductClient({ productId }: ProductClientProps) {
                           Meses de alquiler
                         </label>
                         <select
+                          value={selectedDates.months || ''}
                           className="w-full px-4 py-3 border-2 border-red-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D7514C] focus:border-[#D7514C] bg-white shadow-sm"
                           onChange={(e) => {
-                            const months = parseInt(e.target.value);
+                            const months = e.target.value ? parseInt(e.target.value) : undefined;
                             setSelectedDates(prev => ({...prev, months}));
                           }}
                         >
@@ -757,6 +885,55 @@ export default function ProductClient({ productId }: ProductClientProps) {
                       </div>
                     )}
 
+                    {/* Mensaje de éxito - Mostrar siempre que haya éxito, incluso si no hay fechas */}
+                    {submitSuccess && (
+                      <div id="success-message" className="mt-4 p-4 bg-green-500/20 border-2 border-green-300 rounded-lg">
+                        <div className="flex items-start space-x-3">
+                          <CheckCircle className="w-5 h-5 text-green-400 mt-0.5 shrink-0" />
+                          <div className="flex-1">
+                            <p className="text-sm font-semibold text-gray-900 mb-1">
+                              ¡Solicitud de cotización enviada exitosamente!
+                            </p>
+                            {successNumber && (
+                              <p className="text-xs text-gray-700 mb-2">
+                                Número de solicitud: <span className="font-mono font-bold text-[#D7514C]">{successNumber}</span>
+                              </p>
+                            )}
+                            <p className="text-xs text-gray-600">
+                              El owner recibirá una notificación y se pondrá en contacto contigo.
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => {
+                              setSubmitSuccess(false);
+                              setSuccessNumber(null);
+                            }}
+                            className="text-gray-400 hover:text-gray-600 transition-colors"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Mensaje de error - Mostrar siempre que haya error */}
+                    {submitError && (
+                      <div className="mt-4 p-4 bg-red-500/20 border-2 border-red-300 rounded-lg">
+                        <div className="flex items-start space-x-3">
+                          <X className="w-5 h-5 text-red-400 mt-0.5 shrink-0" />
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-gray-900">{submitError}</p>
+                          </div>
+                          <button
+                            onClick={() => setSubmitError(null)}
+                            className="text-red-300 hover:text-red-500 transition-colors"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Total y Botón de Pago */}
                     {(selectedDates.start && selectedDates.months) && (
                       <div className="mt-4 p-4 bg-gradient-to-r from-[#D7514C] to-red-600 rounded-lg text-white">
@@ -775,16 +952,14 @@ export default function ProductClient({ productId }: ProductClientProps) {
                               (selectedServices.graphicDesign ? servicePrices.graphicDesign : 0)
                             )}</p>
                           )}
-                          <p>Comisión de la plataforma (3%): {formatPrice(calculateSubtotal() * 0.03)}</p>
+                          <p>Comisión de la plataforma (3%): {formatPrice(calculateCommission())}</p>
                         </div>
                         <Button 
-                          className="w-full bg-white text-[#D7514C] hover:bg-gray-100 font-semibold py-3"
-                          onClick={() => {
-                            // Aquí iría la lógica de pago
-                            alert('Redirigiendo al proceso de pago...');
-                          }}
+                          className="w-full bg-white text-[#D7514C] hover:bg-gray-100 font-semibold py-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                          onClick={handleCreateAlquiler}
+                          disabled={isSubmitting || !isFormValid()}
                         >
-                          Proceder al pago
+                          {isSubmitting ? 'Procesando...' : 'Solicitud de cotización'}
                         </Button>
                       </div>
                     )}

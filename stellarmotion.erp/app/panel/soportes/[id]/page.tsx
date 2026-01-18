@@ -28,6 +28,115 @@ const LeafletHybridMap = dynamic(() => import("@/components/LeafletHybridMap"), 
 
 import type { SupportPoint } from "@/components/LeafletHybridMap"
 
+// Función para extraer coordenadas de un enlace de Google Maps
+async function extractCoordinatesFromGoogleMapsLink(link: string): Promise<{ lat: number; lng: number } | null> {
+  if (!link) return null;
+
+  try {
+    // Formato 1: https://maps.google.com/?q=lat,lng
+    const qMatch = link.match(/[?&]q=([^&]+)/);
+    if (qMatch) {
+      const coords = qMatch[1].split(',');
+      if (coords.length >= 2) {
+        const lat = parseFloat(coords[0]);
+        const lng = parseFloat(coords[1]);
+        if (!isNaN(lat) && !isNaN(lng)) {
+          return { lat, lng };
+        }
+      }
+    }
+
+    // Formato 2: https://www.google.com/maps/place/.../@lat,lng,zoom
+    const atMatch = link.match(/@([^,]+),([^,]+)/);
+    if (atMatch) {
+      const lat = parseFloat(atMatch[1]);
+      const lng = parseFloat(atMatch[2]);
+      if (!isNaN(lat) && !isNaN(lng)) {
+        return { lat, lng };
+      }
+    }
+
+    // Formato 3: https://maps.google.com/maps?ll=lat,lng
+    const llMatch = link.match(/[?&]ll=([^&]+)/);
+    if (llMatch) {
+      const coords = llMatch[1].split(',');
+      if (coords.length >= 2) {
+        const lat = parseFloat(coords[0]);
+        const lng = parseFloat(coords[1]);
+        if (!isNaN(lat) && !isNaN(lng)) {
+          return { lat, lng };
+        }
+      }
+    }
+
+    // Formato 4: https://maps.google.com/maps?q=lat,lng
+    const mapsQMatch = link.match(/maps\?q=([^&]+)/);
+    if (mapsQMatch) {
+      const coords = mapsQMatch[1].split(',');
+      if (coords.length >= 2) {
+        const lat = parseFloat(coords[0]);
+        const lng = parseFloat(coords[1]);
+        if (!isNaN(lat) && !isNaN(lng)) {
+          return { lat, lng };
+        }
+      }
+    }
+
+    // Formato 5: !3dlat!4dlng
+    const format5Match = link.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
+    if (format5Match) {
+      const lat = parseFloat(format5Match[1]);
+      const lng = parseFloat(format5Match[2]);
+      if (!isNaN(lat) && !isNaN(lng)) {
+        return { lat, lng };
+      }
+    }
+
+    // Para enlaces acortados, intentar seguir la redirección
+    if (link.includes('maps.app.goo.gl') || link.includes('goo.gl')) {
+      try {
+        const response = await fetch(link, { 
+          method: 'HEAD',
+          redirect: 'follow',
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+          }
+        });
+        
+        if (response.ok) {
+          const finalUrl = response.url;
+          
+          // Intentar extraer coordenadas de la URL final
+          const patterns = [
+            /\/search\/([+-]?\d+\.\d+),([+-]?\d+\.\d+)/, // /search/lat,lng
+            /@(-?\d+\.\d+),(-?\d+\.\d+)/, // @lat,lng
+            /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/, // !3dlat!4dlng
+            /ll=(-?\d+\.\d+),(-?\d+\.\d+)/, // ll=lat,lng
+            /q=(-?\d+\.\d+),(-?\d+\.\d+)/, // q=lat,lng
+          ];
+
+          for (const pattern of patterns) {
+            const match = finalUrl.match(pattern);
+            if (match) {
+              return {
+                lat: parseFloat(match[1]),
+                lng: parseFloat(match[2])
+              };
+            }
+          }
+        }
+      } catch (error) {
+        console.warn('Error following shortened link:', error);
+      }
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Error extracting coordinates from Google Maps link:', error);
+    return null;
+  }
+}
+
 // Constantes para selects y colores
 const TYPE_OPTIONS = [
   'Parada de Bus',
@@ -987,11 +1096,35 @@ export default function SoporteDetailPage() {
             <div>
               <Label htmlFor="googleMapsLink">Enlace de Google Maps</Label>
               {editing ? (
-                <Input
-                  id="googleMapsLink"
-                  value={formData.googleMapsLink}
-                  onChange={(e) => setFormData({...formData, googleMapsLink: e.target.value})}
-                />
+                <div className="space-y-2">
+                  <Input
+                    id="googleMapsLink"
+                    value={formData.googleMapsLink}
+                    onChange={(e) => setFormData({...formData, googleMapsLink: e.target.value})}
+                    onBlur={async (e) => {
+                      const newLink = e.target.value.trim();
+                      if (newLink) {
+                        // Extraer coordenadas del enlace
+                        const coords = await extractCoordinatesFromGoogleMapsLink(newLink);
+                        if (coords) {
+                          setFormData(prev => ({
+                            ...prev,
+                            googleMapsLink: newLink,
+                            latitud: coords.lat,
+                            longitud: coords.lng
+                          }));
+                          toast.success('Coordenadas extraídas correctamente');
+                        } else {
+                          toast.error('No se pudieron extraer coordenadas del enlace');
+                        }
+                      }
+                    }}
+                    placeholder="Pega el enlace de Google Maps aquí"
+                  />
+                  <p className="text-xs text-gray-500">
+                    Al pegar el enlace, se extraerán automáticamente las coordenadas y se mostrará la ubicación en el mapa
+                  </p>
+                </div>
               ) : (
                 <div className="mt-1">
                   {formData.googleMapsLink || support?.googleMapsLink ? (
@@ -1016,20 +1149,22 @@ export default function SoporteDetailPage() {
               <Label>Ubicación en el Mapa</Label>
               <div className="mt-2">
                 <LeafletHybridMap
-                  points={support?.latitud && support?.longitud ? [{
-                    id: support.id || '1',
-                    lat: support.latitud,
-                    lng: support.longitud,
-                    title: support.title || support.nombre || 'Soporte',
+                  points={(formData.latitud && formData.longitud) || (support?.latitud && support?.longitud) ? [{
+                    id: support?.id || '1',
+                    lat: formData.latitud || support?.latitud || 0,
+                    lng: formData.longitud || support?.longitud || 0,
+                    title: formData.title || support?.title || support?.nombre || 'Soporte',
                     type: 'billboard' as const,
-                    dimensions: support.widthM && support.heightM ? `${support.widthM}m × ${support.heightM}m` : undefined,
-                    image: support.imageUrl || support.imagenes?.[0],
-                    monthlyPrice: support.priceMonth ? parseFloat(support.priceMonth) : undefined,
-                    city: support.city || support.ciudad,
-                    format: support.type || support.tipo
+                    dimensions: (formData.widthM || support?.widthM) && (formData.heightM || support?.heightM) ? `${formData.widthM || support?.widthM}m × ${formData.heightM || support?.heightM}m` : undefined,
+                    image: formData.imageUrl || support?.imageUrl || support?.imagenes?.[0],
+                    monthlyPrice: formData.priceMonth || support?.priceMonth ? parseFloat(formData.priceMonth || support?.priceMonth || '0') : undefined,
+                    city: formData.city || support?.city || support?.ciudad,
+                    format: formData.type || support?.type || support?.tipo
                   }] : []}
                   height={400}
-                  center={support?.latitud && support?.longitud ? [support.latitud, support.longitud] : [40.4168, -3.7038]}
+                  center={(formData.latitud && formData.longitud) || (support?.latitud && support?.longitud) 
+                    ? [formData.latitud || support?.latitud || 0, formData.longitud || support?.longitud || 0]
+                    : [40.4168, -3.7038]}
                   zoom={15}
                 />
               </div>

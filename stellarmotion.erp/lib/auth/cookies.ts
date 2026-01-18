@@ -60,4 +60,3 @@ export function clearSessionCookie(response: NextResponse) {
     `st_session=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax; Secure=false`
   );
 }
-

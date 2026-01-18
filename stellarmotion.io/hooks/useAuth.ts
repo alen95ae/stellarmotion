@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { AppRole } from '@/lib/auth/role'
 // Using relative API routes instead of direct ERP calls
 
-export type UserRole = 'admin' | 'owner' | 'agency' | 'client'
+// Usar AppRole como fuente única de verdad
+export type UserRole = AppRole
 
 export interface UserProfile {
   id: string

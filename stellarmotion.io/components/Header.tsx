@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect, useMemo } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { ChevronDown, User, Heart, Settings, LogOut, BarChart3, Megaphone } from "lucide-react"
+import { ChevronDown, User, LogOut, LayoutDashboard } from "lucide-react"
 // Removed Supabase Auth - using JWT-based auth
 import { getRoleFromPayload } from "@/lib/auth/role"
 
@@ -14,6 +14,10 @@ export default function Header() {
   const userMenuRef = useRef<HTMLDivElement>(null)
   const pathname = usePathname()
   const router = useRouter()
+
+  type DashboardView = "owner" | "cliente"
+  const DASHBOARD_VIEW_KEY = "st_dashboard_view"
+  const [dashboardView, setDashboardView] = useState<DashboardView>("cliente")
   
   useEffect(() => {
     let isMounted = true;
@@ -142,6 +146,26 @@ export default function Header() {
   
   // Obtener el rol del usuario usando el helper centralizado
   const userRole = user ? getRoleFromPayload(user.role) : undefined
+
+  // Persistir preferencia de vista Owner/Cliente para todos los usuarios
+  useEffect(() => {
+    if (!user) return
+    try {
+      const saved = window.localStorage.getItem(DASHBOARD_VIEW_KEY)
+      if (saved === "owner" || saved === "cliente") {
+        setDashboardView(saved)
+        return
+      }
+
+      // Default: si el rol es admin/owner/seller, empezar en Owner; si no, Cliente
+      const defaultView: DashboardView =
+        userRole && ["admin", "owner", "seller"].includes(userRole) ? "owner" : "cliente"
+      setDashboardView(defaultView)
+      window.localStorage.setItem(DASHBOARD_VIEW_KEY, defaultView)
+    } catch {
+      // ignore (private mode, etc.)
+    }
+  }, [user, userRole])
   
   // Log para debug
   useEffect(() => {
@@ -149,36 +173,22 @@ export default function Header() {
       console.log('👤 User data:', {
         email: user.email,
         role: userRole,
+        rawRole: user.role,
         name: user.name || user.nombre
       })
     }
   }, [user, userRole])
   
-  const getDashboardPath = () => {
-    // Si no hay usuario o rol undefined, redirigir a home
-    if (!user || !userRole) {
-      return '/'
+  const goToDashboard = (view: DashboardView) => {
+    setDashboardView(view)
+    try {
+      window.localStorage.setItem(DASHBOARD_VIEW_KEY, view)
+    } catch {
+      // ignore
     }
-    
-    const path = (() => {
-      switch (userRole) {
-        case 'admin':
-          return '/panel/inicio'
-        case 'owner':
-          return '/panel/inicio' // Dashboard completo con sidebar
-        case 'seller':
-          return '/panel/inicio' // Usar panel para seller también
-        case 'client':
-          return '/' // Home para client
-        default:
-          return '/' // Por defecto, home (no debería llegar aquí si getRoleFromUser funciona correctamente)
-      }
-    })()
-    console.log('🔍 Dashboard path:', path, 'for role:', userRole || 'undefined')
-    return path
+    setIsUserMenuOpen(false)
+    router.push(view === "owner" ? "/panel/owner/inicio" : "/panel/cliente/inicio")
   }
-  
-  const dashboardPath = getDashboardPath()
 
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-gray-200 w-full m-0 p-0">
@@ -187,7 +197,7 @@ export default function Header() {
           {/* Logo */}
           <Link href="/" aria-label="Inicio" className="flex items-center">
             <svg className="w-40 h-8" viewBox="0 0 934.1 167.24">
-              <text className="text-[#282828] text-[109.26px] font-semibold font-['Poppins']" transform="translate(126.63 102.45) scale(1.02 1)">StellarMotion</text>
+              <text className="text-[#282828] text-[109.26px] font-semibold" transform="translate(126.63 102.45) scale(1.02 1)">StellarMotion</text>
               <path className="fill-[#e94446]" d="M54.91,103.2H61.5c.22,3.23.42,6.23.58,8.51L76.24,96.26H9.76V90.6c7.87-2.82,16-4.58,23-8.46C45.8,74.82,52.36,62.56,54.7,48c.79-5,.77-5,6.74-4V82.86C58.81,81.51,56,81,55.2,79.44c-1-1.93-.45-4.71-.5-5.69l-14.13,15H107v6.13c-6.74,2-13.59,3.21-19.62,6.1-14.87,7.11-22.54,19.8-25.22,35.74-.41,2.46,0,5.19-3.94,5-4.16-.16-3.29-3.08-3.3-5.43C54.88,125.41,54.91,114.53,54.91,103.2Z" transform="translate(-9.76 -26.65)"/>
               <path className="fill-[#e94446]" d="M79.57,60.28a1.94,1.94,0,0,1-2.29,0A3.38,3.38,0,0,1,77,55.44c2.87-2.69,5.76-5.36,8.64-8q6.77-6.27,13.53-12.52c.3-.28.52-.88,1.09-.6s.47.89.48,1.4c0,1.1.13,2.07,1.59,2.31.56.1.74.61.26,1.06l-.36.34-22,20.38A1.58,1.58,0,0,1,79.57,60.28Z" transform="translate(-9.76 -26.65)"/>
               <path className="fill-[#e94446]" d="M87.27,68.91a2.62,2.62,0,0,1,1-1.25Q99.9,56.83,111.58,46c1.46-1.36,2.93-1.38,4.15-.1a2.65,2.65,0,0,1,.32,3.64,5.7,5.7,0,0,1-.69.7Q103.75,61,92.11,71.82a2.62,2.62,0,0,1-1.31.87c-.35-.89.36-1.23.8-1.65,2.58-2.45,5.19-4.86,7.82-7.26,1.21-1.11,2.45-2.12,2.2-4.16-.09-.75.27-1.54.21-2.35a17.4,17.4,0,0,1-.27,2.71c-.07.34-.1.78-.59.8s-.68-.28-.88-.67c-.65-1.23-.88-1.30-1.83-.44-3.08,2.82-6.11,5.68-9.2,8.49C88.59,68.59,88.19,69.33,87.27,68.91Z" transform="translate(-9.76 -26.65)"/>
@@ -232,26 +242,37 @@ export default function Header() {
                 </button>
 
                 {isUserMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-[60] border border-gray-200">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.preventDefault()
-                        e.stopPropagation()
-                        console.log('✅ Dashboard clicked!')
-                        console.log('📍 Dashboard path:', dashboardPath)
-                        console.log('👤 User role:', userRole)
-                        setIsUserMenuOpen(false)
-                        setTimeout(() => {
-                          router.push(dashboardPath)
-                        }, 100)
-                      }}
-                      className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left cursor-pointer"
-                      role="menuitem"
-                    >
-                      <BarChart3 className="w-4 h-4 mr-3" />
-                      Dashboard
-                    </button>
+                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg py-1 z-[60] border border-gray-200">
+                    {/* Selector de vista (Owner / Cliente) - disponible para todos los usuarios */}
+                    <div className="px-4 py-2">
+                      <div className="text-xs font-medium text-gray-500 mb-2">Vista del dashboard</div>
+                      <div className="w-full rounded-full border border-[#e94446] p-1 flex">
+                        <button
+                          type="button"
+                          onClick={() => goToDashboard("owner")}
+                          className={`flex-1 text-sm font-medium rounded-full py-1.5 transition-colors ${
+                            dashboardView === "owner"
+                              ? "bg-[#e94446] text-white"
+                              : "bg-white text-[#e94446] hover:bg-[#e94446]/5"
+                          }`}
+                        >
+                          Owner
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => goToDashboard("cliente")}
+                          className={`flex-1 text-sm font-medium rounded-full py-1.5 transition-colors ${
+                            dashboardView === "cliente"
+                              ? "bg-[#e94446] text-white"
+                              : "bg-white text-[#e94446] hover:bg-[#e94446]/5"
+                          }`}
+                        >
+                          Cliente
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="border-t border-gray-200 my-1" />
                     <Link
                       href="/account"
                       className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
@@ -260,6 +281,15 @@ export default function Header() {
                     >
                       <User className="w-4 h-4 mr-3" />
                       Mi cuenta
+                    </Link>
+                    <Link
+                      href={dashboardView === "owner" ? "/panel/owner/inicio" : "/panel/cliente/inicio"}
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      role="menuitem"
+                      onClick={() => setIsUserMenuOpen(false)}
+                    >
+                      <LayoutDashboard className="w-4 h-4 mr-3" />
+                      Dashboard
                     </Link>
                     <button
                       onClick={handleLogout}
