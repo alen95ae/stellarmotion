@@ -121,42 +121,136 @@ export async function GET(request: Request) {
   }
 }
 
+// Tipos válidos de la UI (según especificación)
+const TIPOS_UI_VALIDOS = [
+  'Valla',
+  'Pantalla',
+  'Mural',
+  'Mupi',
+  'Parada de Bus',
+  'Display',
+  'Letrero',
+  'Cartelera'
+] as const;
+
+// Función para normalizar tipo de soporte a valores del enum de Supabase
+// ⚠️ IMPORTANTE: Los valores devueltos DEBEN existir en el enum tipo_soporte_enum de Supabase
+function normalizarTipoSoporte(tipo: string): string {
+  const tipoLower = String(tipo).trim().toLowerCase();
+  
+  // Mapeos desde tipos de la UI → Valores del enum de Supabase
+  const mappings: Record<string, string> = {
+    // Tipos de la UI
+    'valla': 'Unipolar',
+    'vallas': 'Unipolar',
+    'pantalla': 'Unipolar',
+    'pantallas': 'Unipolar',
+    'mural': 'Mural',
+    'murales': 'Mural',
+    'mupi': 'Unipolar',
+    'mupis': 'Unipolar',
+    'parada de bus': 'Parada de Bus',
+    'paradas de bus': 'Parada de Bus',
+    'parada de autobús': 'Parada de Bus',
+    'display': 'Unipolar',
+    'displays': 'Unipolar',
+    'letrero': 'Unipolar',
+    'letreros': 'Unipolar',
+    'cartelera': 'Cartelera',
+    'carteleras': 'Cartelera',
+    // Valores directos del enum (case-insensitive)
+    'unipolar': 'Unipolar',
+    'bipolar': 'Bipolar',
+    'tripolar': 'Tripolar',
+    'paleta': 'Paleta',
+  };
+  
+  return mappings[tipoLower] || 'Unipolar'; // Default a Unipolar (siempre existe)
+}
+
+// Validación dura: verificar que el tipo esté en la lista permitida de la UI
+function validarTipoSoporte(tipo: string): { valido: boolean; error?: string } {
+  const tipoTrimmed = String(tipo).trim();
+  
+  // Verificar si está en la lista de tipos válidos de la UI (case-insensitive)
+  const tipoLower = tipoTrimmed.toLowerCase();
+  const tiposValidosLower = TIPOS_UI_VALIDOS.map(t => t.toLowerCase());
+  
+  if (!tiposValidosLower.includes(tipoLower)) {
+    return {
+      valido: false,
+      error: `Tipo de soporte inválido: "${tipoTrimmed}". Tipos permitidos: ${TIPOS_UI_VALIDOS.join(', ')}`
+    };
+  }
+  
+  return { valido: true };
+}
+
 export async function POST(request: Request) {
   try {
-    // LOG TEMPORAL: Verificar que estamos usando service role
     console.log("🔐 Using service role:", process.env.SUPABASE_SERVICE_ROLE_KEY?.slice(0, 8));
     
     const data = await request.json()
     
     console.log('🆕 Creando nuevo soporte con datos:', data)
     
-    // Validación básica
-    if (!data['Título del soporte']) {
+    // ✅ CORRECCIÓN: Aceptar 'title' O 'Título del soporte'
+    const titulo = data.title || data.titulo || data['Título del soporte']
+    
+    if (!titulo || !titulo.trim()) {
       return withCors(NextResponse.json(
         { error: "Título del soporte es requerido" },
         { status: 400 }
       ));
     }
     
+    // ✅ Validar y normalizar tipo de soporte
+    const tipoRaw = data.type || data.tipo || data['Tipo de soporte'] || '';
+    
+    if (!tipoRaw || !tipoRaw.trim()) {
+      return withCors(NextResponse.json(
+        { error: "Tipo de soporte es requerido" },
+        { status: 400 }
+      ));
+    }
+    
+    // Validación dura: debe estar en la lista de tipos válidos de la UI
+    const validacion = validarTipoSoporte(tipoRaw);
+    if (!validacion.valido) {
+      return withCors(NextResponse.json(
+        { error: validacion.error },
+        { status: 400 }
+      ));
+    }
+    
+    // Normalizar al enum de Supabase
+    const tipoNormalizado = normalizarTipoSoporte(tipoRaw);
+    console.log(`🔄 Tipo normalizado: "${tipoRaw}" → "${tipoNormalizado}"`)
+    
     // Preparar datos para crear soporte
+    // ✅ Normalizar todos los campos desde inglés/español
     const createData = {
-      'Título del soporte': data['Título del soporte'],
-      'Descripción': data['Descripción'] || '',
-      'Tipo de soporte': data['Tipo de soporte'] || '',
-      'Estado del soporte': data['Estado del soporte'] || 'DISPONIBLE',
-      'Precio por mes': data['Precio por mes'] || null,
-      dimensiones: data.dimensiones || { ancho: 0, alto: 0, area: 0 },
-      imagenes: data.imagenes || [],
-      ubicacion: data.ubicacion || '',
-      ciudad: data.ciudad || '',
-      pais: data.pais || '',
-      'Código interno': data['Código interno'] || '',
-      'Código cliente': data['Código cliente'] || '',
-      'Impactos diarios': data['Impactos diarios'] || null,
-      'Enlace de Google Maps': data['Enlace de Google Maps'] || '',
-      'Propietario': data['Propietario'] || '',
-      'Iluminación': data['Iluminación'] || false,
-      'Destacado': data['Destacado'] || false
+      'Título del soporte': titulo,
+      'Descripción': data.description || data.descripcion || data['Descripción'] || '',
+      'Tipo de soporte': tipoNormalizado,
+      'Estado del soporte': data.status || data.estado || data['Estado del soporte'] || 'DISPONIBLE',
+      'Precio por mes': data.priceMonth || data.pricePerMonth || data.precio_mes || data['Precio por mes'] || null,
+      dimensiones: data.dimensiones || { 
+        ancho: data.widthM || data.ancho || 0, 
+        alto: data.heightM || data.alto || 0, 
+        area: (data.widthM || 0) * (data.heightM || 0) 
+      },
+      imagenes: data.images || data.imagenes || [],
+      ubicacion: data.address || data.ubicacion || '',
+      ciudad: data.city || data.ciudad || '',
+      pais: data.country || data.pais || '',
+      'Código interno': data.code || data.codigo || data.codigo_interno || data['Código interno'] || '',
+      'Código cliente': data.codigo_cliente || data['Código cliente'] || '',
+      'Impactos diarios': data.dailyImpressions || data.impactos_diarios || data.impactosDiarios || data['Impactos diarios'] || null,
+      'Enlace de Google Maps': data.googleMapsLink || data.google_maps_url || data.enlace_maps || data['Enlace de Google Maps'] || '',
+      'Propietario': data.owner || data.propietario || data.usuarioId || data['Propietario'] || '',
+      'Iluminación': data.lighting || data.iluminacion || data['Iluminación'] || false,
+      'Destacado': data.featured || data.destacado || data['Destacado'] || false
     }
     
     console.log('📤 Datos que se enviarán a Supabase:', createData)

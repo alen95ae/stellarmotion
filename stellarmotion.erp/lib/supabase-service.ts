@@ -521,7 +521,7 @@ export class SupabaseService {
         precio_mes: data['Precio por mes'] || data.precio || null,
         ancho: ancho || null,
         alto: alto || null,
-        superficie: superficie || null,
+        // ⚠️ NO enviar superficie - es una columna GENERATED en Supabase (ancho * alto)
         codigo_interno: codigoInterno,
         codigo_cliente: data['Código cliente'] || data.codigoCliente || null,
         ciudad: data.ciudad || null,
@@ -613,7 +613,7 @@ export class SupabaseService {
         const alto = data.dimensiones.alto !== undefined ? data.dimensiones.alto : existing.dimensiones.alto;
         updateData.ancho = ancho;
         updateData.alto = alto;
-        updateData.superficie = ancho * alto;
+        // ⚠️ NO enviar superficie - es una columna GENERATED en Supabase (ancho * alto)
       }
 
       // Imágenes - usar SOLO campo JSONB imagenes

@@ -27,6 +27,7 @@ dist/
 .idea/
 *.swp
 *.swo
+.cursor/
 
 # OS
 .DS_Store
@@ -94,3 +95,11 @@ temp/
 
 # Prisma generated files
 /generated/prisma
+
+# Proyecto legacy eliminado
+Copia de publicidadvialimagen.erp/
+
+# Archivos de debug y scripts temporales
+.cursor/debug.log
+requirements.txt
+migrate_supabase_to_mongodb.py
