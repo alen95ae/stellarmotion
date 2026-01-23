@@ -280,6 +280,9 @@ export default function AlquileresPage() {
                     Período
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Meses
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Precio
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -302,13 +305,13 @@ export default function AlquileresPage() {
                   </tr>
                 ) : error ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-8 text-center text-red-600">
+                    <td colSpan={8} className="px-6 py-8 text-center text-red-600">
                       {error}
                     </td>
                   </tr>
                 ) : filteredAlquileres.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-8 text-center">
+                    <td colSpan={8} className="px-6 py-8 text-center">
                       <span className="text-gray-500">No se encontraron alquileres</span>
                     </td>
                   </tr>
@@ -326,10 +329,13 @@ export default function AlquileresPage() {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {alquiler.soporte?.codigo_cliente ?? alquiler.soporte?.codigo_interno ?? 'N/A'}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                           {new Date(alquiler.fecha_inicio).toLocaleDateString('es-ES')} - {new Date(alquiler.fecha_fin).toLocaleDateString('es-ES')}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                          {alquiler.meses || Math.ceil((new Date(alquiler.fecha_fin).getTime() - new Date(alquiler.fecha_inicio).getTime()) / (1000 * 60 * 60 * 24 * 30))} mes{(alquiler.meses || Math.ceil((new Date(alquiler.fecha_fin).getTime() - new Date(alquiler.fecha_inicio).getTime()) / (1000 * 60 * 60 * 24 * 30))) !== 1 ? 'es' : ''}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
                           Bs. {alquiler.precio_total.toLocaleString()}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
