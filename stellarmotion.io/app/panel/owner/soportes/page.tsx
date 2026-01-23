@@ -17,7 +17,8 @@ import {
   MoreHorizontal,
   Upload,
   FileSpreadsheet,
-  Crown
+  Crown,
+  Download
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -199,6 +200,15 @@ export default function SoportesPage() {
     }
   };
 
+  const handleExportPDF = async () => {
+    try {
+      const url = `/api/soportes/export/pdf`;
+      window.open(url, '_blank');
+    } catch (error) {
+      console.error('Error exporting PDF:', error);
+    }
+  };
+
   const filteredSupports = supports.filter(support => {
     const matchesSearch = support.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          support.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -303,6 +313,14 @@ export default function SoportesPage() {
             </div>
             <FileSpreadsheet className="h-4 w-4" />
             Importar
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleExportPDF}
+            className="flex items-center gap-2"
+          >
+            <Download className="h-4 w-4" />
+            Catálogo PDF
           </Button>
           <Link href="/publicar-espacio">
             <Button className="flex items-center gap-2 bg-[#e94446] hover:bg-[#d63a3a]">
