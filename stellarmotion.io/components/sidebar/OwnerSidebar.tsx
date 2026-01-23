@@ -16,7 +16,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Megaphone,
-  CreditCard
+  CreditCard,
+  Printer
 } from 'lucide-react';
 
 const dashboardNavigation = [
@@ -27,6 +28,7 @@ const dashboardNavigation = [
   { name: 'Clientes', href: '/panel/owner/clientes', icon: Users },
   { name: 'Pagos', href: '/panel/owner/pagos', icon: CreditCard },
   { name: 'Marketing', href: '/panel/owner/marketing', icon: Megaphone },
+  { name: 'Impresiones', href: '/panel/owner/impresiones', icon: Printer },
   { name: 'Métricas', href: '/panel/owner/metricas', icon: TrendingUp },
   { name: 'Mantenimiento', href: '/panel/owner/mantenimiento', icon: Wrench },
   { name: 'Mensajería', href: '/panel/owner/mensajeria', icon: MessageSquare },
