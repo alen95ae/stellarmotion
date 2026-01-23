@@ -705,7 +705,7 @@ export default function PlanificacionPage() {
                                       <Tooltip>
                                         <TooltipTrigger asChild>
                                           <div
-                                            className="absolute bg-blue-500 text-white text-xs p-2 rounded cursor-pointer hover:bg-blue-600 transition-colors"
+                                            className="absolute bg-pink-500 text-white text-xs p-2 rounded cursor-pointer hover:bg-pink-600 transition-colors"
                                             style={{
                                               left: `${left}%`,
                                               width: `${width}%`,
