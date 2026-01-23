@@ -24,6 +24,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import BulkActions from '@/components/BulkActions';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -97,6 +99,7 @@ export default function SoportesPage() {
   console.log('🚀 Componente SoportesPage inicializado - loading:', loading);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; support: Support | null }>({
     open: false,
     support: null
@@ -202,11 +205,97 @@ export default function SoportesPage() {
 
   const handleExportPDF = async () => {
     try {
-      const url = `/api/soportes/export/pdf`;
-      window.open(url, '_blank');
+      const selectedIds = Object.keys(selected).filter(id => selected[id]);
+      if (selectedIds.length === 0) {
+        const url = `/api/soportes/export/pdf`;
+        window.open(url, '_blank');
+      } else {
+        const url = `/api/soportes/export/pdf?ids=${selectedIds.join(',')}`;
+        window.open(url, '_blank');
+      }
     } catch (error) {
       console.error('Error exporting PDF:', error);
     }
+  };
+
+  // Funciones para selección múltiple
+  const filteredSupports = supports.filter(support => {
+    const matchesSearch = support.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         support.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (support.code || '').toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = filterStatus === 'all' || support.status === filterStatus;
+    return matchesSearch && matchesStatus;
+  });
+
+  const ids = filteredSupports.map(s => s.id);
+  const allSelected = ids.length > 0 && ids.every(id => selected[id]);
+  const someSelected = ids.some(id => selected[id]);
+  
+  const toggleAll = (checked: boolean) => {
+    if (checked) {
+      const newSelected: Record<string, boolean> = {};
+      ids.forEach(id => { newSelected[id] = true; });
+      setSelected(newSelected);
+    } else {
+      setSelected({});
+    }
+  };
+
+  const getSelectedIds = () => Object.keys(selected).filter(id => selected[id]);
+
+  // Función para cambio de estado masivo
+  async function bulkStatusChange(newStatus: string) {
+    const ids = getSelectedIds();
+    if (ids.length === 0) return;
+    if (!confirm(`¿Cambiar estado de ${ids.length} soportes a ${getStatusLabel(newStatus)}?`)) return;
+    
+    try {
+      const response = await fetch('/api/soportes/bulk', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids, status: newStatus })
+      });
+      
+      if (response.ok) {
+        await fetchSupports();
+        setSelected({});
+      }
+    } catch (error) {
+      console.error('Error updating status:', error);
+    }
+  }
+
+  // Función para eliminación masiva
+  async function bulkDelete() {
+    const ids = getSelectedIds();
+    if (ids.length === 0) return;
+    if (!confirm(`¿Eliminar ${ids.length} soportes?`)) return;
+    
+    try {
+      const response = await fetch('/api/soportes', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids })
+      });
+      
+      if (response.ok) {
+        await fetchSupports();
+        setSelected({});
+      }
+    } catch (error) {
+      console.error('Error deleting supports:', error);
+    }
+  }
+
+  const getStatusLabel = (status: string) => {
+    const statusLabels = {
+      'DISPONIBLE': 'Disponible',
+      'RESERVADO': 'Reservado',
+      'OCUPADO': 'Ocupado',
+      'MANTENIMIENTO': 'Mantenimiento',
+      'INACTIVO': 'Inactivo'
+    };
+    return statusLabels[status as keyof typeof statusLabels] || status;
   };
 
   const filteredSupports = supports.filter(support => {
@@ -317,6 +406,7 @@ export default function SoportesPage() {
           <Button
             variant="outline"
             onClick={handleExportPDF}
+            disabled={Object.keys(selected).filter(id => selected[id]).length === 0 && filteredSupports.length === 0}
             className="flex items-center gap-2"
           >
             <Download className="h-4 w-4" />
@@ -484,11 +574,25 @@ export default function SoportesPage() {
             <CardTitle>Lista de Soportes</CardTitle>
         </CardHeader>
         <CardContent>
+          {/* Barra de acciones masivas */}
+          <BulkActions
+            selectedCount={Object.keys(selected).filter(id => selected[id]).length}
+            onBulkDelete={bulkDelete}
+            onBulkStatusChange={bulkStatusChange}
+          />
+          
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
+              <thead className="bg-gray-50 dark:bg-gray-900">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-10">
+                    <Checkbox
+                      checked={allSelected ? true : (someSelected ? 'indeterminate' : false)}
+                      onCheckedChange={(v) => toggleAll(Boolean(v))}
+                      aria-label="Seleccionar todo"
+                    />
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Soporte
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -514,9 +618,18 @@ export default function SoportesPage() {
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white dark:bg-gray-950 divide-y divide-gray-200 dark:divide-gray-800">
                   {filteredSupports.map((support) => (
-                    <tr key={support.id} className="hover:bg-gray-50">
+                    <tr key={support.id} className="hover:bg-gray-50 dark:hover:bg-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap w-10">
+                      <Checkbox
+                        checked={!!selected[support.id]}
+                        onCheckedChange={(v) =>
+                          setSelected(prev => ({ ...prev, [support.id]: Boolean(v) }))
+                        }
+                        aria-label={`Seleccionar ${support.code || support.id}`}
+                      />
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="flex-shrink-0 h-10 w-10">
@@ -537,12 +650,12 @@ export default function SoportesPage() {
                             )}
                           </div>
                           <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">
-                              {support.title}
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              {support.shortDescription || 'Sin descripción'}
-                            </div>
+                          <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                            {support.title}
+                          </div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400">
+                            {support.shortDescription || 'Sin descripción'}
+                          </div>
                             {support.featured && (
                               <Badge className="text-xs mt-1 bg-purple-100 text-purple-800 border-purple-200">
                                 Destacado
@@ -552,7 +665,7 @@ export default function SoportesPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
+                        <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
                           {support.code || 'N/A'}
                         </div>
                     </td>
@@ -560,19 +673,19 @@ export default function SoportesPage() {
                         <div className="flex items-center">
                           <MapPin className="h-4 w-4 text-gray-400 mr-2" />
                           <div>
-                            <div className="text-sm text-gray-900">{support.city}</div>
-                            <div className="text-sm text-gray-500">{support.country}</div>
+                            <div className="text-sm text-gray-900 dark:text-gray-100">{support.city}</div>
+                            <div className="text-sm text-gray-500 dark:text-gray-400">{support.country}</div>
                       </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{support.type}</div>
+                        <div className="text-sm text-gray-900 dark:text-gray-100">{support.type}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{support.dimensions}</div>
+                        <div className="text-sm text-gray-900 dark:text-gray-100">{support.dimensions}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-green-600">
+                        <div className="text-sm font-medium text-green-600 dark:text-green-400">
                           {formatPrice(support.pricePerMonth || 0)}
                         </div>
                     </td>
