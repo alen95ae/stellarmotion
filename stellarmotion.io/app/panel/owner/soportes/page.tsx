@@ -580,36 +580,35 @@ export default function SoportesPage() {
                         {getStatusBadge(support.status)}
                       </td>
                       <td className="pl-2 pr-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            {support.id && (
-                              <DropdownMenuItem asChild>
-                                <Link href={`/product/${support.slug && !support.slug.startsWith('support-') ? support.slug : support.id}`}>
-                                  <Eye className="h-4 w-4 mr-2" />
-                                  Ver
-                                </Link>
-                              </DropdownMenuItem>
-                            )}
-                            <DropdownMenuItem asChild>
-                              <Link href={`/panel/soportes/${support.id}/editar`}>
-                                <Edit className="h-4 w-4 mr-2" />
-                                Editar
-                              </Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              onClick={() => setDeleteDialog({ open: true, support })}
-                              className="text-red-600"
+                        <div className="flex gap-2 justify-end">
+                          {support.id && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => window.open(`/product/${support.slug && !support.slug.startsWith('support-') ? support.slug : support.id}`, '_blank')}
+                              title="Ver"
                             >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Eliminar
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                          )}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => window.location.href = `/panel/soportes/${support.id}/editar`}
+                            title="Editar"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setDeleteDialog({ open: true, support })}
+                            className="text-red-600 hover:text-red-700"
+                            title="Eliminar"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
                     </td>
                   </tr>
                 ))}
