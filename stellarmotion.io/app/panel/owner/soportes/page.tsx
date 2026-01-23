@@ -287,17 +287,6 @@ export default function SoportesPage() {
     }
   }
 
-  const getStatusLabel = (status: string) => {
-    const statusLabels = {
-      'DISPONIBLE': 'Disponible',
-      'RESERVADO': 'Reservado',
-      'OCUPADO': 'Ocupado',
-      'MANTENIMIENTO': 'Mantenimiento',
-      'INACTIVO': 'Inactivo'
-    };
-    return statusLabels[status as keyof typeof statusLabels] || status;
-  };
-
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       'DISPONIBLE': { label: 'Disponible', className: 'bg-green-100 text-green-800 border-green-200' },
