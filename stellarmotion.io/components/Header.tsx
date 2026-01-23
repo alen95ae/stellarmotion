@@ -210,20 +210,12 @@ export default function Header() {
           {/* Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
             <Link 
-              href="/buscar-un-espacio" 
+              href="/marketplace" 
               className={`hover:text-gray-900 transition-colors ${
-                pathname === '/buscar-un-espacio' ? 'text-[#D7514C] font-medium' : 'text-gray-600'
+                pathname === '/marketplace' ? 'text-[#D7514C] font-medium' : 'text-gray-600'
               }`}
             >
-              Buscar un espacio
-            </Link>
-            <Link 
-              href="/publicar-espacio" 
-              className={`hover:text-gray-900 transition-colors ${
-                pathname === '/publicar-espacio' ? 'text-[#D7514C] font-medium' : 'text-gray-600'
-              }`}
-            >
-              Publicar mi espacio
+              Marketplace
             </Link>
           </nav>
 
