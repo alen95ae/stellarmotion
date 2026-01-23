@@ -298,14 +298,6 @@ export default function SoportesPage() {
     return statusLabels[status as keyof typeof statusLabels] || status;
   };
 
-  const filteredSupports = supports.filter(support => {
-    const matchesSearch = support.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         support.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (support.code || '').toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === 'all' || support.status === filterStatus;
-    return matchesSearch && matchesStatus;
-  });
-
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       'DISPONIBLE': { label: 'Disponible', className: 'bg-green-100 text-green-800 border-green-200' },
