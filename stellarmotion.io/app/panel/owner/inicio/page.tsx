@@ -42,9 +42,9 @@ const dashboardCards = [
     color: 'bg-red-100'
   },
   {
-    title: 'Facturación',
-    description: 'Controla tus ingresos y facturas',
-    href: '/panel/facturacion',
+    title: 'Pagos',
+    description: 'Controla tus ingresos y pagos',
+    href: '/panel/owner/pagos',
     icon: FileText,
     color: 'bg-red-100'
   },

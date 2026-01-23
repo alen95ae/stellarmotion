@@ -15,7 +15,8 @@ import {
   Monitor,
   ChevronLeft,
   ChevronRight,
-  Megaphone
+  Megaphone,
+  CreditCard
 } from 'lucide-react';
 
 const dashboardNavigation = [
@@ -24,7 +25,7 @@ const dashboardNavigation = [
   { name: 'Alquileres', href: '/panel/owner/alquileres', icon: CalendarDays },
   { name: 'Planificación', href: '/panel/owner/planificacion', icon: CalendarRange },
   { name: 'Clientes', href: '/panel/owner/clientes', icon: Users },
-  { name: 'Facturación', href: '/panel/owner/facturacion', icon: FileText },
+  { name: 'Pagos', href: '/panel/owner/pagos', icon: CreditCard },
   { name: 'Marketing', href: '/panel/owner/marketing', icon: Megaphone },
   { name: 'Métricas', href: '/panel/owner/metricas', icon: TrendingUp },
   { name: 'Mantenimiento', href: '/panel/owner/mantenimiento', icon: Wrench },
