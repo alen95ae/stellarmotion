@@ -2,7 +2,8 @@
 import { useState, useRef, useEffect, useMemo } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { ChevronDown, User, LogOut, LayoutDashboard } from "lucide-react"
+import { ChevronDown, User, LogOut, LayoutDashboard, Moon, Sun } from "lucide-react"
+import { useTheme } from "next-themes"
 // Removed Supabase Auth - using JWT-based auth
 import { getRoleFromPayload } from "@/lib/auth/role"
 
@@ -14,14 +15,22 @@ export default function Header() {
   const userMenuRef = useRef<HTMLDivElement>(null)
   const pathname = usePathname()
   const router = useRouter()
+  const { theme, setTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
 
   type DashboardView = "owner" | "cliente"
   const DASHBOARD_VIEW_KEY = "st_dashboard_view"
   const [dashboardView, setDashboardView] = useState<DashboardView>("cliente")
   
   useEffect(() => {
+    setMounted(true)
+  }, [])
+  
+  useEffect(() => {
     let isMounted = true;
     let timeoutId: NodeJS.Timeout;
+    const abortController = new AbortController();
+    const { signal } = abortController;
 
     // Timeout de seguridad: si loading tarda más de 2 segundos, forzar false
     timeoutId = setTimeout(() => {
@@ -33,29 +42,26 @@ export default function Header() {
 
     const loadUser = async () => {
       try {
-        console.log('🔍 Header: Obteniendo usuario...');
-        const response = await fetch('/api/auth/me', { credentials: 'include' });
+        const response = await fetch('/api/auth/me', { credentials: 'include', signal });
         
         if (!isMounted) return;
 
         if (!response.ok) {
-          console.log('ℹ️ Header: No hay sesión activa');
           setUser(null);
           setOwnerData(null);
         } else {
           const data = await response.json();
           if (data.success && data.user) {
-            console.log('✅ Header: Usuario obtenido:', data.user.email || 'null');
             setUser(data.user);
-            
             setOwnerData(null);
           } else {
             setUser(null);
             setOwnerData(null);
           }
         }
-      } catch (error) {
-        console.error('❌ Header: Error getting user:', error);
+      } catch (error: unknown) {
+        // No tratar como error: petición cancelada (navegación/unmount) o fallo de red transitorio
+        if (error instanceof Error && error.name === 'AbortError') return;
         if (isMounted) {
           setUser(null);
           setOwnerData(null);
@@ -79,6 +85,7 @@ export default function Header() {
 
     return () => {
       isMounted = false;
+      abortController.abort();
       clearTimeout(timeoutId);
       clearInterval(intervalId);
     };
@@ -191,7 +198,7 @@ export default function Header() {
   }
 
   return (
-    <header className="sticky top-0 z-50 bg-white border-b border-gray-200 w-full m-0 p-0">
+    <header className="sticky top-0 z-50 bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800 w-full m-0 p-0">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full m-0">
         <div className="flex items-center justify-between h-16 w-full m-0">
           {/* Logo */}
@@ -210,25 +217,32 @@ export default function Header() {
           {/* Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
             <Link 
-              href="/buscar-un-espacio" 
+              href="/marketplace" 
               className={`hover:text-gray-900 transition-colors ${
-                pathname === '/buscar-un-espacio' ? 'text-[#D7514C] font-medium' : 'text-gray-600'
+                pathname === '/marketplace' ? 'text-[#D7514C] font-medium' : 'text-gray-600'
               }`}
             >
-              Buscar un espacio
-            </Link>
-            <Link 
-              href="/publicar-espacio" 
-              className={`hover:text-gray-900 transition-colors ${
-                pathname === '/publicar-espacio' ? 'text-[#D7514C] font-medium' : 'text-gray-600'
-              }`}
-            >
-              Publicar mi espacio
+              Marketplace
             </Link>
           </nav>
 
           {/* User Menu */}
           <div className="flex items-center space-x-4">
+            {/* Theme Toggle */}
+            {mounted && (
+              <button
+                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                className="p-2 rounded-md text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                aria-label="Toggle theme"
+              >
+                {theme === 'dark' ? (
+                  <Sun className="w-5 h-5" />
+                ) : (
+                  <Moon className="w-5 h-5" />
+                )}
+              </button>
+            )}
+
             {user && (
               <div className="relative z-50" ref={userMenuRef}>
                 <button

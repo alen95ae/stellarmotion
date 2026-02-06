@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Upload, MapPin, DollarSign, Ruler, Lightbulb, Pencil, Eye, Link as LinkIcon, Hash } from 'lucide-react';
+import { ImageUp, MapPin, DollarSign, Ruler, Lightbulb, Pencil, Eye, Link as LinkIcon, Hash } from 'lucide-react';
 import { CATEGORIES, getCategoryIconPath } from '@/lib/categories';
 import Image from 'next/image';
 import { PhotonAutocomplete } from '@/components/PhotonAutocomplete';
@@ -163,6 +163,7 @@ export function SoporteForm({
                 onChange={(e) => onInputChange('title', e.target.value)}
                 placeholder="Ej: Valla publicitaria en Av. Corrientes"
                 required
+                maxLength={200}
                 className="rounded-2xl border-gray-300 focus:border-[#e94446] focus:ring-2 focus:ring-[#e94446]/20 py-3"
               />
             </div>
@@ -178,6 +179,7 @@ export function SoporteForm({
                   value={formData.code}
                   onChange={(e) => onInputChange('code', e.target.value)}
                   placeholder="Ej: VLL-001, MUP-A23"
+                  maxLength={50}
                   className="pl-14 pr-4 py-3 rounded-2xl border-gray-300 focus:border-[#e94446] focus:ring-2 focus:ring-[#e94446]/20"
                 />
               </div>
@@ -312,6 +314,7 @@ export function SoporteForm({
                 value={formatPriceInput(formData.pricePerMonth)}
                 onChange={(e) => onPriceInputChange(e.target.value)}
                 placeholder="00.0"
+                maxLength={15}
                 className="pl-14 pr-4 py-3 rounded-2xl border-gray-300 focus:border-[#e94446] focus:ring-2 focus:ring-[#e94446]/20"
                 required
               />
@@ -358,6 +361,7 @@ export function SoporteForm({
                 onChange={(e) => onDimensionInputChange('height', e.target.value)}
                 placeholder="00.0"
                 required
+                maxLength={10}
                 className="rounded-2xl border-gray-300 focus:border-[#e94446] focus:ring-2 focus:ring-[#e94446]/20 py-3"
               />
             </div>
@@ -462,7 +466,7 @@ export function SoporteForm({
       <Card className="border-0 shadow-lg">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Upload className="h-5 w-5" />
+            <ImageUp className="h-5 w-5" />
             Imágenes
           </CardTitle>
           <CardDescription>

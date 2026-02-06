@@ -8,6 +8,7 @@ import Script from "next/script"
 import "./globals.css"
 import Header from "@/components/Header"
 import Footer from "@/components/Footer"
+import { ThemeProvider } from "@/components/theme-provider"
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -28,16 +29,22 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="es">
-      <body className={`${poppins.variable} font-sans antialiased`}>
-        <Suspense fallback={<div>Loading...</div>}>
-          <Header />
-        </Suspense>
-        {children}
-        <Footer />
-        <Analytics />
-        <SpeedInsights />
-        
+    <html lang="es" suppressHydrationWarning>
+      <body className={`${poppins.variable} font-sans antialiased bg-gray-50 dark:bg-gray-950`}>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <Suspense fallback={<div>Loading...</div>}>
+            <Header />
+          </Suspense>
+          {children}
+          <Footer />
+          <Analytics />
+          <SpeedInsights />
+        </ThemeProvider>
       </body>
     </html>
   )

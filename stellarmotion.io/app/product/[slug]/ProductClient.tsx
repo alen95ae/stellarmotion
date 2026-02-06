@@ -9,6 +9,7 @@ import { FEATURE_ICONS } from '@/lib/icons';
 import { useSoporte } from '@/hooks/useSoporte';
 import dynamic from 'next/dynamic';
 import MapViewerGoogleMaps from '@/components/MapViewerGoogleMaps';
+import StreetViewGoogleMaps from '@/components/StreetViewGoogleMaps';
 import { getSoporteCoordinates } from '@/lib/google-maps-utils';
 
 interface Product {
@@ -676,6 +677,21 @@ export default function ProductClient({ productId }: ProductClientProps) {
                   // Mapa clickeado
                 }}
               />
+              
+              {/* Street View */}
+              {soporteCoords && (
+                <div className="mt-4">
+                  <h4 className="text-md font-semibold text-gray-900 mb-3">Vista de calle</h4>
+                  <StreetViewGoogleMaps
+                    lat={soporteCoords.lat}
+                    lng={soporteCoords.lng}
+                    height={400}
+                    heading={0}
+                    pitch={0}
+                    zoom={1}
+                  />
+                </div>
+              )}
             </div>
 
             {/* Reviews Section */}

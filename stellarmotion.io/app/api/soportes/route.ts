@@ -738,3 +738,34 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+// DELETE - Eliminación masiva (proxy al ERP bulk)
+export async function DELETE(req: NextRequest) {
+  try {
+    const body = await req.json().catch(() => ({}));
+    const ids = Array.isArray(body.ids) ? body.ids : [];
+    if (ids.length === 0) {
+      return NextResponse.json({ error: 'Se requieren IDs de soportes' }, { status: 400 });
+    }
+    const response = await fetch(`${ERP_BASE_URL}/api/soportes/bulk`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids, action: 'delete' }),
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({ error: response.statusText }));
+      return NextResponse.json(
+        { error: (err as { error?: string }).error || 'Error al eliminar los soportes' },
+        { status: response.status }
+      );
+    }
+    const data = await response.json().catch(() => ({}));
+    return NextResponse.json({ success: true, count: (data as { count?: number }).count ?? ids.length }, { status: 200 });
+  } catch (error) {
+    console.error('Error bulk deleting supports:', error);
+    return NextResponse.json(
+      { error: 'Error interno del servidor' },
+      { status: 500 }
+    );
+  }
+}

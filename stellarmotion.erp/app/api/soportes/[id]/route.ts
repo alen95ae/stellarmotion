@@ -3,7 +3,7 @@ import { SupabaseService } from "@/lib/supabase-service"
 
 function withCors(response: NextResponse) {
   response.headers.set("Access-Control-Allow-Origin", "*")
-  response.headers.set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+  response.headers.set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
   response.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization")
   return response
 }
@@ -272,6 +272,48 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       },
       { status: 500 }
     ))
+  }
+}
+
+// PATCH - Actualización parcial (p. ej. solo destacado)
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params;
+    if (!id) {
+      return withCors(NextResponse.json(
+        { error: "ID de soporte requerido" },
+        { status: 400 }
+      ));
+    }
+    const data = await req.json().catch(() => ({}));
+    const featured = data.featured ?? data.destacado ?? data['Destacado'];
+    if (typeof featured !== 'boolean') {
+      return withCors(NextResponse.json(
+        { error: "Se requiere 'featured' (boolean)" },
+        { status: 400 }
+      ));
+    }
+    const existingSupport = await SupabaseService.getSoporteById(id);
+    if (!existingSupport) {
+      return withCors(NextResponse.json(
+        { error: "Soporte no encontrado" },
+        { status: 404 }
+      ));
+    }
+    const updated = await SupabaseService.updateSoporte(id, { destacado: featured });
+    if (!updated) {
+      return withCors(NextResponse.json(
+        { error: "Error al actualizar el soporte" },
+        { status: 500 }
+      ));
+    }
+    return withCors(NextResponse.json({ success: true, data: updated }, { status: 200 }));
+  } catch (error) {
+    console.error("Error PATCH support:", error);
+    return withCors(NextResponse.json(
+      { error: "Error interno del servidor" },
+      { status: 500 }
+    ));
   }
 }
 

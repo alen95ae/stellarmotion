@@ -14,7 +14,10 @@ import {
   Home,
   Monitor,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Megaphone,
+  CreditCard,
+  Printer
 } from 'lucide-react';
 
 const dashboardNavigation = [
@@ -23,7 +26,9 @@ const dashboardNavigation = [
   { name: 'Alquileres', href: '/panel/owner/alquileres', icon: CalendarDays },
   { name: 'Planificación', href: '/panel/owner/planificacion', icon: CalendarRange },
   { name: 'Clientes', href: '/panel/owner/clientes', icon: Users },
-  { name: 'Facturación', href: '/panel/owner/facturacion', icon: FileText },
+  { name: 'Pagos', href: '/panel/owner/pagos', icon: CreditCard },
+  { name: 'Marketing', href: '/panel/owner/marketing', icon: Megaphone },
+  { name: 'Impresiones', href: '/panel/owner/impresiones', icon: Printer },
   { name: 'Métricas', href: '/panel/owner/metricas', icon: TrendingUp },
   { name: 'Mantenimiento', href: '/panel/owner/mantenimiento', icon: Wrench },
   { name: 'Mensajería', href: '/panel/owner/mensajeria', icon: MessageSquare },
@@ -52,13 +57,13 @@ export default function OwnerSidebar(props: OwnerSidebarProps = {}) {
     <aside className={`fixed top-16 left-0 bottom-0 z-30 bg-white shadow-xl border-r border-gray-200 transition-all duration-300 ${
       isCollapsed ? 'w-16' : 'w-64'
     }`}>
-      <nav className="mt-6 px-3">
-        <div className="space-y-6">
+      <nav className="mt-3 px-2">
+        <div className="space-y-4">
           {/* Dashboard Section */}
           <div>
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center justify-between mb-2">
               {!isCollapsed && (
-                <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                <h3 className="px-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                   Dashboard
                 </h3>
               )}
@@ -74,17 +79,17 @@ export default function OwnerSidebar(props: OwnerSidebarProps = {}) {
                 )}
               </button>
             </div>
-            <div className="space-y-1">
+            <div className="space-y-0.5">
               {dashboardNavigation.map((item) => (
                 <Link
                   key={item.name}
                   href={item.href}
-                  className={`flex items-center rounded-lg px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 ${
+                  className={`flex items-center rounded-lg px-2 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 ${
                     isCollapsed ? 'justify-center' : ''
                   }`}
                   title={isCollapsed ? item.name : undefined}
                 >
-                  <item.icon className={`h-5 w-5 ${isCollapsed ? '' : 'mr-3'}`} />
+                  <item.icon className={`h-5 w-5 ${isCollapsed ? '' : 'mr-2'}`} />
                   {!isCollapsed && item.name}
                 </Link>
               ))}

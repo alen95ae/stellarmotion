@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { 
@@ -17,12 +17,17 @@ import {
   MoreHorizontal,
   Upload,
   FileSpreadsheet,
-  Crown
+  Crown,
+  X,
+  ArrowUpDown
 } from 'lucide-react';
+import { normalizeText } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import BulkActions from '@/components/BulkActions';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,6 +49,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Switch } from '@/components/ui/switch';
 
 interface Support {
   id: string;
@@ -77,6 +83,7 @@ interface Support {
 }
 
 const ERP_ASSET_BASE = process.env.NEXT_PUBLIC_ERP_ASSET_URL || process.env.NEXT_PUBLIC_ERP_API_URL || '';
+const STORAGE_KEY = 'stellarmotion_soportes_filtros';
 
 const makeAbsoluteUrl = (value?: string | null) => {
   if (!value) return value;
@@ -92,18 +99,60 @@ const makeAbsoluteUrl = (value?: string | null) => {
 export default function SoportesPage() {
   const [supports, setSupports] = useState<Support[]>([]);
   const [loading, setLoading] = useState(true);
-  
-  console.log('🚀 Componente SoportesPage inicializado - loading:', loading);
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [filterCity, setFilterCity] = useState('');
+  const [sortColumn, setSortColumn] = useState<'code' | 'title' | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [filtersLoaded, setFiltersLoaded] = useState(false);
+  const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; support: Support | null }>({
     open: false,
     support: null
   });
 
-  // ID del owner - en producción esto vendría de la sesión autenticada
-  // Por ahora usamos el ID del owner creado en el seed
-  const usuarioId = 'cmfskhuda0004sj2w46q3g7rc'; // ID del usuario "Publicidad Vial Imagen SRL"
+  const usuarioId = 'cmfskhuda0004sj2w46q3g7rc';
+
+  const uniqueCities = useMemo(() => {
+    const cities = [...new Set(supports.map(s => s.city).filter(Boolean))] as string[];
+    return cities.sort((a, b) => a.localeCompare(b));
+  }, [supports]);
+
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const f = JSON.parse(saved);
+        setSearchTerm(f.q ?? '');
+        setSearchQuery(f.q ?? '');
+        setFilterStatus(f.filterStatus ?? 'all');
+        setFilterCity(f.filterCity ?? '');
+        setSortColumn(f.sortColumn ?? null);
+        setSortDirection(f.sortDirection ?? 'asc');
+      }
+    } catch {
+      // ignore
+    }
+    setFiltersLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    if (!filtersLoaded) return;
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
+      q: searchQuery,
+      filterStatus,
+      filterCity,
+      sortColumn,
+      sortDirection
+    }));
+  }, [searchQuery, filterStatus, filterCity, sortColumn, sortDirection, filtersLoaded]);
+
+  useEffect(() => {
+    if (!filtersLoaded) return;
+    const t = setTimeout(() => setSearchQuery(searchTerm), 300);
+    return () => clearTimeout(t);
+  }, [searchTerm, filtersLoaded]);
 
   useEffect(() => {
     fetchSupports();
@@ -199,25 +248,223 @@ export default function SoportesPage() {
     }
   };
 
+  const handleExportPDF = async () => {
+    const selectedIds = Object.keys(selected).filter(id => selected[id]);
+    const idsToExport = selectedIds.length > 0
+      ? selectedIds
+      : sortedFilteredSupports.map(s => s.id);
+
+    if (idsToExport.length === 0) return;
+
+    const params = new URLSearchParams({ ids: idsToExport.join(',') });
+    if (filterStatus === 'DISPONIBLE') params.set('disponibilidad', 'disponibles');
+    if (filterStatus === 'OCUPADO') params.set('disponibilidad', 'ocupados');
+    if (filterCity.trim()) params.set('ciudad', filterCity.trim());
+    if (idsToExport.length === 1) {
+      const one = sortedFilteredSupports.find(s => s.id === idsToExport[0]) || supports.find(s => s.id === idsToExport[0]);
+      if (one?.title) params.set('soporte', encodeURIComponent(one.title));
+    }
+
+    try {
+      const response = await fetch(`/api/soportes/export/pdf?${params.toString()}`, { credentials: 'include' });
+      if (!response.ok) throw new Error('Error al generar el PDF');
+
+      let fileName = `Catalogo Soportes - ${new Date().toISOString().split('T')[0]}.pdf`;
+      const contentDisposition = response.headers.get('Content-Disposition');
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename\*?=['"]?([^'";]+)['"]?/i);
+        if (match?.[1]) {
+          fileName = match[1];
+          if (fileName.includes("UTF-8''")) fileName = decodeURIComponent(fileName.split("UTF-8''")[1]);
+          fileName = fileName.trim().replace(/[_\s]+$/, '');
+        }
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error exporting PDF:', error);
+    }
+  };
+
+  const limpiarTodosFiltros = () => {
+    setSearchTerm('');
+    setSearchQuery('');
+    setFilterStatus('all');
+    setFilterCity('');
+    setSortColumn(null);
+    setSortDirection('asc');
+    sessionStorage.removeItem(STORAGE_KEY);
+  };
+
+  const eliminarFiltro = (tipo: 'busqueda' | 'estado' | 'ciudad' | 'orden') => {
+    switch (tipo) {
+      case 'busqueda':
+        setSearchTerm('');
+        setSearchQuery('');
+        break;
+      case 'estado':
+        setFilterStatus('all');
+        break;
+      case 'ciudad':
+        setFilterCity('');
+        break;
+      case 'orden':
+        setSortColumn(null);
+        setSortDirection('asc');
+        break;
+    }
+  };
+
+  const handleSort = (column: 'code' | 'title') => {
+    if (sortColumn === column) {
+      if (sortDirection === 'asc') {
+        setSortDirection('desc');
+      } else {
+        setSortColumn(null);
+        setSortDirection('asc');
+      }
+    } else {
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
+
   const filteredSupports = supports.filter(support => {
-    const matchesSearch = support.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         support.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (support.code || '').toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = !searchQuery.trim() || (() => {
+      const q = normalizeText(searchQuery);
+      return normalizeText(support.title || '').includes(q) ||
+             normalizeText(support.city || '').includes(q) ||
+             normalizeText(support.code || '').includes(q) ||
+             normalizeText(support.type || '').includes(q);
+    })();
     const matchesStatus = filterStatus === 'all' || support.status === filterStatus;
-    return matchesSearch && matchesStatus;
+    const matchesCity = !filterCity.trim() || support.city === filterCity;
+    return matchesSearch && matchesStatus && matchesCity;
   });
 
-  const getStatusBadge = (status: string) => {
-    const statusConfig = {
-      'DISPONIBLE': { label: 'Disponible', className: 'bg-green-100 text-green-800 border-green-200' },
-      'RESERVADO': { label: 'Reservado', className: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
-      'OCUPADO': { label: 'Ocupado', className: 'bg-red-100 text-red-800 border-red-200' },
-      'MANTENIMIENTO': { label: 'Mantenimiento', className: 'bg-gray-100 text-gray-800 border-gray-200' },
-      'INACTIVO': { label: 'Inactivo', className: 'bg-gray-100 text-gray-800 border-gray-200' }
-    };
+  const sortedFilteredSupports = [...filteredSupports].sort((a, b) => {
+    if (!sortColumn) return 0;
+    if (sortColumn === 'code') {
+      const parseCode = (code: string) => {
+        const parts = (code || '').split('-');
+        const numberPart = parts[0] ? parseInt(parts[0], 10) : 0;
+        const letterPart = parts[1] ? parts[1].toLowerCase() : '';
+        return { number: isNaN(numberPart) ? 0 : numberPart, letters: letterPart };
+      };
+      const aP = parseCode(a.code || '');
+      const bP = parseCode(b.code || '');
+      if (aP.number !== bP.number) {
+        return sortDirection === 'asc' ? aP.number - bP.number : bP.number - aP.number;
+      }
+      if (aP.letters < bP.letters) return sortDirection === 'asc' ? -1 : 1;
+      if (aP.letters > bP.letters) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    }
+    const aVal = (a.title || '').toLowerCase();
+    const bVal = (b.title || '').toLowerCase();
+    if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+    if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  const ids = sortedFilteredSupports.map(s => s.id);
+  const allSelected = ids.length > 0 && ids.every(id => selected[id]);
+  const someSelected = ids.some(id => selected[id]);
+  
+  const toggleAll = (checked: boolean) => {
+    if (checked) {
+      const newSelected: Record<string, boolean> = {};
+      ids.forEach(id => { newSelected[id] = true; });
+      setSelected(newSelected);
+    } else {
+      setSelected({});
+    }
+  };
+
+  const getSelectedIds = () => Object.keys(selected).filter(id => selected[id]);
+
+  // Función para cambio de estado masivo
+  async function bulkStatusChange(newStatus: string) {
+    const ids = getSelectedIds();
+    if (ids.length === 0) return;
+    if (!confirm(`¿Cambiar estado de ${ids.length} soportes a ${getStatusLabel(newStatus)}?`)) return;
     
-    const config = statusConfig[status as keyof typeof statusConfig] || { label: status, className: 'bg-gray-100 text-gray-800 border-gray-200' };
-    return <Badge className={config.className}>{config.label}</Badge>;
+    try {
+      const response = await fetch('/api/soportes/bulk', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids, status: newStatus })
+      });
+      
+      if (response.ok) {
+        await fetchSupports();
+        setSelected({});
+      }
+    } catch (error) {
+      console.error('Error updating status:', error);
+    }
+  }
+
+  // Función para eliminación masiva
+  async function bulkDelete() {
+    const ids = getSelectedIds();
+    if (ids.length === 0) return;
+    if (!confirm(`¿Eliminar ${ids.length} soportes?`)) return;
+    
+    try {
+      const response = await fetch('/api/soportes', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids })
+      });
+      
+      if (response.ok) {
+        await fetchSupports();
+        setSelected({});
+      }
+    } catch (error) {
+      console.error('Error deleting supports:', error);
+    }
+  }
+
+  const handleToggleDestacado = async (supportId: string, checked: boolean) => {
+    try {
+      const response = await fetch(`/api/soportes/${supportId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ featured: checked }),
+      });
+      if (response.ok) {
+        setSupports(prev => prev.map(s => s.id === supportId ? { ...s, featured: checked } : s));
+      }
+    } catch (error) {
+      console.error('Error toggling destacado:', error);
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    const statusConfig: Record<string, { label: string; className: string }> = {
+      'DISPONIBLE': { label: 'Disponible', className: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200' },
+      'RESERVADO': { label: 'Reservado', className: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-200' },
+      'OCUPADO': { label: 'Ocupado', className: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200' },
+      'MANTENIMIENTO': { label: 'Mantenimiento', className: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200' },
+      'INACTIVO': { label: 'Inactivo', className: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200' }
+    };
+    const config = statusConfig[status] || { label: status, className: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200' };
+    return <span className={`inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ${config.className}`}>{config.label}</span>;
+  };
+
+  const formatDimensions = (dimensions: string) => {
+    if (!dimensions) return 'N/A';
+    return dimensions.replace(/\s*m\s*/gi, ' ').trim() || dimensions;
   };
 
   const getStatusColor = (status: string) => {
@@ -257,26 +504,26 @@ export default function SoportesPage() {
   if (loading) {
     console.log('⏳ Mostrando estado de carga...');
     return (
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
+      <div className="space-y-1.5 -mt-10">
+        <div className="flex items-center justify-between mb-1">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Gestión de Soportes</h1>
-            <p className="mt-1 text-gray-600">
+            <h1 className="text-lg font-bold text-gray-900">Gestión de Soportes</h1>
+            <p className="mt-0.5 text-xs text-gray-600 leading-tight">
               Administra todos tus espacios publicitarios
             </p>
           </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1.5">
           {[...Array(6)].map((_, i) => (
-            <Card key={i} className="animate-pulse">
-              <CardHeader>
-                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+            <Card key={i} className="animate-pulse p-2">
+              <CardHeader className="px-2 py-1.5">
+                <div className="h-3 bg-gray-200 rounded w-3/4"></div>
+                <div className="h-2 bg-gray-200 rounded w-1/2"></div>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="h-3 bg-gray-200 rounded"></div>
-                  <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+              <CardContent className="px-2 py-2">
+                <div className="space-y-1">
+                  <div className="h-2 bg-gray-200 rounded"></div>
+                  <div className="h-2 bg-gray-200 rounded w-2/3"></div>
                 </div>
               </CardContent>
             </Card>
@@ -287,123 +534,108 @@ export default function SoportesPage() {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-1.5 -mt-10">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-1">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Gestión de Soportes</h1>
-          <p className="mt-1 text-gray-600">
+          <h1 className="text-lg font-bold text-gray-900">Gestión de Soportes</h1>
+          <p className="mt-0.5 text-xs text-gray-600 leading-tight">
             Administra todos tus espacios publicitarios
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" className="flex items-center gap-2 relative">
-            <div className="absolute -top-2 -left-2 z-10">
-              <Crown className="h-4 w-4 text-purple-600 fill-purple-600" />
+        <div className="flex gap-1.5">
+          <Button variant="outline" size="sm" className="flex items-center gap-1.5 relative py-1 px-2 h-8">
+            <div className="absolute -top-1 -left-1 z-10">
+              <Crown className="h-3 w-3 text-purple-600 fill-purple-600" />
             </div>
-            <FileSpreadsheet className="h-4 w-4" />
+            <FileSpreadsheet className="h-3.5 w-3.5" />
             Importar
           </Button>
           <Link href="/publicar-espacio">
-            <Button className="flex items-center gap-2 bg-[#e94446] hover:bg-[#d63a3a]">
-              <Plus className="h-4 w-4" />
+            <Button size="sm" className="flex items-center gap-1.5 bg-[#e94446] hover:bg-[#d63a3a] py-1 px-2 h-8">
+              <Plus className="h-3.5 w-3.5" />
               Nuevo Soporte
             </Button>
           </Link>
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Total Soportes</p>
-                <p className="text-2xl font-semibold text-gray-900">{supports.length}</p>
-              </div>
+      {/* Chips de filtros activos */}
+      {(searchQuery || filterStatus !== 'all' || filterCity || sortColumn) && (
+        <div className="flex flex-wrap gap-2 items-center pb-3 border-b border-gray-200 dark:border-gray-800">
+          {searchQuery && (
+            <div className="flex items-center gap-1 bg-blue-100 dark:bg-blue-900/40 hover:bg-blue-200 dark:hover:bg-blue-900/60 rounded-full px-3 py-1 text-sm">
+              <span className="font-medium text-blue-800 dark:text-blue-200">Búsqueda:</span>
+              <span className="text-gray-700 dark:text-gray-300">{searchQuery}</span>
+              <button type="button" onClick={() => eliminarFiltro('busqueda')} className="ml-1 hover:text-red-500 transition-colors" aria-label="Quitar búsqueda">
+                <X className="w-3 h-3" />
+              </button>
             </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Disponibles</p>
-                <p className="text-2xl font-semibold text-gray-900">
-                  {supports.filter(s => s.status === 'DISPONIBLE').length}
-                </p>
-              </div>
+          )}
+          {filterStatus !== 'all' && (
+            <div className="flex items-center gap-1 bg-green-100 dark:bg-green-900/40 hover:bg-green-200 dark:hover:bg-green-900/60 rounded-full px-3 py-1 text-sm">
+              <span className="font-medium text-green-800 dark:text-green-200">Estado:</span>
+              <span className="text-gray-700 dark:text-gray-300">{getStatusLabel(filterStatus)}</span>
+              <button type="button" onClick={() => eliminarFiltro('estado')} className="ml-1 hover:text-red-500 transition-colors" aria-label="Quitar estado">
+                <X className="w-3 h-3" />
+              </button>
             </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Ingresos Potenciales</p>
-                <p className="text-2xl font-semibold text-gray-900">
-                  {formatPrice(supports.reduce((sum, s) => sum + (s.pricePerMonth || 0), 0))}
-                </p>
-              </div>
+          )}
+          {filterCity && (
+            <div className="flex items-center gap-1 bg-purple-100 dark:bg-purple-900/40 hover:bg-purple-200 dark:hover:bg-purple-900/60 rounded-full px-3 py-1 text-sm">
+              <span className="font-medium text-purple-800 dark:text-purple-200">Ciudad:</span>
+              <span className="text-gray-700 dark:text-gray-300">{filterCity}</span>
+              <button type="button" onClick={() => eliminarFiltro('ciudad')} className="ml-1 hover:text-red-500 transition-colors" aria-label="Quitar ciudad">
+                <X className="w-3 h-3" />
+              </button>
             </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Este Mes</p>
-                <p className="text-2xl font-semibold text-gray-900">
-                  {supports.filter(s => {
-                    const created = new Date(s.createdAt);
-                    const now = new Date();
-                    return created.getMonth() === now.getMonth() && created.getFullYear() === now.getFullYear();
-                  }).length}
-                </p>
-              </div>
+          )}
+          {sortColumn && (
+            <div className="flex items-center gap-1 bg-amber-100 dark:bg-amber-900/40 hover:bg-amber-200 dark:hover:bg-amber-900/60 rounded-full px-3 py-1 text-sm">
+              <span className="font-medium text-amber-800 dark:text-amber-200">Orden:</span>
+              <span className="text-gray-700 dark:text-gray-300">
+                {sortColumn === 'code' ? 'Código interno' : 'Título'} ({sortDirection === 'asc' ? 'A-Z' : 'Z-A'})
+              </span>
+              <button type="button" onClick={() => eliminarFiltro('orden')} className="ml-1 hover:text-red-500 transition-colors" aria-label="Quitar orden">
+                <X className="w-3 h-3" />
+              </button>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          )}
+          <button type="button" onClick={limpiarTodosFiltros} className="text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 underline">
+            Limpiar todo
+          </button>
+        </div>
+      )}
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative w-full sm:w-[300px]">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+      <div className="flex flex-col sm:flex-row gap-1.5 flex-wrap">
+        <div className="relative w-full sm:w-[300px] min-w-0">
+          <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 h-3.5 w-3.5" />
           <Input
-            placeholder="Buscar soportes..."
+            placeholder="Buscar código, título, ciudad..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-              />
-            </div>
-        <div className="flex gap-2">
+            onKeyDown={(e) => { if (e.key === 'Enter') setSearchQuery(searchTerm); }}
+            className="pl-8 h-8 text-sm"
+          />
+        </div>
+        <div className="flex flex-wrap gap-1.5 min-w-0">
           <Select value={filterStatus} onValueChange={setFilterStatus}>
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Todos los estados" className="truncate">
+            <SelectTrigger className="h-8 min-w-[8rem] w-auto max-w-full [&_[data-slot=select-value]]:line-clamp-none">
+              <SelectValue placeholder="Disponibilidad">
                 {filterStatus === 'all' ? (
-                  <div className="flex items-center gap-2 min-w-0">
-                    <Filter className="h-4 w-4 text-gray-500 shrink-0" />
-                    <span className="truncate">Todos los estados</span>
-                  </div>
+                  <span className="text-muted-foreground">Disponibilidad</span>
                 ) : (
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className={`w-2 h-2 rounded-full shrink-0 ${getStatusColor(filterStatus)}`}></span>
-                    <span className="truncate">{getStatusLabel(filterStatus)}</span>
-                  </div>
+                  <span className="flex items-center gap-2 whitespace-nowrap">
+                    <span className={`w-2 h-2 rounded-full shrink-0 ${getStatusColor(filterStatus)}`} />
+                    {getStatusLabel(filterStatus)}
+                  </span>
                 )}
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">
-                <div className="flex items-center gap-2">
-                  <Filter className="h-4 w-4 text-gray-500" />
-                  <span>Todos los estados</span>
-                </div>
+                <span className="text-muted-foreground">Disponibilidad</span>
               </SelectItem>
               <SelectItem value="DISPONIBLE">
                 <span className="flex items-center gap-2">
@@ -437,73 +669,161 @@ export default function SoportesPage() {
               </SelectItem>
             </SelectContent>
           </Select>
+          <Select value={filterCity || 'all'} onValueChange={(v) => setFilterCity(v === 'all' ? '' : v)}>
+            <SelectTrigger className="h-8 min-w-[6rem] w-auto max-w-full [&_[data-slot=select-value]]:line-clamp-none">
+              <SelectValue placeholder="Ciudad">
+                {filterCity ? (
+                  <span className="whitespace-nowrap">{filterCity}</span>
+                ) : (
+                  <span className="text-muted-foreground">Ciudad</span>
+                )}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">
+                <span className="text-muted-foreground">Ciudad</span>
+              </SelectItem>
+              {uniqueCities.map((city) => (
+                <SelectItem key={city} value={city}>
+                  {city}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
       {/* Supports Table */}
-      {filteredSupports.length === 0 ? (
-        <Card>
-          <CardContent className="p-12 text-center">
-            <Monitor className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No hay soportes</h3>
-            <p className="text-gray-500 mb-4">
-              {searchTerm || filterStatus !== 'all' 
+      {sortedFilteredSupports.length === 0 ? (
+        <Card className="p-4">
+          <CardContent className="p-4 text-center">
+            <Monitor className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+            <h3 className="text-sm font-medium text-gray-900 mb-1">No hay soportes</h3>
+            <p className="text-xs text-gray-500 mb-2">
+              {searchTerm || filterStatus !== 'all' || filterCity
                 ? 'No se encontraron soportes con los filtros aplicados.'
                 : 'Comienza creando tu primer soporte publicitario.'
               }
             </p>
             <Link href="/publicar-espacio">
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
+              <Button size="sm" className="h-8">
+                <Plus className="h-3.5 w-3.5 mr-1.5" />
                 Crear Primer Soporte
               </Button>
             </Link>
         </CardContent>
       </Card>
       ) : (
-      <Card>
-        <CardHeader>
-            <CardTitle>Lista de Soportes</CardTitle>
+      <Card className="p-2">
+        <CardHeader className="px-2 pb-1">
+            <CardTitle className="text-sm font-semibold">Lista de Soportes</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-2">
+          {/* Barra de acciones masivas */}
+          <BulkActions
+            selectedCount={Object.keys(selected).filter(id => selected[id]).length}
+            onBulkDelete={bulkDelete}
+            onBulkStatusChange={bulkStatusChange}
+            onExportPDF={handleExportPDF}
+          />
+          
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-800 text-sm">
+              <thead className="[&_tr]:border-b [&_tr]:border-gray-200 dark:[&_tr]:border-gray-800">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Soporte
+                  <th className="h-10 px-2 text-left align-middle font-medium whitespace-nowrap text-foreground w-10 [&:has([role=checkbox])]:pr-0">
+                    <Checkbox
+                      checked={allSelected ? true : (someSelected ? 'indeterminate' : false)}
+                      onCheckedChange={(v) => toggleAll(Boolean(v))}
+                      aria-label="Seleccionar todo"
+                    />
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Código
+                  <th className="h-10 px-2 text-center align-middle font-medium whitespace-nowrap text-foreground">
+                    <div className="flex justify-center items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => handleSort('code')}
+                        className="hover:opacity-80 transition-opacity"
+                      >
+                        Código
+                        <ArrowUpDown className="h-3 w-3 opacity-60 inline-block ml-0.5 align-middle" />
+                      </button>
+                      {sortColumn === 'code' && (
+                        <span className="text-xs font-normal text-muted-foreground">({sortDirection === 'asc' ? 'A-Z' : 'Z-A'})</span>
+                      )}
+                    </div>
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="h-10 px-2 text-center align-middle font-medium whitespace-nowrap text-foreground">
+                    Destacado
+                  </th>
+                  <th className="h-10 px-2 text-center align-middle font-medium whitespace-nowrap text-foreground">
+                    <div className="flex justify-center items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => handleSort('title')}
+                        className="hover:opacity-80 transition-opacity"
+                      >
+                        Soporte
+                        <ArrowUpDown className="h-3 w-3 opacity-60 inline-block ml-0.5 align-middle" />
+                      </button>
+                      {sortColumn === 'title' && (
+                        <span className="text-xs font-normal text-muted-foreground">({sortDirection === 'asc' ? 'A-Z' : 'Z-A'})</span>
+                      )}
+                    </div>
+                  </th>
+                  <th className="h-10 px-2 text-center align-middle font-medium whitespace-nowrap text-foreground">
+                    Tipo
+                  </th>
+                  <th className="h-10 px-2 text-center align-middle font-medium whitespace-nowrap text-foreground">
                     Ubicación
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Tipo
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Dimensiones
+                  <th className="h-10 px-2 text-center align-middle font-medium whitespace-nowrap text-foreground">
+                    Dimensiones (m)
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Precio/mes
+                  <th className="h-10 px-2 text-center align-middle font-medium whitespace-nowrap text-foreground">
+                    Precio/mes
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="h-10 px-2 text-center align-middle font-medium whitespace-nowrap text-foreground">
                     Estado
                   </th>
-                  <th className="pl-2 pr-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="h-10 px-2 text-center align-middle font-medium whitespace-nowrap text-foreground">
                     Acciones
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredSupports.map((support) => (
-                    <tr key={support.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
+              <tbody className="bg-white dark:bg-gray-950 divide-y divide-gray-200 dark:divide-gray-800">
+                  {sortedFilteredSupports.map((support) => (
+                    <tr key={support.id} className="hover:bg-gray-50 dark:hover:bg-gray-900">
+                    <td className="px-2 py-1 whitespace-nowrap w-10">
+                      <Checkbox
+                        checked={!!selected[support.id]}
+                        onCheckedChange={(v) =>
+                          setSelected(prev => ({ ...prev, [support.id]: Boolean(v) }))
+                        }
+                        aria-label={`Seleccionar ${support.code || support.id}`}
+                      />
+                    </td>
+                    <td className="px-2 py-1 whitespace-nowrap text-center">
+                      <div className="flex justify-center">
+                        <Badge variant="secondary" className="text-xs font-medium">
+                          {support.code || 'N/A'}
+                        </Badge>
+                      </div>
+                    </td>
+                    <td className="px-2 py-1 whitespace-nowrap">
+                      <div className="flex justify-center">
+                        <Switch
+                          checked={!!support.featured}
+                          onCheckedChange={(checked) => handleToggleDestacado(support.id, checked)}
+                          className="data-[state=checked]:bg-purple-500 data-[state=unchecked]:bg-gray-300 hover:data-[state=checked]:bg-purple-600 data-[state=unchecked]:hover:bg-gray-400 transition-colors"
+                        />
+                      </div>
+                    </td>
+                    <td className="px-2 py-1 whitespace-nowrap">
                         <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10">
+                          <div className="flex-shrink-0 h-8 w-8">
                             {support.images && support.images.length > 0 && support.images[0] ? (
-                              <div className="h-10 w-10 rounded-lg overflow-hidden relative">
+                              <div className="h-8 w-8 rounded overflow-hidden relative">
                                 <Image
                                   src={support.images[0]}
                                   alt={support.title}
@@ -513,85 +833,77 @@ export default function SoportesPage() {
                                 />
                               </div>
                             ) : (
-                              <div className="h-10 w-10 rounded-lg bg-red-100 flex items-center justify-center">
-                                <Monitor className="h-5 w-5 text-red-600" />
+                              <div className="h-8 w-8 rounded bg-red-100 flex items-center justify-center">
+                                <Monitor className="h-4 w-4 text-red-600" />
                               </div>
                             )}
                           </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">
+                          <div className="ml-2">
+                            <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
                               {support.title}
                             </div>
-                            <div className="text-sm text-gray-500">
-                              {support.shortDescription || 'Sin descripción'}
-                            </div>
-                            {support.featured && (
-                              <Badge className="text-xs mt-1 bg-purple-100 text-purple-800 border-purple-200">
-                                Destacado
-                              </Badge>
-                            )}
                           </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
-                          {support.code || 'N/A'}
+                    <td className="px-2 py-1 whitespace-nowrap text-center">
+                      <div className="flex justify-center">
+                        <span className="inline-flex items-center rounded-md border-0 px-2 py-0.5 text-xs font-medium bg-[hsl(210,40%,96%)] text-[hsl(222,84%,5%)] dark:bg-[hsl(217,33%,18%)] dark:text-[hsl(210,40%,98%)]">
+                          {support.type || 'N/A'}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-2 py-1 whitespace-nowrap text-center">
+                        <div className="flex items-center justify-center">
+                          <MapPin className="h-3.5 w-3.5 text-gray-400 mr-1" />
+                          <div>
+                            <div className="text-sm text-gray-900 dark:text-gray-100">{support.city}</div>
+                            <div className="text-[11px] text-gray-500 dark:text-gray-400 leading-tight">{support.country}</div>
+                          </div>
                         </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <MapPin className="h-4 w-4 text-gray-400 mr-2" />
-                          <div>
-                            <div className="text-sm text-gray-900">{support.city}</div>
-                            <div className="text-sm text-gray-500">{support.country}</div>
-                      </div>
-                      </div>
+                    <td className="px-2 py-1 whitespace-nowrap text-center">
+                        <div className="flex justify-center text-sm text-gray-900 dark:text-gray-100">{formatDimensions(support.dimensions)}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{support.type}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{support.dimensions}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-green-600">
+                    <td className="px-2 py-1 whitespace-nowrap text-center">
+                        <div className="flex justify-center text-sm font-medium text-green-600 dark:text-green-400">
                           {formatPrice(support.pricePerMonth || 0)}
                         </div>
                     </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {getStatusBadge(support.status)}
+                      <td className="px-2 py-1 whitespace-nowrap text-center">
+                        <div className="flex justify-center">{getStatusBadge(support.status)}</div>
                       </td>
-                      <td className="pl-2 pr-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            {support.id && (
-                              <DropdownMenuItem asChild>
-                                <Link href={`/product/${support.slug && !support.slug.startsWith('support-') ? support.slug : support.id}`}>
-                                  <Eye className="h-4 w-4 mr-2" />
-                                  Ver
-                                </Link>
-                              </DropdownMenuItem>
-                            )}
-                            <DropdownMenuItem asChild>
-                              <Link href={`/panel/soportes/${support.id}/editar`}>
-                                <Edit className="h-4 w-4 mr-2" />
-                                Editar
-                              </Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              onClick={() => setDeleteDialog({ open: true, support })}
-                              className="text-red-600"
+                      <td className="px-2 py-1 whitespace-nowrap text-center text-sm font-medium">
+                        <div className="flex gap-1 justify-center">
+                          {support.id && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => window.open(`/product/${support.slug && !support.slug.startsWith('support-') ? support.slug : support.id}`, '_blank')}
+                              title="Ver"
+                              className="h-7 w-7 p-0"
                             >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Eliminar
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                              <Eye className="w-3.5 h-3.5" />
+                            </Button>
+                          )}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => window.location.href = `/panel/soportes/${support.id}/editar`}
+                            title="Editar"
+                            className="h-7 w-7 p-0"
+                          >
+                            <Edit className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setDeleteDialog({ open: true, support })}
+                            className="text-red-600 hover:text-red-700 h-7 w-7 p-0"
+                            title="Eliminar"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
                     </td>
                   </tr>
                 ))}

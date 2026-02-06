@@ -419,3 +419,63 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     );
   }
 }
+
+// PATCH - Actualización parcial (p. ej. destacado)
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params;
+    if (!id) {
+      return NextResponse.json({ error: 'ID de soporte requerido' }, { status: 400 });
+    }
+    const body = await req.json().catch(() => ({}));
+    const featured = body.featured;
+    if (typeof featured !== 'boolean') {
+      return NextResponse.json({ error: "Se requiere 'featured' (boolean)" }, { status: 400 });
+    }
+    const response = await fetch(`${API_BASE_URL}/api/soportes/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ featured }),
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({ error: response.statusText }));
+      return NextResponse.json(
+        { error: (err as { error?: string }).error || 'Error al actualizar' },
+        { status: response.status }
+      );
+    }
+    const data = await response.json().catch(() => ({}));
+    return NextResponse.json(data);
+  } catch (error) {
+    console.error('Error PATCH support:', error);
+    return NextResponse.json(
+      { error: 'Error interno del servidor' },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE - Eliminar un soporte (proxy al ERP)
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params;
+    if (!id) {
+      return NextResponse.json({ error: 'ID de soporte requerido' }, { status: 400 });
+    }
+    const response = await fetch(`${API_BASE_URL}/api/soportes/${id}`, { method: 'DELETE' });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({ error: response.statusText }));
+      return NextResponse.json(
+        { error: (err as { error?: string }).error || 'Error al eliminar el soporte' },
+        { status: response.status }
+      );
+    }
+    return NextResponse.json({ success: true }, { status: 200 });
+  } catch (error) {
+    console.error('Error deleting support:', error);
+    return NextResponse.json(
+      { error: 'Error interno del servidor' },
+      { status: 500 }
+    );
+  }
+}

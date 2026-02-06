@@ -144,7 +144,7 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 disabled={loading}
-                className="pl-14 pr-4 py-3 rounded-2xl border-gray-300 focus:border-[#e94446] focus:ring-2 focus:ring-[#e94446]/20"
+                className="pl-14 pr-4 py-3 rounded-2xl border-gray-300 bg-white focus:border-[#e94446] focus:ring-2 focus:ring-[#e94446]/20 focus:bg-white"
                 autoComplete="email"
               />
             </div>
@@ -170,7 +170,7 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 disabled={loading}
-                className="pl-14 pr-14 py-3 rounded-2xl border-gray-300 focus:border-[#e94446] focus:ring-2 focus:ring-[#e94446]/20"
+                className="pl-14 pr-14 py-3 rounded-2xl border-gray-300 bg-white focus:border-[#e94446] focus:ring-2 focus:ring-[#e94446]/20 focus:bg-white"
                 autoComplete="current-password"
               />
               <button
@@ -194,7 +194,14 @@ export default function LoginPage() {
               type="checkbox"
               checked={rememberMe}
               onChange={(e) => setRememberMe(e.target.checked)}
-              className="h-4 w-4 text-[#e94446] focus:ring-[#e94446] border-gray-300 rounded"
+              className="h-4 w-4 rounded border-gray-300 text-[#e94446] focus:ring-[#e94446] focus:ring-offset-0 checked:bg-[#e94446] checked:border-[#e94446]"
+              style={{
+                accentColor: '#e94446',
+                backgroundColor: rememberMe ? '#e94446' : '#ffffff',
+                appearance: 'none',
+                WebkitAppearance: 'none',
+                MozAppearance: 'none'
+              }}
             />
             <Label htmlFor="rememberMe" className="ml-2 text-sm text-gray-700">
               Mantener sesión iniciada
@@ -204,7 +211,7 @@ export default function LoginPage() {
           <div className="flex justify-center pt-4">
             <Button
               type="submit"
-              className="px-12 py-6 text-lg rounded-2xl bg-[#e94446] hover:bg-[#d63a3a] transition-all shadow-lg hover:shadow-xl"
+              className="px-12 py-6 text-lg rounded-2xl bg-[#e94446] hover:bg-[#d63a3a] text-white transition-all shadow-lg hover:shadow-xl"
               disabled={loading}
             >
               {loading ? (

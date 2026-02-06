@@ -280,6 +280,9 @@ export default function AlquileresPage() {
                     Período
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Meses
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Precio
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -302,13 +305,13 @@ export default function AlquileresPage() {
                   </tr>
                 ) : error ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-8 text-center text-red-600">
+                    <td colSpan={8} className="px-6 py-8 text-center text-red-600">
                       {error}
                     </td>
                   </tr>
                 ) : filteredAlquileres.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-8 text-center">
+                    <td colSpan={8} className="px-6 py-8 text-center">
                       <span className="text-gray-500">No se encontraron alquileres</span>
                     </td>
                   </tr>
@@ -326,10 +329,13 @@ export default function AlquileresPage() {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {alquiler.soporte?.codigo_cliente ?? alquiler.soporte?.codigo_interno ?? 'N/A'}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                           {new Date(alquiler.fecha_inicio).toLocaleDateString('es-ES')} - {new Date(alquiler.fecha_fin).toLocaleDateString('es-ES')}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                          {alquiler.meses || Math.ceil((new Date(alquiler.fecha_fin).getTime() - new Date(alquiler.fecha_inicio).getTime()) / (1000 * 60 * 60 * 24 * 30))} mes{(alquiler.meses || Math.ceil((new Date(alquiler.fecha_fin).getTime() - new Date(alquiler.fecha_inicio).getTime()) / (1000 * 60 * 60 * 24 * 30))) !== 1 ? 'es' : ''}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
                           Bs. {alquiler.precio_total.toLocaleString()}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -339,29 +345,30 @@ export default function AlquileresPage() {
                           </Badge>
                         </td>
                         <td className="pl-2 pr-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem>
-                                <Eye className="h-4 w-4 mr-2" />
-                                Ver
-                              </DropdownMenuItem>
-                              <DropdownMenuItem>
-                                <Edit className="h-4 w-4 mr-2" />
-                                Editar
-                              </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                className="text-red-600"
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Eliminar
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                          <div className="flex gap-2 justify-end">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              title="Ver"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              title="Editar"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-red-600 hover:text-red-700"
+                              title="Eliminar"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     );
