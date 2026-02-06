@@ -189,13 +189,22 @@ export function PublicarEspacioClient() {
     const errors: string[] = [];
     
     if (!formData.title.trim()) errors.push('El título es requerido');
+    if (formData.title.length > 200) errors.push('El título no puede superar 200 caracteres');
     if (!formData.pricePerMonth || numericFromDigits(formData.pricePerMonth) <= 0) errors.push('El precio debe ser mayor a 0');
+    if (formData.pricePerMonth.length > 15) errors.push('El precio no puede superar 15 caracteres');
     if (!formData.city.trim()) errors.push('La ciudad es requerida');
+    if (formData.city.length > 100) errors.push('La ciudad no puede superar 100 caracteres');
     if (!formData.country) errors.push('El país es requerido');
+    if (formData.country.length > 100) errors.push('El país no puede superar 100 caracteres');
     if (!formData.width.trim() || numericFromDigits(formData.width) <= 0) errors.push('El ancho es requerido y debe ser mayor a 0');
+    if (formData.width.length > 10) errors.push('El ancho no puede superar 10 caracteres');
     if (!formData.height.trim() || numericFromDigits(formData.height) <= 0) errors.push('La altura es requerida y debe ser mayor a 0');
+    if (formData.height.length > 10) errors.push('La altura no puede superar 10 caracteres');
     if (!formData.type) errors.push('El tipo es requerido');
+    if ((formData.code?.length ?? 0) > 50) errors.push('El código no puede superar 50 caracteres');
+    if ((formData.googleMapsLink?.length ?? 0) > 2000) errors.push('El enlace de Google Maps no puede superar 2000 caracteres');
     if (formData.dailyImpressions && parseInt(formData.dailyImpressions) <= 0) errors.push('Los impactos diarios deben ser mayor a 0');
+    if ((formData.dailyImpressions?.length ?? 0) > 10) errors.push('Los impactos diarios no pueden superar 10 dígitos');
     // Validar que el enlace de Google Maps sea válido (opcional)
     if (formData.googleMapsLink.trim()) {
       try {
@@ -340,16 +349,45 @@ export function PublicarEspacioClient() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
-        <div className="mb-8 text-center">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
-          Publicar un Soporte
-        </h1>
-          <p className="text-lg text-gray-600">
-          Completa la información de tu soporte publicitario para que otros puedan encontrarlo y reservarlo.
-        </p>
-      </div>
+        <div className="mb-8">
+          <div className="text-center mb-6">
+            <h1 className="text-4xl font-bold text-gray-900 mb-2">
+              Publicar un Soporte
+            </h1>
+            <p className="text-lg text-gray-600">
+              Completa la información de tu soporte publicitario para que otros puedan encontrarlo y reservarlo.
+            </p>
+          </div>
+          <div className="flex justify-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => router.back()}
+              className="rounded-xl"
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              form="publicar-soporte-form"
+              size="sm"
+              disabled={isSubmitting}
+              className="rounded-xl bg-[#e94446] hover:bg-[#d63a3a] px-4"
+            >
+              {isSubmitting ? (
+                <span className="flex items-center gap-1.5">
+                  <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Publicando...
+                </span>
+              ) : (
+                'Publicar Espacio'
+              )}
+            </Button>
+          </div>
+        </div>
 
-      <form onSubmit={handleSubmit} className="space-y-8">
+      <form id="publicar-soporte-form" onSubmit={handleSubmit} className="space-y-8">
           <SoporteForm
             formData={formData}
             onInputChange={handleInputChange}
@@ -377,35 +415,6 @@ export function PublicarEspacioClient() {
             </CardContent>
           </Card>
         )}
-
-        {/* Botones de Acción */}
-          <div className="flex justify-center pt-8 pb-8">
-            <div className="flex gap-4">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => router.back()}
-            disabled={isSubmitting}
-                className="px-8 py-6 text-lg rounded-2xl"
-          >
-            Cancelar
-          </Button>
-          <Button
-            type="submit"
-            disabled={isSubmitting}
-                className="px-12 py-6 text-lg rounded-2xl bg-[#e94446] hover:bg-[#d63a3a] transition-all shadow-lg hover:shadow-xl"
-          >
-            {isSubmitting ? (
-              <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                Publicando...
-              </div>
-            ) : (
-              'Publicar Espacio'
-            )}
-          </Button>
-            </div>
-        </div>
       </form>
       </div>
     </div>

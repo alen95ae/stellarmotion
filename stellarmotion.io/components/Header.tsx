@@ -29,6 +29,8 @@ export default function Header() {
   useEffect(() => {
     let isMounted = true;
     let timeoutId: NodeJS.Timeout;
+    const abortController = new AbortController();
+    const { signal } = abortController;
 
     // Timeout de seguridad: si loading tarda más de 2 segundos, forzar false
     timeoutId = setTimeout(() => {
@@ -40,29 +42,26 @@ export default function Header() {
 
     const loadUser = async () => {
       try {
-        console.log('🔍 Header: Obteniendo usuario...');
-        const response = await fetch('/api/auth/me', { credentials: 'include' });
+        const response = await fetch('/api/auth/me', { credentials: 'include', signal });
         
         if (!isMounted) return;
 
         if (!response.ok) {
-          console.log('ℹ️ Header: No hay sesión activa');
           setUser(null);
           setOwnerData(null);
         } else {
           const data = await response.json();
           if (data.success && data.user) {
-            console.log('✅ Header: Usuario obtenido:', data.user.email || 'null');
             setUser(data.user);
-            
             setOwnerData(null);
           } else {
             setUser(null);
             setOwnerData(null);
           }
         }
-      } catch (error) {
-        console.error('❌ Header: Error getting user:', error);
+      } catch (error: unknown) {
+        // No tratar como error: petición cancelada (navegación/unmount) o fallo de red transitorio
+        if (error instanceof Error && error.name === 'AbortError') return;
         if (isMounted) {
           setUser(null);
           setOwnerData(null);
@@ -86,6 +85,7 @@ export default function Header() {
 
     return () => {
       isMounted = false;
+      abortController.abort();
       clearTimeout(timeoutId);
       clearInterval(intervalId);
     };

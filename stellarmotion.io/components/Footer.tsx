@@ -55,8 +55,13 @@ export default function Footer() {
                   </Link>
                 </li>
                 <li>
-                  <Link href="/mapa-test" className="text-gray-600 hover:text-gray-900 transition-colors text-sm">
-                    Mapa Test
+                  <Link href="/test-publi-movil" className="text-gray-600 hover:text-gray-900 transition-colors text-sm">
+                    Test Publi Móvil
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/test-mapas" className="text-gray-600 hover:text-gray-900 transition-colors text-sm">
+                    Test Mapas
                   </Link>
                 </li>
               </ul>

@@ -48,9 +48,7 @@ export function setSessionCookie(response: NextResponse, token: string) {
   } else {
     console.error('❌ [setSessionCookie] ERROR: Cookie NO se pudo establecer');
   }
-}
-
-/**
+}/**
  * Limpia la cookie de sesión con el formato correcto para localhost
  * @param response - La respuesta NextResponse donde se limpiará la cookie
  */

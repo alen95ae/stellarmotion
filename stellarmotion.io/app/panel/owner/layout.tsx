@@ -43,10 +43,12 @@ export default function OwnerLayout({
   return (
     <div className="min-h-screen bg-gray-50">
       <OwnerSidebar isCollapsed={isCollapsed} onToggle={() => setIsCollapsed(!isCollapsed)} />
-      {/* Main content - ajustado para el header y sidebar */}
-      <div className={`pt-16 transition-all duration-300 ${isCollapsed ? 'pl-16' : 'pl-64'}`}>
-        <main className="py-2">
-          <div className="w-full px-3 sm:px-4 lg:px-5">
+      {/* Main content - ajustado para el sidebar */}
+      <div className={`transition-all duration-300 ${isCollapsed ? 'pl-16' : 'pl-64'} pt-0 mt-0`}>
+        {/* Spacer estructural para compensar header fijo (64px = h-16) */}
+        <div style={{ height: '64px', margin: 0, padding: 0 }} className="bg-gray-50 dark:bg-gray-950" aria-hidden="true" />
+        <main className="pb-0 pt-0 mt-0">
+          <div className="w-full px-2">
             {children}
           </div>
         </main>

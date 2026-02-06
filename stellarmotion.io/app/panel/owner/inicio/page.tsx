@@ -157,34 +157,34 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-1.5">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-        <p className="mt-1 text-gray-600">
+      <div className="mb-1">
+        <h1 className="text-lg font-bold text-gray-900">Dashboard</h1>
+        <p className="mt-0.5 text-xs text-gray-600 leading-tight">
           Bienvenido a tu panel de control. Gestiona tus soportes publicitarios y anuncios.
         </p>
       </div>
 
       {/* Dashboard Cards */}
       <div>
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">Gestión de Soportes</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <h2 className="text-sm font-semibold text-gray-900 mb-1">Gestión de Soportes</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1.5">
           {dashboardCards.map((card) => (
             <Link
               key={card.title}
               href={card.href}
-              className="group relative overflow-hidden rounded-lg bg-white p-6 shadow-sm ring-1 ring-gray-200 hover:shadow-md transition-shadow"
+              className="group relative overflow-hidden rounded bg-white p-2 border border-gray-200 hover:bg-gray-50 transition-colors"
             >
               <div className="flex items-center">
-                <div className={`flex h-12 w-12 items-center justify-center rounded-lg ${card.color}`}>
-                  <card.icon className="h-6 w-6 text-red-600" />
+                <div className={`flex h-7 w-7 items-center justify-center rounded ${card.color}`}>
+                  <card.icon className="h-3.5 w-3.5 text-red-600" />
                 </div>
-                <div className="ml-4">
-                  <h3 className="text-lg font-medium text-gray-900 group-hover:text-gray-700">
+                <div className="ml-2">
+                  <h3 className="text-sm font-medium text-gray-900 group-hover:text-gray-700">
                     {card.title}
                   </h3>
-                  <p className="text-sm text-gray-500">{card.description}</p>
+                  <p className="text-[11px] text-gray-500 leading-tight">{card.description}</p>
                 </div>
               </div>
             </Link>
@@ -194,23 +194,23 @@ export default function DashboardPage() {
 
       {/* Quick Actions */}
       <div>
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">Acciones Rápidas</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <h2 className="text-sm font-semibold text-gray-900 mb-1">Acciones Rápidas</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-1.5">
           {quickActions.map((action) => (
             <Link
               key={action.title}
               href={action.href}
-              className="group relative overflow-hidden rounded-lg bg-white p-4 shadow-sm ring-1 ring-gray-200 hover:shadow-md transition-shadow"
+              className="group relative overflow-hidden rounded bg-white p-2 border border-gray-200 hover:bg-gray-50 transition-colors"
             >
               <div className="flex items-center">
-                <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${action.color}`}>
-                  <action.icon className="h-5 w-5 text-red-600" />
+                <div className={`flex h-7 w-7 items-center justify-center rounded ${action.color}`}>
+                  <action.icon className="h-3.5 w-3.5 text-red-600" />
                 </div>
-                <div className="ml-3">
+                <div className="ml-2">
                   <h3 className="text-sm font-medium text-gray-900 group-hover:text-gray-700">
                     {action.title}
                   </h3>
-                  <p className="text-xs text-gray-500">{action.description}</p>
+                  <p className="text-[11px] text-gray-500 leading-tight">{action.description}</p>
                 </div>
               </div>
             </Link>
@@ -219,57 +219,57 @@ export default function DashboardPage() {
       </div>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white p-6 rounded-lg shadow-sm ring-1 ring-gray-200">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-1.5">
+        <div className="bg-white p-2 rounded border border-gray-200">
           <div className="flex items-center">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-100">
-              <Monitor className="h-4 w-4 text-red-600" />
+            <div className="flex h-6 w-6 items-center justify-center rounded bg-red-100">
+              <Monitor className="h-3.5 w-3.5 text-red-600" />
             </div>
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-500">Soportes Totales</p>
-              <p className="text-2xl font-semibold text-gray-900">
+            <div className="ml-2">
+              <p className="text-[11px] font-medium text-gray-500">Soportes Totales</p>
+              <p className="text-base font-semibold text-gray-900">
                 {loading ? '...' : stats.totalSupports}
               </p>
             </div>
           </div>
         </div>
         
-        <div className="bg-white p-6 rounded-lg shadow-sm ring-1 ring-gray-200">
+        <div className="bg-white p-2 rounded border border-gray-200">
           <div className="flex items-center">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-100">
-              <Calendar className="h-4 w-4 text-red-600" />
+            <div className="flex h-6 w-6 items-center justify-center rounded bg-red-100">
+              <Calendar className="h-3.5 w-3.5 text-red-600" />
             </div>
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-500">Soportes Disponibles</p>
-              <p className="text-2xl font-semibold text-gray-900">
+            <div className="ml-2">
+              <p className="text-[11px] font-medium text-gray-500">Soportes Disponibles</p>
+              <p className="text-base font-semibold text-gray-900">
                 {loading ? '...' : stats.activeReservations}
               </p>
             </div>
           </div>
         </div>
         
-        <div className="bg-white p-6 rounded-lg shadow-sm ring-1 ring-gray-200">
+        <div className="bg-white p-2 rounded border border-gray-200">
           <div className="flex items-center">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-100">
-              <Users className="h-4 w-4 text-red-600" />
+            <div className="flex h-6 w-6 items-center justify-center rounded bg-red-100">
+              <Users className="h-3.5 w-3.5 text-red-600" />
             </div>
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-500">Clientes Estimados</p>
-              <p className="text-2xl font-semibold text-gray-900">
+            <div className="ml-2">
+              <p className="text-[11px] font-medium text-gray-500">Clientes Estimados</p>
+              <p className="text-base font-semibold text-gray-900">
                 {loading ? '...' : stats.totalClients}
               </p>
             </div>
           </div>
         </div>
         
-        <div className="bg-white p-6 rounded-lg shadow-sm ring-1 ring-gray-200">
+        <div className="bg-white p-2 rounded border border-gray-200">
           <div className="flex items-center">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-100">
-              <TrendingUp className="h-4 w-4 text-red-600" />
+            <div className="flex h-6 w-6 items-center justify-center rounded bg-red-100">
+              <TrendingUp className="h-3.5 w-3.5 text-red-600" />
             </div>
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-500">Ingresos Potenciales</p>
-              <p className="text-2xl font-semibold text-gray-900">
+            <div className="ml-2">
+              <p className="text-[11px] font-medium text-gray-500">Ingresos Potenciales</p>
+              <p className="text-base font-semibold text-gray-900">
                 {loading ? '...' : formatPrice(stats.monthlyRevenue)}
               </p>
             </div>

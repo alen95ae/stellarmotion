@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Trash2, Filter } from "lucide-react"
+import { Trash2, Filter, Monitor } from "lucide-react"
 
 // Constantes para colores de estado
 const STATUS_META = {
@@ -18,48 +18,58 @@ interface BulkActionsProps {
   selectedCount: number
   onBulkDelete: () => void
   onBulkStatusChange: (status: string) => void
+  onExportPDF?: () => void
 }
 
-export default function BulkActions({ 
-  selectedCount, 
-  onBulkDelete, 
-  onBulkStatusChange 
+export default function BulkActions({
+  selectedCount,
+  onBulkDelete,
+  onBulkStatusChange,
+  onExportPDF,
 }: BulkActionsProps) {
   if (selectedCount === 0) return null
 
   return (
-    <div className="flex items-center gap-2 p-4 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800">
-      <span className="text-sm text-gray-600 dark:text-gray-400">
-        {selectedCount} elemento{selectedCount !== 1 ? 's' : ''} seleccionado{selectedCount !== 1 ? 's' : ''}
+    <div className="flex flex-wrap items-center gap-3 p-3 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-lg">
+      <span className="text-sm font-medium text-blue-800 dark:text-blue-200">
+        {selectedCount} soporte{selectedCount !== 1 ? 's' : ''} seleccionado{selectedCount !== 1 ? 's' : ''}
       </span>
-      
-      <div className="flex gap-2">
-        {/* Cambiar estado */}
+
+      <div className="flex flex-wrap items-center gap-2">
+        {onExportPDF && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onExportPDF}
+            className="h-8 border-blue-300 bg-white hover:bg-blue-50 dark:bg-blue-900/50 dark:border-blue-700 dark:hover:bg-blue-900/70 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+          >
+            <Monitor className="w-3.5 h-3.5 mr-1.5" />
+            Catálogo PDF
+          </Button>
+        )}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm">
-              <Filter className="w-4 h-4 mr-2" />
+            <Button variant="outline" size="sm" className="h-8 border-blue-300 bg-white hover:bg-blue-50 dark:bg-blue-900/50 dark:border-blue-700 dark:hover:bg-blue-900/70 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0">
+              <Filter className="w-3.5 h-3.5 mr-1.5" />
               Cambiar Estado
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
             {Object.entries(STATUS_META).map(([key, meta]) => (
-              <DropdownMenuItem 
-                key={key} 
+              <DropdownMenuItem
+                key={key}
                 onClick={() => onBulkStatusChange(key)}
                 className="cursor-pointer"
               >
-                <span className={`inline-flex items-center rounded px-2 py-1 text-xs font-medium ${meta.className}`}>
+                <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium ${meta.className}`}>
                   {meta.label}
                 </span>
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
-
-        {/* Eliminar */}
-        <Button variant="destructive" size="sm" onClick={onBulkDelete}>
-          <Trash2 className="w-4 h-4 mr-2" />
+        <Button variant="destructive" size="sm" onClick={onBulkDelete} className="h-8 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0">
+          <Trash2 className="w-3.5 h-3.5 mr-1.5" />
           Eliminar
         </Button>
       </div>

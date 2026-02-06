@@ -38,6 +38,15 @@ export const useGoogleMaps = () => {
     script.onload = () => {
       setIsLoaded(true);
       setIsLoading(false);
+      
+      // Cargar MarkerClusterer después de que Google Maps esté listo (opcional, se carga bajo demanda)
+      if (!document.querySelector('script[src*="markerclusterer"]')) {
+        const clusterScript = document.createElement('script');
+        clusterScript.src = 'https://unpkg.com/@googlemaps/markerclusterer@2.4.0/dist/index.min.js';
+        clusterScript.async = true;
+        clusterScript.defer = true;
+        document.head.appendChild(clusterScript);
+      }
     };
     script.onerror = () => {
       setIsLoading(false);
