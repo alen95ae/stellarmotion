@@ -155,6 +155,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const city = formData.get('city') as string;
     const country = formData.get('country') as string;
     const dimensions = formData.get('dimensions') as string;
+    const widthMForm = formData.get('widthM') as string | null;
+    const heightMForm = formData.get('heightM') as string | null;
     const lighting = formData.get('lighting') === 'true';
     const type = formData.get('type') as string;
     const dailyImpressions = parseInt(formData.get('dailyImpressions') as string) || 0;
@@ -315,12 +317,40 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       }
     }
 
-    // Extraer dimensiones de width y height del string dimensions
-    const dimensionsMatch = dimensions.match(/(\d+(?:\.\d+)?)×(\d+(?:\.\d+)?)/);
-    const widthM = dimensionsMatch ? parseFloat(dimensionsMatch[1]) : null;
-    const heightM = dimensionsMatch ? parseFloat(dimensionsMatch[2]) : null;
+    // Si no se subieron imágenes nuevas, conservar las existentes del soporte
+    if (imageUrls.length === 0) {
+      try {
+        const existingRes = await fetch(`${API_BASE_URL}/api/soportes/${id}`);
+        if (existingRes.ok) {
+          const existing = await existingRes.json();
+          const existingImages = existing?.imagenes ?? existing?.images;
+          if (Array.isArray(existingImages) && existingImages.length > 0) {
+            imageUrls.push(...existingImages);
+          }
+        }
+      } catch (e) {
+        console.warn('No se pudieron cargar imágenes existentes:', e);
+      }
+    }
 
-    // Preparar datos para el backend
+    // Dimensiones: usar widthM/heightM del form si vienen; si no, extraer del string dimensions
+    let widthM: number | null = null;
+    let heightM: number | null = null;
+    if (widthMForm != null && heightMForm != null) {
+      const w = parseFloat(String(widthMForm));
+      const h = parseFloat(String(heightMForm));
+      if (!isNaN(w)) widthM = w;
+      if (!isNaN(h)) heightM = h;
+    }
+    if ((widthM == null || heightM == null) && dimensions) {
+      const dimensionsMatch = dimensions.match(/(\d+(?:\.\d+)?)×(\d+(?:\.\d+)?)/);
+      if (dimensionsMatch) {
+        if (widthM == null) widthM = parseFloat(dimensionsMatch[1]);
+        if (heightM == null) heightM = parseFloat(dimensionsMatch[2]);
+      }
+    }
+
+    // Preparar datos para el backend (ERP espera dimensiones como objeto e imagenes como array)
     const supportData = {
       title,
       type,
@@ -328,23 +358,23 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       country,
       latitude: lat,
       longitude: lng,
-      googleMapsLink: googleMapsLink || null, // Guardar el enlace original
+      googleMapsLink: googleMapsLink || null,
       priceMonth: pricePerMonth,
       dailyImpressions,
       lighting,
-      dimensions,
+      dimensions: widthM != null && heightM != null ? { ancho: widthM, alto: heightM, area: widthM * heightM } : undefined,
       widthM,
       heightM,
       shortDescription: shortDescription || '',
       description: description || '',
       imageUrl: imageUrls[0] || '/placeholder.svg?height=400&width=600',
-      images: JSON.stringify(imageUrls),
-      tags: '', // Tags vacíos por ahora
+      images: imageUrls, // array para que el ERP/Supabase lo procese correctamente
+      tags: '',
       featured: false,
       available: status === 'DISPONIBLE',
       status: status,
       categoryId: null,
-      code: code || '', // Código opcional
+      code: code || '',
     };
 
     // Actualizar el soporte en el backend
@@ -364,10 +394,21 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     console.log('Respuesta del ERP:', response.status, response.statusText);
     
     if (!response.ok) {
-      const errorData = await response.json();
-      console.error('Error del ERP:', errorData);
+      let errorMessage = 'Error al actualizar el soporte';
+      try {
+        const contentType = response.headers.get('content-type');
+        const body = contentType?.includes('application/json')
+          ? await response.json()
+          : { error: await response.text() };
+        const err = (body as { error?: string }).error;
+        const details = (body as { details?: string }).details;
+        errorMessage = err || (details ? `Error al actualizar el soporte: ${details}` : errorMessage) || errorMessage;
+        console.error('Error del ERP:', body);
+      } catch (e) {
+        console.error('Error leyendo respuesta del ERP:', e);
+      }
       return NextResponse.json(
-        { error: errorData.error || 'Error al actualizar el soporte' },
+        { error: errorMessage },
         { status: response.status }
       );
     }

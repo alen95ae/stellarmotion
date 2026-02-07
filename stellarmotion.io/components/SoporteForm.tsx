@@ -11,6 +11,7 @@ import { ImageUp, MapPin, DollarSign, Ruler, Lightbulb, Pencil, Eye, Link as Lin
 import { CATEGORIES, getCategoryIconPath } from '@/lib/categories';
 import Image from 'next/image';
 import { PhotonAutocomplete } from '@/components/PhotonAutocomplete';
+import EditableGoogleMap from '@/components/EditableGoogleMap';
 
 export interface FormData {
   title: string;
@@ -37,11 +38,21 @@ interface SoporteFormProps {
   onRemoveImage: (index: number) => void;
   onDimensionInputChange: (field: 'width' | 'height', inputValue: string) => void;
   onPriceInputChange: (inputValue: string) => void;
-  formatPriceInput: (value: string) => string;
+  /** Opcional: el precio se muestra y edita como número normal */
+  formatPriceInput?: (value: string) => string;
+  /** Opcional: si no se pasa, ancho/alto se muestran y editan como texto numérico normal */
   formatDimensionInput?: (value: string) => string;
   availableCities: string[];
   isEditMode?: boolean;
+  /** Coordenadas del mapa (del enlace o arrastrando la chincheta) */
+  mapCoords?: { lat: number; lng: number } | null;
+  /** True mientras se resuelve un enlace corto (goo.gl, maps.app.goo.gl) */
+  mapCoordsLoading?: boolean;
+  /** Se llama cuando el usuario arrastra la chincheta o hace clic en el mapa */
+  onMapCoordsChange?: (coords: { lat: number; lng: number }) => void;
 }
+
+const DEFAULT_MAP_CENTER = { lat: 40.4168, lng: -3.7038 }; // Madrid
 
 // Mapeo de tipos de soporte a categorías
 const TYPE_TO_CATEGORY: Record<string, string> = {
@@ -120,12 +131,12 @@ export function SoporteForm({
   onDimensionInputChange,
   onPriceInputChange,
   formatPriceInput,
-  formatDimensionInput,
   availableCities,
-  isEditMode = false
+  isEditMode = false,
+  mapCoords = null,
+  mapCoordsLoading = false,
+  onMapCoordsChange,
 }: SoporteFormProps) {
-  // Use formatDimensionInput if provided, otherwise use formatPriceInput
-  const formatDim = formatDimensionInput || formatPriceInput;
   const [selectedCategory, setSelectedCategory] = useState<string | null>(
     formData.type ? TYPE_TO_CATEGORY[formData.type] || null : null
   );
@@ -287,6 +298,30 @@ export function SoporteForm({
               Ve a Google Maps, busca tu ubicación, haz clic en "Compartir" y pega el enlace aquí
             </p>
           </div>
+
+          {/* Mapa siempre visible; chincheta arrastrable. Al resolver enlace solo mostramos loader para evitar duplicar mapa */}
+          <div className="mt-4">
+            <Label className="text-sm font-medium text-gray-700 mb-2 block">
+              Ubicación del soporte
+            </Label>
+            {mapCoordsLoading ? (
+              <div className="rounded-2xl border border-gray-300 h-[280px] flex items-center justify-center bg-gray-100">
+                <span className="text-gray-500 text-sm">Obteniendo ubicación del enlace...</span>
+              </div>
+            ) : (
+              <div className="rounded-2xl overflow-hidden border border-gray-300 shadow-sm">
+                <EditableGoogleMap
+                  lat={mapCoords?.lat ?? DEFAULT_MAP_CENTER.lat}
+                  lng={mapCoords?.lng ?? DEFAULT_MAP_CENTER.lng}
+                  onChange={(c) => onMapCoordsChange?.(c)}
+                  height={280}
+                />
+              </div>
+            )}
+            <p className="text-sm text-gray-500 mt-2">
+              Arrastra la chincheta o haz clic en el mapa para fijar la ubicación.
+            </p>
+          </div>
         </CardContent>
       </Card>
 
@@ -310,11 +345,12 @@ export function SoporteForm({
               <DollarSign className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5 z-10 pointer-events-none" />
               <Input
                 id="pricePerMonth"
-                type="text"
-                value={formatPriceInput(formData.pricePerMonth)}
+                type="number"
+                step="any"
+                min="0"
+                value={formData.pricePerMonth}
                 onChange={(e) => onPriceInputChange(e.target.value)}
-                placeholder="00.0"
-                maxLength={15}
+                placeholder="Ej: 350.50"
                 className="pl-14 pr-4 py-3 rounded-2xl border-gray-300 focus:border-[#e94446] focus:ring-2 focus:ring-[#e94446]/20"
                 required
               />
@@ -342,10 +378,12 @@ export function SoporteForm({
               </Label>
               <Input
                 id="width"
-                type="text"
-                value={formatDim(formData.width)}
+                type="number"
+                step="any"
+                min="0"
+                value={formData.width}
                 onChange={(e) => onDimensionInputChange('width', e.target.value)}
-                placeholder="00.0"
+                placeholder="Ej: 3.5"
                 required
                 className="rounded-2xl border-gray-300 focus:border-[#e94446] focus:ring-2 focus:ring-[#e94446]/20 py-3"
               />
@@ -356,12 +394,13 @@ export function SoporteForm({
               </Label>
               <Input
                 id="height"
-                type="text"
-                value={formatDim(formData.height)}
+                type="number"
+                step="any"
+                min="0"
+                value={formData.height}
                 onChange={(e) => onDimensionInputChange('height', e.target.value)}
-                placeholder="00.0"
+                placeholder="Ej: 2"
                 required
-                maxLength={10}
                 className="rounded-2xl border-gray-300 focus:border-[#e94446] focus:ring-2 focus:ring-[#e94446]/20 py-3"
               />
             </div>

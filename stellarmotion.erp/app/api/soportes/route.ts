@@ -133,39 +133,15 @@ const TIPOS_UI_VALIDOS = [
   'Cartelera'
 ] as const;
 
-// Función para normalizar tipo de soporte a valores del enum de Supabase
-// ⚠️ IMPORTANTE: Los valores devueltos DEBEN existir en el enum tipo_soporte_enum de Supabase
+// Normalizar tipo: usar los valores de la UI (Valla, Mupi, etc.) con casing consistente.
+// Sin mapeo a Unipolar ni valores de otro sistema.
 function normalizarTipoSoporte(tipo: string): string {
-  const tipoLower = String(tipo).trim().toLowerCase();
-  
-  // Mapeos desde tipos de la UI → Valores del enum de Supabase
-  const mappings: Record<string, string> = {
-    // Tipos de la UI
-    'valla': 'Unipolar',
-    'vallas': 'Unipolar',
-    'pantalla': 'Unipolar',
-    'pantallas': 'Unipolar',
-    'mural': 'Mural',
-    'murales': 'Mural',
-    'mupi': 'Unipolar',
-    'mupis': 'Unipolar',
-    'parada de bus': 'Parada de Bus',
-    'paradas de bus': 'Parada de Bus',
-    'parada de autobús': 'Parada de Bus',
-    'display': 'Unipolar',
-    'displays': 'Unipolar',
-    'letrero': 'Unipolar',
-    'letreros': 'Unipolar',
-    'cartelera': 'Cartelera',
-    'carteleras': 'Cartelera',
-    // Valores directos del enum (case-insensitive)
-    'unipolar': 'Unipolar',
-    'bipolar': 'Bipolar',
-    'tripolar': 'Tripolar',
-    'paleta': 'Paleta',
-  };
-  
-  return mappings[tipoLower] || 'Unipolar'; // Default a Unipolar (siempre existe)
+  const trimmed = String(tipo).trim();
+  if (!trimmed) return trimmed;
+  const lower = trimmed.toLowerCase();
+  const canonical = TIPOS_UI_VALIDOS.find(t => t.toLowerCase() === lower);
+  if (canonical) return canonical;
+  return trimmed.replace(/\w+/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
 }
 
 // Validación dura: verificar que el tipo esté en la lista permitida de la UI

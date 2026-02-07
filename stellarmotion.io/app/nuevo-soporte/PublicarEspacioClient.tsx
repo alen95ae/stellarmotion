@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { SoporteForm, FormData } from '@/components/SoporteForm';
+import { extractCoordinatesFromGoogleMapsLink, buildGoogleMapsLinkFromCoords } from '@/lib/extract-google-maps-coords';
 
 const CITIES_BY_COUNTRY: Record<string, string[]> = {
   'Argentina': ['Buenos Aires', 'Córdoba', 'Rosario', 'Mendoza', 'La Plata', 'Mar del Plata', 'Salta', 'Tucumán', 'Santa Fe', 'Neuquén'],
@@ -34,6 +35,8 @@ export function PublicarEspacioClient() {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [mapCoords, setMapCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [mapCoordsLoading, setMapCoordsLoading] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     title: '',
     pricePerMonth: '',
@@ -67,33 +70,32 @@ export function PublicarEspacioClient() {
   // Obtener ciudades del país seleccionado
   const availableCities = formData.country ? CITIES_BY_COUNTRY[formData.country] || [] : [];
 
-  // Función para extraer coordenadas del enlace de Google Maps
-  const extractCoordinatesFromGoogleMapsLink = (link: string): { lat: number | null, lng: number | null } => {
-    if (!link) return { lat: null, lng: null };
-
-    // Patrones para diferentes formatos de Google Maps
-    const patterns = [
-      /@(-?\d+\.\d+),(-?\d+\.\d+)/, // @lat,lng
-      /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/, // !3dlat!4dlng
-      /ll=(-?\d+\.\d+),(-?\d+\.\d+)/, // ll=lat,lng
-      /q=(-?\d+\.\d+),(-?\d+\.\d+)/, // q=lat,lng
-      /query=(-?\d+\.\d+),(-?\d+\.\d+)/, // query=lat,lng (API format)
-      /center=(-?\d+\.\d+),(-?\d+\.\d+)/, // center=lat,lng
-      /@(-?\d+\.\d+),(-?\d+\.\d+),/ // @lat,lng,zoom
-    ];
-
-    for (const pattern of patterns) {
-      const match = link.match(pattern);
-      if (match) {
-        return {
-          lat: parseFloat(match[1]),
-          lng: parseFloat(match[2])
-        };
-      }
+  const updateMapCoordsFromLink = useCallback(async (link: string) => {
+    if (!link.trim()) {
+      setMapCoords(null);
+      return;
     }
+    setMapCoordsLoading(true);
+    try {
+      const coords = await extractCoordinatesFromGoogleMapsLink(link);
+      if (coords.lat != null && coords.lng != null) {
+        setMapCoords({ lat: coords.lat, lng: coords.lng });
+      } else {
+        setMapCoords(null);
+      }
+    } finally {
+      setMapCoordsLoading(false);
+    }
+  }, []);
 
-    return { lat: null, lng: null };
-  };
+  useEffect(() => {
+    const link = formData.googleMapsLink?.trim() || '';
+    if (!link) {
+      setMapCoords(null);
+      return;
+    }
+    updateMapCoordsFromLink(link);
+  }, [formData.googleMapsLink, updateMapCoordsFromLink]);
 
   const formatPriceInput = (value: string) => {
     if (!value) return '';
@@ -126,7 +128,7 @@ export function PublicarEspacioClient() {
   };
 
   const handleDimensionInputChange = (field: 'width' | 'height', inputValue: string) => {
-    const cleaned = inputValue.replace(/[^\d]/g, '');
+    const cleaned = inputValue.replace(/[^\d.]/g, '').replace(/(\..*)\./g, '$1');
     handleInputChange(field, cleaned);
   };
 
@@ -259,8 +261,11 @@ export function PublicarEspacioClient() {
     try {
       const formDataToSend = new FormData();
       
-      // Extraer coordenadas del enlace de Google Maps
-      const coordinates = extractCoordinatesFromGoogleMapsLink(formData.googleMapsLink);
+      // Coordenadas: usar las del mapa (chincheta arrastrada) o extraer del enlace
+      let coordinates = { lat: mapCoords?.lat ?? null, lng: mapCoords?.lng ?? null };
+      if ((coordinates.lat == null || coordinates.lng == null) && formData.googleMapsLink?.trim()) {
+        coordinates = await extractCoordinatesFromGoogleMapsLink(formData.googleMapsLink);
+      }
       
       // Validar que el título no esté vacío antes de enviar
       if (!formData.title || !formData.title.trim()) {
@@ -277,7 +282,9 @@ export function PublicarEspacioClient() {
       formDataToSend.append('pricePerMonth', numericFromDigits(formData.pricePerMonth).toFixed(1));
       formDataToSend.append('city', formData.city);
       formDataToSend.append('country', formData.country);
-      formDataToSend.append('dimensions', `${numericFromDigits(formData.width).toFixed(1)}×${numericFromDigits(formData.height).toFixed(1)} m`);
+      formDataToSend.append('dimensions', `${formData.width}×${formData.height} m`);
+      formDataToSend.append('widthM', formData.width);
+      formDataToSend.append('heightM', formData.height);
       formDataToSend.append('lighting', formData.lighting.toString());
       formDataToSend.append('type', formData.type);
       formDataToSend.append('code', formData.code);
@@ -426,7 +433,12 @@ export function PublicarEspacioClient() {
             formatPriceInput={formatPriceInput}
             availableCities={availableCities}
             isEditMode={false}
-            extractCoordinatesFromGoogleMapsLink={extractCoordinatesFromGoogleMapsLink}
+            mapCoords={mapCoords}
+            mapCoordsLoading={mapCoordsLoading}
+            onMapCoordsChange={(c) => {
+            setMapCoords(c);
+            handleInputChange('googleMapsLink', buildGoogleMapsLinkFromCoords(c.lat, c.lng));
+          }}
           />
 
         {/* Indicador de Progreso */}

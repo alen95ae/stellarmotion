@@ -123,3 +123,51 @@ export async function getUserById(userId: string) {
 
   return data;
 }
+
+/**
+ * Actualizar perfil del usuario (nombre, teléfono y opcionalmente contraseña)
+ */
+export async function updateUserProfile(
+  email: string,
+  updates: { nombre?: string; telefono?: string; passwordNueva?: string },
+  passwordActual?: string
+): Promise<{ error?: string }> {
+  const supabase = getAdminSupabase();
+  const user = await findUserByEmail(email);
+  if (!user) {
+    return { error: 'Usuario no encontrado' };
+  }
+
+  if (updates.passwordNueva) {
+    if (!passwordActual) {
+      return { error: 'Debes ingresar tu contraseña actual' };
+    }
+    const ok = await bcrypt.compare(passwordActual, user.passwordhash || '');
+    if (!ok) {
+      return { error: 'Contraseña actual incorrecta' };
+    }
+    if (updates.passwordNueva.length < 6) {
+      return { error: 'La contraseña nueva debe tener al menos 6 caracteres' };
+    }
+  }
+
+  const now = new Date().toISOString();
+  const payload: Record<string, unknown> = {
+    updated_at: now,
+  };
+  if (updates.nombre !== undefined) payload.nombre = updates.nombre.trim() || null;
+  if (updates.telefono !== undefined) payload.telefono = updates.telefono?.trim() || null;
+  if (updates.passwordNueva) {
+    payload.passwordhash = await bcrypt.hash(updates.passwordNueva, 10);
+  }
+
+  const { error } = await supabase
+    .from('usuarios')
+    .update(payload)
+    .eq('id', user.id);
+
+  if (error) {
+    return { error: error.message };
+  }
+  return {};
+}

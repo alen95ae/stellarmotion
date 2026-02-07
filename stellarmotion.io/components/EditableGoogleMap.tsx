@@ -1,9 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { useGoogleMaps } from "@/hooks/useGoogleMaps";
-import { Button } from "@/components/ui/button";
-import { Maximize2, Minimize2 } from "lucide-react";
 
 type Props = {
   lat: number;
@@ -12,9 +10,14 @@ type Props = {
   height?: number; // px
 };
 
+// Mismo icono que el marketplace: punto rojo de Google (red-dot.png 32x32)
+const MARKETPLACE_MARKER_ICON = {
+  url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
+  scaledSize: { width: 32, height: 32 } as const,
+};
+
 export default function EditableGoogleMap({ lat, lng, onChange, height = 400 }: Props) {
   const [pos, setPos] = useState({ lat, lng });
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<any>(null);
   const marker = useRef<any>(null);
@@ -23,13 +26,9 @@ export default function EditableGoogleMap({ lat, lng, onChange, height = 400 }: 
   const center = useMemo(() => ({ lat: pos.lat, lng: pos.lng }), [pos]);
   const mapContainerStyle = useMemo(() => ({ 
     width: "100%", 
-    height: isFullscreen ? "100vh" : `${height}px`, 
-    borderRadius: isFullscreen ? 0 : 12,
-    position: isFullscreen ? "fixed" : "relative",
-    top: isFullscreen ? 0 : "auto",
-    left: isFullscreen ? 0 : "auto",
-    zIndex: isFullscreen ? 9999 : "auto"
-  }), [height, isFullscreen]);
+    height: `${height}px`, 
+    borderRadius: 12,
+  }), [height]);
 
   // Actualizar posición cuando cambian las props (desde el enlace de Google Maps)
   useEffect(() => {
@@ -53,32 +52,28 @@ export default function EditableGoogleMap({ lat, lng, onChange, height = 400 }: 
     const initMap = () => {
       if (!window.google || !mapContainer.current) return;
 
-      // Crear el mapa
+      // Crear el mapa (pantalla completa = control nativo de Google, como en el marketplace)
       map.current = new window.google.maps.Map(mapContainer.current, {
         center: center,
         zoom: 16,
         zoomControl: true,
         streetViewControl: false,
-        fullscreenControl: false,
+        fullscreenControl: true,
         mapTypeControl: true,
         scaleControl: true,
         scrollwheel: true,
-        gestureHandling: 'auto',
+        gestureHandling: "auto",
       });
 
-      // Crear icono del marcador (usando el icono de valla del marketplace)
-      const markerIcon = {
-        url: "/icons/valla.svg",
-        scaledSize: new window.google.maps.Size(32, 32),
-        anchor: new window.google.maps.Point(16, 32),
-      };
-
-      // Crear el marcador arrastrable
+      // Mismo icono que el marketplace: punto rojo de Google (red-dot.png 32x32)
       marker.current = new window.google.maps.Marker({
         position: center,
         map: map.current,
         draggable: true,
-        icon: markerIcon,
+        icon: {
+          url: MARKETPLACE_MARKER_ICON.url,
+          scaledSize: new window.google.maps.Size(32, 32),
+        },
         title: "Arrastra para cambiar la ubicación"
       });
 
@@ -117,26 +112,8 @@ export default function EditableGoogleMap({ lat, lng, onChange, height = 400 }: 
     };
   }, [googleMapsLoaded, onChange]);
 
-  const toggleFullscreen = useCallback(() => {
-    setIsFullscreen(!isFullscreen);
-  }, [isFullscreen]);
-
-  // Prevenir scroll del body cuando esté en pantalla completa
-  useEffect(() => {
-    if (isFullscreen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
-    
-    // Cleanup al desmontar el componente
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
-  }, [isFullscreen]);
-
   return (
-    <div className={`relative ${isFullscreen ? 'fixed inset-0 z-[9999] bg-white' : ''}`}>
+    <div className="relative">
       <div 
         ref={mapContainer}
         style={mapContainerStyle}
@@ -147,29 +124,6 @@ export default function EditableGoogleMap({ lat, lng, onChange, height = 400 }: 
         <div className="absolute inset-0 bg-gray-100 rounded-lg flex items-center justify-center">
           <div className="text-gray-500">Cargando Google Maps...</div>
         </div>
-      )}
-      
-      {/* Botón de pantalla completa */}
-      {googleMapsLoaded && (
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className={`absolute top-2 right-2 z-[10000] bg-white/90 hover:bg-white shadow-md border-2 ${isFullscreen ? 'top-4 right-4' : ''}`}
-          onClick={toggleFullscreen}
-        >
-          {isFullscreen ? (
-            <>
-              <Minimize2 className="w-4 h-4 mr-1" />
-              Salir
-            </>
-          ) : (
-            <>
-              <Maximize2 className="w-4 h-4 mr-1" />
-              Pantalla completa
-            </>
-          )}
-        </Button>
       )}
     </div>
   );

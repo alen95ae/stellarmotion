@@ -560,10 +560,22 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Extraer dimensiones de width y height del string dimensions
-    const dimensionsMatch = data.dimensions?.match(/(\d+(?:\.\d+)?)×(\d+(?:\.\d+)?)/);
-    const widthM = dimensionsMatch ? parseFloat(dimensionsMatch[1]) : null;
-    const heightM = dimensionsMatch ? parseFloat(dimensionsMatch[2]) : null;
+    // Dimensiones: usar widthM/heightM del form si vienen; si no, extraer del string dimensions
+    let widthM: number | null = null;
+    let heightM: number | null = null;
+    if (data.widthM != null && data.heightM != null && String(data.widthM) !== '' && String(data.heightM) !== '') {
+      const w = parseFloat(String(data.widthM));
+      const h = parseFloat(String(data.heightM));
+      if (!isNaN(w)) widthM = w;
+      if (!isNaN(h)) heightM = h;
+    }
+    if ((widthM == null || heightM == null) && data.dimensions) {
+      const dimensionsMatch = String(data.dimensions).match(/(\d+(?:\.\d+)?)×(\d+(?:\.\d+)?)/);
+      if (dimensionsMatch) {
+        if (widthM == null) widthM = parseFloat(dimensionsMatch[1]);
+        if (heightM == null) heightM = parseFloat(dimensionsMatch[2]);
+      }
+    }
 
     // Función para extraer coordenadas del enlace de Google Maps
     const extractCoordinatesFromGoogleMapsLink = async (link: string): Promise<{ lat: number | null, lng: number | null }> => {

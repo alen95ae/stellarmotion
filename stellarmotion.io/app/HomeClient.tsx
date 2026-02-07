@@ -99,13 +99,80 @@ export default function HomeClient() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       {isUserMenuOpen && (
         <div className="fixed inset-0 z-40" onClick={() => setIsUserMenuOpen(false)} aria-hidden="true" />
       )}
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <main className="w-full">
+        {/* Hero superior - ocupa toda la primera pantalla */}
+        <section className="relative min-h-[100vh] min-h-[100dvh] flex flex-col justify-center overflow-hidden border-b border-gray-200 dark:border-gray-800">
+          {/* Cuadrícula sutil tipo ejemplo (líneas finas gris claro) */}
+          <div
+            className="absolute inset-0 z-0"
+            style={{
+              backgroundImage: `
+                linear-gradient(to right, rgba(0, 0, 0, 0.06) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(0, 0, 0, 0.06) 1px, transparent 1px)
+              `,
+              backgroundSize: "40px 40px",
+            }}
+            aria-hidden
+          />
+          {/* Dark mode: grid más suave */}
+          <div
+            className="absolute inset-0 z-0 dark:block hidden"
+            style={{
+              backgroundImage: `
+                linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px)
+              `,
+              backgroundSize: "40px 40px",
+            }}
+            aria-hidden
+          />
+          {/* Gradiente rojizo muy sutil (#e94446) */}
+          <div
+            className="absolute inset-0 z-0 pointer-events-none"
+            style={{
+              background: `
+                radial-gradient(ellipse 80% 50% at 50% 0%, rgba(233, 68, 70, 0.06) 0%, transparent 55%),
+                radial-gradient(ellipse 60% 40% at 80% 60%, rgba(233, 68, 70, 0.03) 0%, transparent 50%)
+              `,
+            }}
+            aria-hidden
+          />
+          {/* Transición suave al contenido inferior */}
+          <div className="absolute inset-0 z-0 bg-gradient-to-b from-white/70 via-transparent to-gray-50 dark:from-gray-950/80 dark:via-transparent dark:to-gray-950" aria-hidden />
+          <div className="relative z-10 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-16">
+            <div className="max-w-3xl">
+              <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl lg:text-5xl xl:text-6xl">
+                La infraestructura del marketplace publicitario físico
+              </h1>
+              <p className="mt-5 text-lg text-gray-600 dark:text-gray-400 sm:mt-6 sm:text-xl lg:text-2xl max-w-2xl">
+                Conectamos espacios, propietarios y anunciantes en una única plataforma para publicidad exterior (OOH y DOOH).
+              </p>
+              <div className="mt-8 flex flex-wrap gap-4 sm:mt-10">
+                <Link
+                  href="/marketplace"
+                  className="inline-flex items-center justify-center rounded-full h-11 px-8 text-sm font-medium bg-[#e94446] text-white hover:bg-[#d63a3a] transition-all duration-150 active:scale-[0.98]"
+                >
+                  Explorar marketplace
+                </Link>
+                <Link
+                  href="/instalacion-de-soportes"
+                  className="inline-flex items-center justify-center rounded-full h-11 px-8 text-sm font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                >
+                  Monetizar mi espacio
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Contenido existente de la home */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Search Section */}
         <div className="mb-16">
           <SearchBarGooglePlaces />
@@ -636,6 +703,7 @@ export default function HomeClient() {
             </div>
           </div>
         </section>
+        </div>
       </main>
     </div>
   )

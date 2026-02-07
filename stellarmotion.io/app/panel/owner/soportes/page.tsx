@@ -534,94 +534,30 @@ export default function SoportesPage() {
   }
 
   return (
-    <div className="space-y-1.5 -mt-10">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-1">
-        <div>
-          <h1 className="text-lg font-bold text-gray-900">Gestión de Soportes</h1>
-          <p className="mt-0.5 text-xs text-gray-600 leading-tight">
-            Administra todos tus espacios publicitarios
-          </p>
-        </div>
-        <div className="flex gap-1.5">
-          <Button variant="outline" size="sm" className="flex items-center gap-1.5 relative py-1 px-2 h-8">
-            <div className="absolute -top-1 -left-1 z-10">
-              <Crown className="h-3 w-3 text-purple-600 fill-purple-600" />
-            </div>
-            <FileSpreadsheet className="h-3.5 w-3.5" />
-            Importar
-          </Button>
-          <Link href="/publicar-espacio">
-            <Button size="sm" className="flex items-center gap-1.5 bg-[#e94446] hover:bg-[#d63a3a] py-1 px-2 h-8">
-              <Plus className="h-3.5 w-3.5" />
-              Nuevo Soporte
-            </Button>
-          </Link>
-        </div>
+    <div className="space-y-4 -mt-10">
+      {/* Título */}
+      <div>
+        <h1 className="text-lg font-bold text-gray-900">Gestión de Soportes</h1>
+        <p className="mt-0.5 text-xs text-gray-600 leading-tight">
+          Administra todos tus espacios publicitarios
+        </p>
       </div>
 
-      {/* Chips de filtros activos */}
-      {(searchQuery || filterStatus !== 'all' || filterCity || sortColumn) && (
-        <div className="flex flex-wrap gap-2 items-center pb-3 border-b border-gray-200 dark:border-gray-800">
-          {searchQuery && (
-            <div className="flex items-center gap-1 bg-blue-100 dark:bg-blue-900/40 hover:bg-blue-200 dark:hover:bg-blue-900/60 rounded-full px-3 py-1 text-sm">
-              <span className="font-medium text-blue-800 dark:text-blue-200">Búsqueda:</span>
-              <span className="text-gray-700 dark:text-gray-300">{searchQuery}</span>
-              <button type="button" onClick={() => eliminarFiltro('busqueda')} className="ml-1 hover:text-red-500 transition-colors" aria-label="Quitar búsqueda">
-                <X className="w-3 h-3" />
-              </button>
-            </div>
-          )}
-          {filterStatus !== 'all' && (
-            <div className="flex items-center gap-1 bg-green-100 dark:bg-green-900/40 hover:bg-green-200 dark:hover:bg-green-900/60 rounded-full px-3 py-1 text-sm">
-              <span className="font-medium text-green-800 dark:text-green-200">Estado:</span>
-              <span className="text-gray-700 dark:text-gray-300">{getStatusLabel(filterStatus)}</span>
-              <button type="button" onClick={() => eliminarFiltro('estado')} className="ml-1 hover:text-red-500 transition-colors" aria-label="Quitar estado">
-                <X className="w-3 h-3" />
-              </button>
-            </div>
-          )}
-          {filterCity && (
-            <div className="flex items-center gap-1 bg-purple-100 dark:bg-purple-900/40 hover:bg-purple-200 dark:hover:bg-purple-900/60 rounded-full px-3 py-1 text-sm">
-              <span className="font-medium text-purple-800 dark:text-purple-200">Ciudad:</span>
-              <span className="text-gray-700 dark:text-gray-300">{filterCity}</span>
-              <button type="button" onClick={() => eliminarFiltro('ciudad')} className="ml-1 hover:text-red-500 transition-colors" aria-label="Quitar ciudad">
-                <X className="w-3 h-3" />
-              </button>
-            </div>
-          )}
-          {sortColumn && (
-            <div className="flex items-center gap-1 bg-amber-100 dark:bg-amber-900/40 hover:bg-amber-200 dark:hover:bg-amber-900/60 rounded-full px-3 py-1 text-sm">
-              <span className="font-medium text-amber-800 dark:text-amber-200">Orden:</span>
-              <span className="text-gray-700 dark:text-gray-300">
-                {sortColumn === 'code' ? 'Código interno' : 'Título'} ({sortDirection === 'asc' ? 'A-Z' : 'Z-A'})
-              </span>
-              <button type="button" onClick={() => eliminarFiltro('orden')} className="ml-1 hover:text-red-500 transition-colors" aria-label="Quitar orden">
-                <X className="w-3 h-3" />
-              </button>
-            </div>
-          )}
-          <button type="button" onClick={limpiarTodosFiltros} className="text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 underline">
-            Limpiar todo
-          </button>
-        </div>
-      )}
-
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-1.5 flex-wrap">
-        <div className="relative w-full sm:w-[300px] min-w-0">
-          <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 h-3.5 w-3.5" />
-          <Input
-            placeholder="Buscar código, título, ciudad..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') setSearchQuery(searchTerm); }}
-            className="pl-8 h-8 text-sm"
-          />
-        </div>
-        <div className="flex flex-wrap gap-1.5 min-w-0">
+      {/* Fila única: filtros a la izquierda, Importar y Nuevo soporte a la derecha (misma altura) */}
+      <div className="flex flex-wrap items-center gap-3 justify-between">
+        <div className="flex flex-col sm:flex-row gap-3 flex-wrap items-stretch sm:items-center min-w-0 flex-1">
+          <div className="relative w-full sm:w-[280px] min-w-0">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Input
+              placeholder="Buscar código, título, ciudad..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') setSearchQuery(searchTerm); }}
+              className="pl-9 h-9 text-sm"
+            />
+          </div>
           <Select value={filterStatus} onValueChange={setFilterStatus}>
-            <SelectTrigger className="h-8 min-w-[8rem] w-auto max-w-full [&_[data-slot=select-value]]:line-clamp-none">
+            <SelectTrigger className="h-9 min-w-[10rem] w-auto [&_[data-slot=select-value]]:line-clamp-none">
               <SelectValue placeholder="Disponibilidad">
                 {filterStatus === 'all' ? (
                   <span className="text-muted-foreground">Disponibilidad</span>
@@ -670,7 +606,7 @@ export default function SoportesPage() {
             </SelectContent>
           </Select>
           <Select value={filterCity || 'all'} onValueChange={(v) => setFilterCity(v === 'all' ? '' : v)}>
-            <SelectTrigger className="h-8 min-w-[6rem] w-auto max-w-full [&_[data-slot=select-value]]:line-clamp-none">
+            <SelectTrigger className="h-9 min-w-[7rem] w-auto [&_[data-slot=select-value]]:line-clamp-none">
               <SelectValue placeholder="Ciudad">
                 {filterCity ? (
                   <span className="whitespace-nowrap">{filterCity}</span>
@@ -691,7 +627,69 @@ export default function SoportesPage() {
             </SelectContent>
           </Select>
         </div>
+        <div className="flex gap-2 shrink-0">
+          <Button variant="outline" size="sm" className="flex items-center gap-2 h-9 px-3 relative">
+            <div className="absolute -top-0.5 -left-0.5 z-10">
+              <Crown className="h-3 w-3 text-purple-600 fill-purple-600" />
+            </div>
+            <FileSpreadsheet className="h-4 w-4" />
+            Importar
+          </Button>
+          <Link href="/publicar-espacio">
+            <Button size="sm" className="flex items-center gap-2 bg-[#e94446] hover:bg-[#d63a3a] h-9 px-3">
+              <Plus className="h-4 w-4" />
+              Nuevo Soporte
+            </Button>
+          </Link>
+        </div>
       </div>
+
+      {/* Chips de filtros activos */}
+      {(searchQuery || filterStatus !== 'all' || filterCity || sortColumn) && (
+        <div className="flex flex-wrap gap-2 items-center pb-3 border-b border-gray-200 dark:border-gray-800">
+          {searchQuery && (
+            <div className="flex items-center gap-1 bg-blue-100 dark:bg-blue-900/40 hover:bg-blue-200 dark:hover:bg-blue-900/60 rounded-full px-3 py-1.5 text-sm">
+              <span className="font-medium text-blue-800 dark:text-blue-200">Búsqueda:</span>
+              <span className="text-gray-700 dark:text-gray-300">{searchQuery}</span>
+              <button type="button" onClick={() => eliminarFiltro('busqueda')} className="ml-1 hover:text-red-500 transition-colors" aria-label="Quitar búsqueda">
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          )}
+          {filterStatus !== 'all' && (
+            <div className="flex items-center gap-1 bg-green-100 dark:bg-green-900/40 hover:bg-green-200 dark:hover:bg-green-900/60 rounded-full px-3 py-1.5 text-sm">
+              <span className="font-medium text-green-800 dark:text-green-200">Estado:</span>
+              <span className="text-gray-700 dark:text-gray-300">{getStatusLabel(filterStatus)}</span>
+              <button type="button" onClick={() => eliminarFiltro('estado')} className="ml-1 hover:text-red-500 transition-colors" aria-label="Quitar estado">
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          )}
+          {filterCity && (
+            <div className="flex items-center gap-1 bg-purple-100 dark:bg-purple-900/40 hover:bg-purple-200 dark:hover:bg-purple-900/60 rounded-full px-3 py-1.5 text-sm">
+              <span className="font-medium text-purple-800 dark:text-purple-200">Ciudad:</span>
+              <span className="text-gray-700 dark:text-gray-300">{filterCity}</span>
+              <button type="button" onClick={() => eliminarFiltro('ciudad')} className="ml-1 hover:text-red-500 transition-colors" aria-label="Quitar ciudad">
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          )}
+          {sortColumn && (
+            <div className="flex items-center gap-1 bg-amber-100 dark:bg-amber-900/40 hover:bg-amber-200 dark:hover:bg-amber-900/60 rounded-full px-3 py-1.5 text-sm">
+              <span className="font-medium text-amber-800 dark:text-amber-200">Orden:</span>
+              <span className="text-gray-700 dark:text-gray-300">
+                {sortColumn === 'code' ? 'Código interno' : 'Título'} ({sortDirection === 'asc' ? 'A-Z' : 'Z-A'})
+              </span>
+              <button type="button" onClick={() => eliminarFiltro('orden')} className="ml-1 hover:text-red-500 transition-colors" aria-label="Quitar orden">
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          )}
+          <button type="button" onClick={limpiarTodosFiltros} className="text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 underline">
+            Limpiar todo
+          </button>
+        </div>
+      )}
 
       {/* Supports Table */}
       {sortedFilteredSupports.length === 0 ? (
@@ -714,11 +712,11 @@ export default function SoportesPage() {
         </CardContent>
       </Card>
       ) : (
-      <Card className="p-2">
-        <CardHeader className="px-2 pb-1">
+      <Card className="p-4">
+        <CardHeader className="px-0 pb-3">
             <CardTitle className="text-sm font-semibold">Lista de Soportes</CardTitle>
         </CardHeader>
-        <CardContent className="px-2">
+        <CardContent className="px-0">
           {/* Barra de acciones masivas */}
           <BulkActions
             selectedCount={Object.keys(selected).filter(id => selected[id]).length}
@@ -731,14 +729,14 @@ export default function SoportesPage() {
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-800 text-sm">
               <thead className="[&_tr]:border-b [&_tr]:border-gray-200 dark:[&_tr]:border-gray-800">
                 <tr>
-                  <th className="h-10 px-2 text-left align-middle font-medium whitespace-nowrap text-foreground w-10 [&:has([role=checkbox])]:pr-0">
+                  <th className="h-12 px-4 text-left align-middle font-medium whitespace-nowrap text-foreground w-10 [&:has([role=checkbox])]:pr-0">
                     <Checkbox
                       checked={allSelected ? true : (someSelected ? 'indeterminate' : false)}
                       onCheckedChange={(v) => toggleAll(Boolean(v))}
                       aria-label="Seleccionar todo"
                     />
                   </th>
-                  <th className="h-10 px-2 text-center align-middle font-medium whitespace-nowrap text-foreground">
+                  <th className="h-12 px-4 text-center align-middle font-medium whitespace-nowrap text-foreground">
                     <div className="flex justify-center items-center gap-1">
                       <button
                         type="button"
@@ -753,10 +751,10 @@ export default function SoportesPage() {
                       )}
                     </div>
                   </th>
-                  <th className="h-10 px-2 text-center align-middle font-medium whitespace-nowrap text-foreground">
+                  <th className="h-12 px-4 text-center align-middle font-medium whitespace-nowrap text-foreground">
                     Destacado
                   </th>
-                  <th className="h-10 px-2 text-center align-middle font-medium whitespace-nowrap text-foreground">
+                  <th className="h-12 px-4 text-center align-middle font-medium whitespace-nowrap text-foreground">
                     <div className="flex justify-center items-center gap-1">
                       <button
                         type="button"
@@ -771,22 +769,22 @@ export default function SoportesPage() {
                       )}
                     </div>
                   </th>
-                  <th className="h-10 px-2 text-center align-middle font-medium whitespace-nowrap text-foreground">
+                  <th className="h-12 px-4 text-center align-middle font-medium whitespace-nowrap text-foreground">
                     Tipo
                   </th>
-                  <th className="h-10 px-2 text-center align-middle font-medium whitespace-nowrap text-foreground">
+                  <th className="h-12 px-4 text-center align-middle font-medium whitespace-nowrap text-foreground">
                     Ubicación
                   </th>
-                  <th className="h-10 px-2 text-center align-middle font-medium whitespace-nowrap text-foreground">
+                  <th className="h-12 px-4 text-center align-middle font-medium whitespace-nowrap text-foreground">
                     Dimensiones (m)
                   </th>
-                  <th className="h-10 px-2 text-center align-middle font-medium whitespace-nowrap text-foreground">
+                  <th className="h-12 px-4 text-center align-middle font-medium whitespace-nowrap text-foreground">
                     Precio/mes
                   </th>
-                  <th className="h-10 px-2 text-center align-middle font-medium whitespace-nowrap text-foreground">
+                  <th className="h-12 px-4 text-center align-middle font-medium whitespace-nowrap text-foreground">
                     Estado
                   </th>
-                  <th className="h-10 px-2 text-center align-middle font-medium whitespace-nowrap text-foreground">
+                  <th className="h-12 px-4 text-center align-middle font-medium whitespace-nowrap text-foreground">
                     Acciones
                   </th>
                 </tr>
@@ -794,7 +792,7 @@ export default function SoportesPage() {
               <tbody className="bg-white dark:bg-gray-950 divide-y divide-gray-200 dark:divide-gray-800">
                   {sortedFilteredSupports.map((support) => (
                     <tr key={support.id} className="hover:bg-gray-50 dark:hover:bg-gray-900">
-                    <td className="px-2 py-1 whitespace-nowrap w-10">
+                    <td className="px-4 py-3 whitespace-nowrap w-10">
                       <Checkbox
                         checked={!!selected[support.id]}
                         onCheckedChange={(v) =>
@@ -803,14 +801,14 @@ export default function SoportesPage() {
                         aria-label={`Seleccionar ${support.code || support.id}`}
                       />
                     </td>
-                    <td className="px-2 py-1 whitespace-nowrap text-center">
+                    <td className="px-4 py-3 whitespace-nowrap text-center">
                       <div className="flex justify-center">
                         <Badge variant="secondary" className="text-xs font-medium">
                           {support.code || 'N/A'}
                         </Badge>
                       </div>
                     </td>
-                    <td className="px-2 py-1 whitespace-nowrap">
+                    <td className="px-4 py-3 whitespace-nowrap">
                       <div className="flex justify-center">
                         <Switch
                           checked={!!support.featured}
@@ -819,7 +817,7 @@ export default function SoportesPage() {
                         />
                       </div>
                     </td>
-                    <td className="px-2 py-1 whitespace-nowrap">
+                    <td className="px-4 py-3 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="flex-shrink-0 h-8 w-8">
                             {support.images && support.images.length > 0 && support.images[0] ? (
@@ -845,14 +843,14 @@ export default function SoportesPage() {
                           </div>
                       </div>
                     </td>
-                    <td className="px-2 py-1 whitespace-nowrap text-center">
+                    <td className="px-4 py-3 whitespace-nowrap text-center">
                       <div className="flex justify-center">
                         <span className="inline-flex items-center rounded-md border-0 px-2 py-0.5 text-xs font-medium bg-[hsl(210,40%,96%)] text-[hsl(222,84%,5%)] dark:bg-[hsl(217,33%,18%)] dark:text-[hsl(210,40%,98%)]">
                           {support.type || 'N/A'}
                         </span>
                       </div>
                     </td>
-                    <td className="px-2 py-1 whitespace-nowrap text-center">
+                    <td className="px-4 py-3 whitespace-nowrap text-center">
                         <div className="flex items-center justify-center">
                           <MapPin className="h-3.5 w-3.5 text-gray-400 mr-1" />
                           <div>
@@ -861,18 +859,18 @@ export default function SoportesPage() {
                           </div>
                         </div>
                     </td>
-                    <td className="px-2 py-1 whitespace-nowrap text-center">
+                    <td className="px-4 py-3 whitespace-nowrap text-center">
                         <div className="flex justify-center text-sm text-gray-900 dark:text-gray-100">{formatDimensions(support.dimensions)}</div>
                     </td>
-                    <td className="px-2 py-1 whitespace-nowrap text-center">
+                    <td className="px-4 py-3 whitespace-nowrap text-center">
                         <div className="flex justify-center text-sm font-medium text-green-600 dark:text-green-400">
                           {formatPrice(support.pricePerMonth || 0)}
                         </div>
                     </td>
-                      <td className="px-2 py-1 whitespace-nowrap text-center">
+                      <td className="px-4 py-3 whitespace-nowrap text-center">
                         <div className="flex justify-center">{getStatusBadge(support.status)}</div>
                       </td>
-                      <td className="px-2 py-1 whitespace-nowrap text-center text-sm font-medium">
+                      <td className="px-4 py-3 whitespace-nowrap text-center text-sm font-medium">
                         <div className="flex gap-1 justify-center">
                           {support.id && (
                             <Button

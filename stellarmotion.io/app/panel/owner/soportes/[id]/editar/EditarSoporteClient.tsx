@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { SoporteForm, type FormData } from '@/components/SoporteForm';
+import { extractCoordinatesFromGoogleMapsLink, buildGoogleMapsLinkFromCoords } from '@/lib/extract-google-maps-coords';
 
 interface Support {
   id: string;
@@ -72,6 +73,8 @@ export default function EditarSoporteClient({ supportId }: EditarSoporteClientPr
   const [isLoading, setIsLoading] = useState(true);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [support, setSupport] = useState<Support | null>(null);
+  const [mapCoords, setMapCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [mapCoordsLoading, setMapCoordsLoading] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     title: '',
     pricePerMonth: '',
@@ -101,26 +104,32 @@ export default function EditarSoporteClient({ supportId }: EditarSoporteClientPr
         const supportData = await response.json();
         setSupport(supportData);
         
-        // Extraer dimensiones
-        const dimensionsMatch = supportData.dimensions?.match(/(\d+(?:\.\d+)?)×(\d+(?:\.\d+)?)/);
-        const width = dimensionsMatch ? dimensionsMatch[1] : '';
-        const height = dimensionsMatch ? dimensionsMatch[2] : '';
+        // Extraer dimensiones: prioridad dimensiones.ancho/alto, luego string "10x4" o "10×4"
+        const fromObj = supportData.dimensiones != null && typeof supportData.dimensiones === 'object';
+        const width = fromObj
+          ? String((supportData.dimensiones as { ancho?: number }).ancho ?? '')
+          : (supportData.dimensions?.match(/(\d+(?:\.\d+)?)[x×](\d+(?:\.\d+)?)/i) ?? [])[1] ?? '';
+        const height = fromObj
+          ? String((supportData.dimensiones as { alto?: number }).alto ?? '')
+          : (supportData.dimensions?.match(/(\d+(?:\.\d+)?)[x×](\d+(?:\.\d+)?)/i) ?? [])[2] ?? '';
+        const rawStatus = supportData.estado ?? supportData.status ?? '';
+        const status = rawStatus ? String(rawStatus).toUpperCase() : 'DISPONIBLE';
         
         setFormData({
           title: supportData.title || '',
-          pricePerMonth: supportData.pricePerMonth ? (supportData.pricePerMonth * 100).toString() : '',
+          pricePerMonth: supportData.pricePerMonth != null ? String(supportData.pricePerMonth) : '',
           images: [],
           city: supportData.city || '',
           country: supportData.country || '',
-          width: width,
-          height: height,
+          width,
+          height,
           lighting: supportData.lighting || false,
           type: supportData.type || '',
           code: supportData.code || '',
           dailyImpressions: supportData.dailyImpressions?.toString() || '',
           description: supportData.description || '',
-          googleMapsLink: supportData.googleMapsLink || '', // Cargar el enlace existente
-          status: 'all'
+          googleMapsLink: supportData.googleMapsLink || '',
+          status
         });
       } catch (error) {
         console.error('Error fetching support:', error);
@@ -154,62 +163,36 @@ export default function EditarSoporteClient({ supportId }: EditarSoporteClientPr
   // Obtener ciudades del país seleccionado
   const availableCities = formData.country ? CITIES_BY_COUNTRY[formData.country] || [] : [];
 
-  // Función para extraer coordenadas del enlace de Google Maps
-  const extractCoordinatesFromGoogleMapsLink = (link: string): { lat: number | null, lng: number | null } => {
-    if (!link) return { lat: null, lng: null };
-
-    // Patrones para diferentes formatos de Google Maps
-    const patterns = [
-      /@(-?\d+\.\d+),(-?\d+\.\d+)/, // @lat,lng
-      /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/, // !3dlat!4dlng
-      /ll=(-?\d+\.\d+),(-?\d+\.\d+)/, // ll=lat,lng
-      /q=(-?\d+\.\d+),(-?\d+\.\d+)/, // q=lat,lng
-      /query=(-?\d+\.\d+),(-?\d+\.\d+)/, // query=lat,lng (API format)
-      /center=(-?\d+\.\d+),(-?\d+\.\d+)/, // center=lat,lng
-      /@(-?\d+\.\d+),(-?\d+\.\d+),/ // @lat,lng,zoom
-    ];
-
-    for (const pattern of patterns) {
-      const match = link.match(pattern);
-      if (match) {
-        return {
-          lat: parseFloat(match[1]),
-          lng: parseFloat(match[2])
-        };
-      }
+  const updateMapCoordsFromLink = useCallback(async (link: string) => {
+    if (!link.trim()) {
+      setMapCoords(null);
+      return;
     }
+    setMapCoordsLoading(true);
+    try {
+      const coords = await extractCoordinatesFromGoogleMapsLink(link);
+      if (coords.lat != null && coords.lng != null) {
+        setMapCoords({ lat: coords.lat, lng: coords.lng });
+      } else {
+        setMapCoords(null);
+      }
+    } finally {
+      setMapCoordsLoading(false);
+    }
+  }, []);
 
-    return { lat: null, lng: null };
-  };
-
-  const formatPriceInput = (value: string) => {
-    if (!value) return '';
-    const cleaned = value.replace(/[^\d]/g, ''); // Remove non-digits
-    if (cleaned.length === 0) return '';
-    
-    // Convert cents to dollars (value is stored as cents: 35000 = 350.00)
-    const dollars = parseFloat(cleaned) / 100;
-    return dollars.toFixed(2);
-  };
-
-  const formatDimensionInput = (value: string) => {
-    if (!value) return '';
-    const cleaned = value.replace(/[^\d]/g, ''); // Remove non-digits
-    if (cleaned.length === 0) return '';
-    
-    // For dimensions, just return the value as-is (stored as digits)
-    // Format with 1 decimal place for display
-    const num = parseFloat(cleaned);
-    return num.toFixed(1);
-  };
-
-  const numericFromDigits = (value: string): number => {
-    const cleaned = (value || '').replace(/[^\d]/g, '');
-    if (cleaned.length === 0) return 0;
-    
-    // Value is stored as cents (35000 = 350.00), so return as-is
-    return parseFloat(cleaned);
-  };
+  useEffect(() => {
+    const link = formData.googleMapsLink?.trim() || '';
+    if (!link) {
+      if (support?.lat != null && support?.lng != null) {
+        setMapCoords({ lat: support.lat, lng: support.lng });
+      } else {
+        setMapCoords(null);
+      }
+      return;
+    }
+    updateMapCoordsFromLink(link);
+  }, [formData.googleMapsLink, updateMapCoordsFromLink, support?.lat, support?.lng]);
 
   const handlePriceInputChange = (inputValue: string) => {
     // Allow user to type with decimal point, then convert to cents
@@ -236,7 +219,7 @@ export default function EditarSoporteClient({ supportId }: EditarSoporteClientPr
   };
 
   const handleDimensionInputChange = (field: 'width' | 'height', inputValue: string) => {
-    const cleaned = inputValue.replace(/[^\d]/g, '');
+    const cleaned = inputValue.replace(/[^\d.]/g, '').replace(/(\..*)\./g, '$1');
     handleInputChange(field, cleaned);
   };
 
@@ -300,16 +283,14 @@ export default function EditarSoporteClient({ supportId }: EditarSoporteClientPr
     
     if (!formData.title.trim()) errors.push('El título es requerido');
     if (formData.title.length > 200) errors.push('El título no puede superar 200 caracteres');
-    if (!formData.pricePerMonth || numericFromDigits(formData.pricePerMonth) <= 0) errors.push('El precio debe ser mayor a 0');
-    if ((formData.pricePerMonth?.length ?? 0) > 15) errors.push('El precio no puede superar 15 caracteres');
+    const priceNum = parseFloat(formData.pricePerMonth || '');
+    if (!formData.pricePerMonth?.trim() || isNaN(priceNum) || priceNum < 0) errors.push('El precio es requerido y debe ser un número válido');
     if (!formData.city.trim()) errors.push('La ciudad es requerida');
     if (formData.city.length > 100) errors.push('La ciudad no puede superar 100 caracteres');
     if (!formData.country) errors.push('El país es requerido');
     if (formData.country.length > 100) errors.push('El país no puede superar 100 caracteres');
-    if (!formData.width.trim() || numericFromDigits(formData.width) <= 0) errors.push('El ancho es requerido y debe ser mayor a 0');
-    if (formData.width.length > 10) errors.push('El ancho no puede superar 10 caracteres');
-    if (!formData.height.trim() || numericFromDigits(formData.height) <= 0) errors.push('La altura es requerida y debe ser mayor a 0');
-    if (formData.height.length > 10) errors.push('La altura no puede superar 10 caracteres');
+    if (!formData.width.trim()) errors.push('El ancho es requerido');
+    if (!formData.height.trim()) errors.push('La altura es requerida');
     if (!formData.type) errors.push('El tipo es requerido');
     if ((formData.code?.length ?? 0) > 50) errors.push('El código no puede superar 50 caracteres');
     if ((formData.googleMapsLink?.length ?? 0) > 2000) errors.push('El enlace de Google Maps no puede superar 2000 caracteres');
@@ -369,17 +350,20 @@ export default function EditarSoporteClient({ supportId }: EditarSoporteClientPr
     try {
       const formDataToSend = new FormData();
       
-      // Extraer coordenadas del enlace de Google Maps
-      const coordinates = extractCoordinatesFromGoogleMapsLink(formData.googleMapsLink);
+      // Coordenadas: usar las del mapa (chincheta arrastrada) o extraer del enlace
+      let coordinates = { lat: mapCoords?.lat ?? null, lng: mapCoords?.lng ?? null };
+      if ((coordinates.lat == null || coordinates.lng == null) && formData.googleMapsLink?.trim()) {
+        coordinates = await extractCoordinatesFromGoogleMapsLink(formData.googleMapsLink);
+      }
       
       // Agregar campos básicos
       formDataToSend.append('title', formData.title);
-      // Convertir de centavos a dólares (35000 centavos = 350.00 dólares)
-      const priceInDollars = numericFromDigits(formData.pricePerMonth) / 100;
-      formDataToSend.append('pricePerMonth', priceInDollars.toFixed(2));
+      formDataToSend.append('pricePerMonth', formData.pricePerMonth.trim() ? parseFloat(formData.pricePerMonth).toString() : '0');
       formDataToSend.append('city', formData.city);
       formDataToSend.append('country', formData.country);
-      formDataToSend.append('dimensions', `${numericFromDigits(formData.width).toFixed(1)}×${numericFromDigits(formData.height).toFixed(1)} m`);
+      formDataToSend.append('dimensions', `${formData.width}×${formData.height} m`);
+      formDataToSend.append('widthM', formData.width);
+      formDataToSend.append('heightM', formData.height);
       formDataToSend.append('lighting', formData.lighting.toString());
       formDataToSend.append('type', formData.type);
       formDataToSend.append('code', formData.code);
@@ -392,10 +376,10 @@ export default function EditarSoporteClient({ supportId }: EditarSoporteClientPr
       formDataToSend.append('usuarioId', 'cmfskhuda0004sj2w46q3g7rc');
       
       // Agregar coordenadas extraídas (si están disponibles)
-      if (coordinates.lat !== null && coordinates.lng !== null) {
+      if (coordinates.lat != null && coordinates.lng != null) {
         formDataToSend.append('lat', coordinates.lat.toString());
         formDataToSend.append('lng', coordinates.lng.toString());
-      } else if (support?.lat && support?.lng) {
+      } else if (support?.lat != null && support?.lng != null) {
         // Usar coordenadas existentes si no se proporcionan nuevas
         formDataToSend.append('lat', support.lat.toString());
         formDataToSend.append('lng', support.lng.toString());
@@ -540,10 +524,14 @@ export default function EditarSoporteClient({ supportId }: EditarSoporteClientPr
           onRemoveImage={removeImage}
           onDimensionInputChange={handleDimensionInputChange}
           onPriceInputChange={handlePriceInputChange}
-          formatPriceInput={formatPriceInput}
-          formatDimensionInput={formatDimensionInput}
           availableCities={availableCities}
           isEditMode={true}
+          mapCoords={mapCoords}
+          mapCoordsLoading={mapCoordsLoading}
+          onMapCoordsChange={(c) => {
+            setMapCoords(c);
+            handleInputChange('googleMapsLink', buildGoogleMapsLinkFromCoords(c.lat, c.lng));
+          }}
         />
 
         {/* Indicador de Progreso */}

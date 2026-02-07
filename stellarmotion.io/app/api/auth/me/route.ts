@@ -53,6 +53,8 @@ export async function GET() {
         nombre: userName,
         role: roleName,
         rol: roleName,
+        telefono: user?.telefono ?? undefined,
+        numero: user?.numero ?? undefined,
       }
     });
   } catch (error: any) {
