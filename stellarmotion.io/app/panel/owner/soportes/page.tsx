@@ -648,39 +648,39 @@ export default function SoportesPage() {
       {(searchQuery || filterStatus !== 'all' || filterCity || sortColumn) && (
         <div className="flex flex-wrap gap-2 items-center pb-3 border-b border-gray-200 dark:border-gray-800">
           {searchQuery && (
-            <div className="flex items-center gap-1 bg-blue-100 dark:bg-blue-900/40 hover:bg-blue-200 dark:hover:bg-blue-900/60 rounded-full px-3 py-1.5 text-sm">
-              <span className="font-medium text-blue-800 dark:text-blue-200">Búsqueda:</span>
-              <span className="text-gray-700 dark:text-gray-300">{searchQuery}</span>
-              <button type="button" onClick={() => eliminarFiltro('busqueda')} className="ml-1 hover:text-red-500 transition-colors" aria-label="Quitar búsqueda">
+            <div className="flex items-center gap-1 bg-red-50 dark:bg-red-950/40 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-full px-3 py-1.5 text-sm">
+              <span className="font-medium text-red-800 dark:text-red-200">Búsqueda:</span>
+              <span className="text-red-700 dark:text-red-300">{searchQuery}</span>
+              <button type="button" onClick={() => eliminarFiltro('busqueda')} className="ml-1 hover:text-red-600 dark:hover:text-red-400 transition-colors" aria-label="Quitar búsqueda">
                 <X className="w-3 h-3" />
               </button>
             </div>
           )}
           {filterStatus !== 'all' && (
-            <div className="flex items-center gap-1 bg-green-100 dark:bg-green-900/40 hover:bg-green-200 dark:hover:bg-green-900/60 rounded-full px-3 py-1.5 text-sm">
-              <span className="font-medium text-green-800 dark:text-green-200">Estado:</span>
-              <span className="text-gray-700 dark:text-gray-300">{getStatusLabel(filterStatus)}</span>
-              <button type="button" onClick={() => eliminarFiltro('estado')} className="ml-1 hover:text-red-500 transition-colors" aria-label="Quitar estado">
+            <div className="flex items-center gap-1 bg-red-50 dark:bg-red-950/40 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-full px-3 py-1.5 text-sm">
+              <span className="font-medium text-red-800 dark:text-red-200">Estado:</span>
+              <span className="text-red-700 dark:text-red-300">{getStatusLabel(filterStatus)}</span>
+              <button type="button" onClick={() => eliminarFiltro('estado')} className="ml-1 hover:text-red-600 dark:hover:text-red-400 transition-colors" aria-label="Quitar estado">
                 <X className="w-3 h-3" />
               </button>
             </div>
           )}
           {filterCity && (
-            <div className="flex items-center gap-1 bg-purple-100 dark:bg-purple-900/40 hover:bg-purple-200 dark:hover:bg-purple-900/60 rounded-full px-3 py-1.5 text-sm">
-              <span className="font-medium text-purple-800 dark:text-purple-200">Ciudad:</span>
-              <span className="text-gray-700 dark:text-gray-300">{filterCity}</span>
-              <button type="button" onClick={() => eliminarFiltro('ciudad')} className="ml-1 hover:text-red-500 transition-colors" aria-label="Quitar ciudad">
+            <div className="flex items-center gap-1 bg-red-50 dark:bg-red-950/40 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-full px-3 py-1.5 text-sm">
+              <span className="font-medium text-red-800 dark:text-red-200">Ciudad:</span>
+              <span className="text-red-700 dark:text-red-300">{filterCity}</span>
+              <button type="button" onClick={() => eliminarFiltro('ciudad')} className="ml-1 hover:text-red-600 dark:hover:text-red-400 transition-colors" aria-label="Quitar ciudad">
                 <X className="w-3 h-3" />
               </button>
             </div>
           )}
           {sortColumn && (
-            <div className="flex items-center gap-1 bg-amber-100 dark:bg-amber-900/40 hover:bg-amber-200 dark:hover:bg-amber-900/60 rounded-full px-3 py-1.5 text-sm">
-              <span className="font-medium text-amber-800 dark:text-amber-200">Orden:</span>
-              <span className="text-gray-700 dark:text-gray-300">
+            <div className="flex items-center gap-1 bg-red-50 dark:bg-red-950/40 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-full px-3 py-1.5 text-sm">
+              <span className="font-medium text-red-800 dark:text-red-200">Orden:</span>
+              <span className="text-red-700 dark:text-red-300">
                 {sortColumn === 'code' ? 'Código interno' : 'Título'} ({sortDirection === 'asc' ? 'A-Z' : 'Z-A'})
               </span>
-              <button type="button" onClick={() => eliminarFiltro('orden')} className="ml-1 hover:text-red-500 transition-colors" aria-label="Quitar orden">
+              <button type="button" onClick={() => eliminarFiltro('orden')} className="ml-1 hover:text-red-600 dark:hover:text-red-400 transition-colors" aria-label="Quitar orden">
                 <X className="w-3 h-3" />
               </button>
             </div>

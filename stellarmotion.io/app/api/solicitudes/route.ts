@@ -11,6 +11,7 @@ import {
   createSolicitud,
   getSolicitudesByBrand,
   getSolicitudesByOwner,
+  getAllSolicitudesForAdmin,
 } from '@/lib/solicitudes';
 
 export const runtime = 'nodejs';
@@ -30,11 +31,14 @@ export async function GET(req: NextRequest) {
 
     const role = getRoleFromPayload(payload.role) ?? 'client';
 
-    if (role === 'owner' || role === 'admin' || role === 'seller') {
+    if (role === 'admin') {
+      const solicitudes = await getAllSolicitudesForAdmin();
+      return NextResponse.json({ success: true, solicitudes });
+    }
+    if (role === 'owner' || role === 'seller') {
       const solicitudes = await getSolicitudesByOwner(payload.sub);
       return NextResponse.json({ success: true, solicitudes });
     }
-
     const solicitudes = await getSolicitudesByBrand(payload.sub);
     return NextResponse.json({ success: true, solicitudes });
   } catch (error: unknown) {

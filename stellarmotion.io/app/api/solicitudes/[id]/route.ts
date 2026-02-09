@@ -6,7 +6,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifySession } from '@/lib/auth/session';
-import { getSolicitudById, updateSolicitudEstado, isOwnerOfSolicitudSoporte } from '@/lib/solicitudes';
+import { getRoleFromPayload } from '@/lib/auth/role';
+import { getSolicitudById, updateSolicitudEstado, isOwnerOfSolicitudSoporte, deleteSolicitud } from '@/lib/solicitudes';
 
 export const runtime = 'nodejs';
 
@@ -32,9 +33,11 @@ export async function GET(
     if (!solicitud) {
       return NextResponse.json({ error: 'Solicitud no encontrada' }, { status: 404 });
     }
+    const role = getRoleFromPayload(payload.role);
+    const isAdmin = role === 'admin';
     const isBrand = solicitud.usuario_id === payload.sub;
     const isOwner = await isOwnerOfSolicitudSoporte(id, payload.sub);
-    if (!isBrand && !isOwner) {
+    if (!isAdmin && !isBrand && !isOwner) {
       return NextResponse.json({ error: 'No tienes permiso para ver esta solicitud' }, { status: 403 });
     }
     return NextResponse.json({ success: true, solicitud });
@@ -96,6 +99,44 @@ export async function PATCH(
     return NextResponse.json(
       {
         error: 'Error al actualizar solicitud',
+        details: error instanceof Error ? error.message : '',
+      },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const cookieStore = await cookies();
+    const st = cookieStore.get('st_session');
+    if (!st?.value) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
+    const payload = await verifySession(st.value);
+    if (!payload?.sub) {
+      return NextResponse.json({ error: 'Sesión inválida' }, { status: 401 });
+    }
+    const { id } = await params;
+    if (!id) {
+      return NextResponse.json({ error: 'id es requerido' }, { status: 400 });
+    }
+    const result = await deleteSolicitud(id, payload.sub);
+    if (!result.success) {
+      return NextResponse.json(
+        { error: result.error ?? 'No se pudo eliminar la solicitud' },
+        { status: 403 }
+      );
+    }
+    return NextResponse.json({ success: true });
+  } catch (error: unknown) {
+    console.error('❌ DELETE /api/solicitudes/[id]:', error);
+    return NextResponse.json(
+      {
+        error: 'Error al eliminar solicitud',
         details: error instanceof Error ? error.message : '',
       },
       { status: 500 }

@@ -1,36 +1,51 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
-import {
-  FileText,
-  TrendingUp,
-  MessageSquare,
-  Settings,
-  Home,
-  Megaphone,
-  BarChart3,
-  ChevronLeft,
-  ChevronRight,
-} from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { FileAudioIcon } from '@hugeicons/core-free-icons';
+import {
+  FileAudioIcon,
+  Home02Icon,
+  Megaphone03Icon,
+  WaterfallDown01Icon,
+  CreditCardIcon,
+  Message01Icon,
+  Settings02Icon,
+} from '@hugeicons/core-free-icons';
+
+const ICON_SIZE = 24;
 
 function SolicitudesMenuIcon({ className }: { className?: string }) {
-  return <HugeiconsIcon icon={FileAudioIcon} size={20} className={className} />;
+  return <HugeiconsIcon icon={FileAudioIcon} size={ICON_SIZE} className={className} />;
+}
+function InicioIcon({ className }: { className?: string }) {
+  return <HugeiconsIcon icon={Home02Icon} size={ICON_SIZE} className={className} />;
+}
+function MisAnunciosIcon({ className }: { className?: string }) {
+  return <HugeiconsIcon icon={Megaphone03Icon} size={ICON_SIZE} className={className} />;
+}
+function MetricasAnunciosIcon({ className }: { className?: string }) {
+  return <HugeiconsIcon icon={WaterfallDown01Icon} size={ICON_SIZE} className={className} />;
+}
+function PagosIcon({ className }: { className?: string }) {
+  return <HugeiconsIcon icon={CreditCardIcon} size={ICON_SIZE} className={className} />;
+}
+function MensajeriaIcon({ className }: { className?: string }) {
+  return <HugeiconsIcon icon={Message01Icon} size={ICON_SIZE} className={className} />;
+}
+function AjustesIcon({ className }: { className?: string }) {
+  return <HugeiconsIcon icon={Settings02Icon} size={ICON_SIZE} className={className} />;
 }
 
-const dashboardNavigation = [
-  { name: 'Inicio', href: '/panel/cliente/inicio', icon: Home },
+const navigation = [
+  { name: 'Inicio', href: '/panel/cliente/inicio', icon: InicioIcon },
   { name: 'Solicitudes', href: '/panel/cliente/solicitudes', icon: SolicitudesMenuIcon },
-  { name: 'Mis Anuncios', href: '/panel/cliente/anuncios', icon: Megaphone },
-  { name: 'Métricas Anuncios', href: '/panel/cliente/anuncios/metricas', icon: BarChart3 },
-  { name: 'Facturación', href: '/panel/cliente/facturacion', icon: FileText },
-];
-
-const otherNavigation = [
-  { name: 'Mensajería', href: '/panel/mensajeria', icon: MessageSquare },
-  { name: 'Ajustes', href: '/panel/ajustes', icon: Settings },
+  { name: 'Mis Anuncios', href: '/panel/cliente/anuncios', icon: MisAnunciosIcon },
+  { name: 'Métricas Anuncios', href: '/panel/cliente/anuncios/metricas', icon: MetricasAnunciosIcon },
+  { name: 'Pagos', href: '/panel/cliente/facturacion', icon: PagosIcon },
+  { name: 'Mensajería', href: '/panel/mensajeria', icon: MensajeriaIcon },
+  { name: 'Ajustes', href: '/panel/ajustes', icon: AjustesIcon },
 ];
 
 interface ClienteSidebarProps {
@@ -42,6 +57,25 @@ export default function ClienteSidebar(props: ClienteSidebarProps = {}) {
   const { isCollapsed: externalCollapsed, onToggle } = props;
   const [internalCollapsed, setInternalCollapsed] = useState(false);
   const isCollapsed = externalCollapsed !== undefined ? externalCollapsed : internalCollapsed;
+  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
+  const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearHoverTimeout = () => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = null;
+    }
+  };
+  const scheduleClosePopover = () => {
+    clearHoverTimeout();
+    hoverTimeoutRef.current = setTimeout(() => setHoveredItem(null), 120);
+  };
+  const openPopover = (name: string) => {
+    clearHoverTimeout();
+    setHoveredItem(name);
+  };
+
+  useEffect(() => () => clearHoverTimeout(), []);
 
   const toggleSidebar = () => {
     if (onToggle) {
@@ -51,71 +85,66 @@ export default function ClienteSidebar(props: ClienteSidebarProps = {}) {
     }
   };
 
+  const linkBase =
+  'flex items-center rounded-lg px-3 py-2 text-base font-medium text-gray-600 transition-colors ' +
+  'hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-950/30 dark:hover:text-red-400 ' +
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500';
+
+  const popoverClass =
+    'absolute left-full top-1/2 -translate-y-1/2 ml-1 min-w-[140px] py-2 px-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 shadow-lg z-50 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white';
+
   return (
-    <div className={`fixed top-16 left-0 bottom-0 z-40 bg-white shadow-lg transition-all duration-300 ${
+    <div className={`fixed top-16 left-0 bottom-0 z-40 bg-white dark:bg-gray-950 shadow-lg transition-all duration-300 ${
       isCollapsed ? 'w-16' : 'w-64'
     }`}>
       <nav className="mt-3 px-2">
-        <div className="space-y-4">
-          {/* Dashboard Section */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              {!isCollapsed && (
-                <h3 className="px-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  Dashboard
-                </h3>
-              )}
-              <button
-                onClick={toggleSidebar}
-                className="p-1 rounded-md hover:bg-gray-100 transition-colors"
-                title={isCollapsed ? 'Expandir sidebar' : 'Minimizar sidebar'}
-              >
-                {isCollapsed ? (
-                  <ChevronRight className="h-4 w-4 text-gray-500" />
-                ) : (
-                  <ChevronLeft className="h-4 w-4 text-gray-500" />
-                )}
-              </button>
-            </div>
-            <div className="space-y-0.5">
-              {dashboardNavigation.map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`flex items-center rounded-lg px-2 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 ${
-                    isCollapsed ? 'justify-center' : ''
-                  }`}
-                  title={isCollapsed ? item.name : undefined}
-                >
-                  <item.icon className={`h-5 w-5 ${isCollapsed ? '' : 'mr-2'}`} />
-                  {!isCollapsed && item.name}
-                </Link>
-              ))}
-            </div>
-          </div>
-
-          {/* Other Section */}
-          <div>
+        <div className="space-y-1">
+          <div className={`flex items-center mb-3 ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
             {!isCollapsed && (
-              <h3 className="px-2 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                Otros
+              <h3 className="px-2 text-sm font-semibold text-gray-500 uppercase tracking-wider">
+                Dashboard
               </h3>
             )}
-            <div className="space-y-0.5">
-              {otherNavigation.map((item) => (
+            <button
+              onClick={toggleSidebar}
+              className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              title={isCollapsed ? 'Expandir sidebar' : 'Minimizar sidebar'}
+            >
+              {isCollapsed ? (
+                <ChevronRight className="h-5 w-5 text-gray-500" />
+              ) : (
+                <ChevronLeft className="h-5 w-5 text-gray-500" />
+              )}
+            </button>
+          </div>
+          <div className="space-y-1.5" onMouseLeave={isCollapsed ? scheduleClosePopover : undefined}>
+            {navigation.map((item) => (
+              <div
+                key={item.name}
+                className="relative"
+                onMouseEnter={isCollapsed ? () => openPopover(item.name) : undefined}
+                onMouseLeave={isCollapsed ? scheduleClosePopover : undefined}
+              >
                 <Link
-                  key={item.name}
                   href={item.href}
-                  className={`flex items-center rounded-lg px-2 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 ${
-                    isCollapsed ? 'justify-center' : ''
-                  }`}
-                  title={isCollapsed ? item.name : undefined}
+                  className={`${linkBase} ${isCollapsed ? 'justify-center' : ''}`}
+                  {...(!isCollapsed ? {} : { 'aria-label': item.name })}
                 >
-                  <item.icon className={`h-5 w-5 ${isCollapsed ? '' : 'mr-2'}`} />
-                  {!isCollapsed && item.name}
+                  <item.icon className={isCollapsed ? 'h-6 w-6 shrink-0' : 'h-6 w-6 shrink-0 mr-3'} />
+                  {!isCollapsed && <span className="truncate">{item.name}</span>}
                 </Link>
-              ))}
-            </div>
+                {isCollapsed && hoveredItem === item.name && (
+                  <div
+                    className={popoverClass}
+                    onMouseEnter={clearHoverTimeout}
+                    onMouseLeave={scheduleClosePopover}
+                    role="tooltip"
+                  >
+                    {item.name}
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         </div>
       </nav>

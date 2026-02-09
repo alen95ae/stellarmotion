@@ -5,6 +5,7 @@
  */
 
 import { supabaseAdmin } from './supabase-sql';
+import { fetchFromERP, ERP_ENDPOINTS } from './api-config';
 import {
   Solicitud,
   SolicitudWithRelations,
@@ -84,7 +85,7 @@ export async function createSolicitud(
 }
 
 /**
- * Listar solicitudes del brand (usuario_id = userId).
+ * Listar solicitudes del brand (brand_user_id = userId).
  */
 export async function getSolicitudesByBrand(
   usuarioId: string
@@ -92,13 +93,30 @@ export async function getSolicitudesByBrand(
   const { data: rows, error } = await supabaseAdmin
     .from('solicitudes')
     .select('*')
-    .eq('usuario_id', usuarioId)
+    .eq('brand_user_id', usuarioId)
     .order('created_at', { ascending: false });
 
   if (error) throw error;
   if (!rows?.length) return [];
 
-  return await enrichSolicitudes(rows);
+  return await enrichSolicitudes(rows.map((r) => mapRowToSolicitud(r as Record<string, unknown>)));
+}
+
+/**
+ * Modo desarrollo: admin ve TODAS las solicitudes sin filtrar por brand ni owner.
+ * Select completo + enrich (soportes, usuarios brand). Misma forma que el resto.
+ */
+export async function getAllSolicitudesForAdmin(): Promise<SolicitudWithRelations[]> {
+  const { data: rows, error } = await supabaseAdmin
+    .from('solicitudes')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  if (!rows?.length) return [];
+
+  const mapped = rows.map((r) => mapRowToSolicitud(r as Record<string, unknown>));
+  return await enrichSolicitudes(mapped);
 }
 
 /**
@@ -127,6 +145,28 @@ export async function getSolicitudesByOwner(
   return await enrichSolicitudes(rows.map((r) => mapRowToSolicitud(r as Record<string, unknown>)));
 }
 
+/** Normaliza código/título de soporte desde respuesta ERP (camelCase o snake_case). */
+function normalizarSoporteFromERP(erp: Record<string, unknown>, id: string): { id: string; titulo: string | null; codigo_interno: string | null; codigo_cliente: string | null; tipo_soporte: string | null; usuario_id: string | null } {
+  const codigo_interno =
+    (erp.codigo_interno as string) ??
+    (erp.codigoInterno as string) ??
+    (erp.code as string) ??
+    null;
+  const codigo_cliente =
+    (erp.codigo_cliente as string) ?? (erp.codigoCliente as string) ?? null;
+  const titulo = (erp.titulo as string) ?? (erp.nombre as string) ?? (erp.title as string) ?? null;
+  const tipo_soporte = (erp.tipo_soporte as string) ?? (erp.tipo as string) ?? null;
+  const usuario_id = (erp.usuario_id as string) ?? (erp.usuarioId as string) ?? null;
+  return {
+    id,
+    titulo: titulo ?? null,
+    codigo_interno: codigo_interno ?? null,
+    codigo_cliente: codigo_cliente ?? null,
+    tipo_soporte: tipo_soporte ?? null,
+    usuario_id: usuario_id ?? null,
+  };
+}
+
 async function enrichSolicitudes(solicitudes: Solicitud[]): Promise<SolicitudWithRelations[]> {
   const usuarioIds = [...new Set(solicitudes.map((s) => s.usuario_id).filter(Boolean))];
   const soporteIds = [...new Set(solicitudes.map((s) => String(s.soporte_id)).filter(Boolean))];
@@ -137,7 +177,7 @@ async function enrichSolicitudes(solicitudes: Solicitud[]): Promise<SolicitudWit
   ]);
 
   const usuariosMap = new Map((usuariosRes.data || []).map((u) => [u.id, u]));
-  const soportesMap = new Map(
+  const soportesMap = new Map<string, { id: string; titulo: string | null; codigo_interno: string | null; codigo_cliente: string | null; tipo_soporte: string | null; usuario_id: string | null }>(
     (soportesRes.data || []).map((s) => [
       String(s.id),
       {
@@ -150,6 +190,34 @@ async function enrichSolicitudes(solicitudes: Solicitud[]): Promise<SolicitudWit
       },
     ])
   );
+
+  // Fallback ERP: para soporte_id sin datos en Supabase (o sin código), obtener desde ERP
+  const idsSinCodigo = soporteIds.filter((id) => {
+    const s = soportesMap.get(id);
+    return !s || ((s.codigo_interno == null || s.codigo_interno === '') && (s.codigo_cliente == null || s.codigo_cliente === ''));
+  });
+  if (idsSinCodigo.length > 0) {
+    const erpResults = await Promise.allSettled(
+      idsSinCodigo.map(async (soporteId) => {
+        try {
+          const erpUrl = ERP_ENDPOINTS.support(soporteId);
+          const data = await fetchFromERP(erpUrl);
+          if (data && typeof data === 'object') {
+            return { id: soporteId, data: data as Record<string, unknown> };
+          }
+        } catch {
+          // ignorar errores por soporte; seguir con el resto
+        }
+        return { id: soporteId, data: null };
+      })
+    );
+    erpResults.forEach((result) => {
+      if (result.status === 'fulfilled' && result.value.data) {
+        const { id, data } = result.value;
+        soportesMap.set(id, normalizarSoporteFromERP(data, id));
+      }
+    });
+  }
 
   return solicitudes.map((s) => ({
     ...s,
@@ -245,5 +313,30 @@ export async function updateSolicitudEstado(
     }
   }
 
+  return { success: true };
+}
+
+/**
+ * Eliminar solicitud. Puede el owner del soporte o el brand que la creó.
+ */
+export async function deleteSolicitud(
+  solicitudId: string,
+  userId: string
+): Promise<{ success: boolean; error?: string }> {
+  const solicitud = await getSolicitudById(solicitudId);
+  if (!solicitud) return { success: false, error: 'Solicitud no encontrada' };
+  const isOwner = await isOwnerOfSolicitudSoporte(solicitudId, userId);
+  const isBrand = solicitud.usuario_id === userId;
+  if (!isOwner && !isBrand) {
+    return { success: false, error: 'No tienes permiso para eliminar esta solicitud' };
+  }
+  const { error } = await supabaseAdmin
+    .from('solicitudes')
+    .delete()
+    .eq('id', solicitudId);
+  if (error) {
+    console.error('❌ Error eliminando solicitud:', error);
+    return { success: false, error: error.message };
+  }
   return { success: true };
 }
