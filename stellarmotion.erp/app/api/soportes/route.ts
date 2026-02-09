@@ -241,6 +241,11 @@ export async function POST(request: Request) {
       'Código cliente': data.codigo_cliente || data['Código cliente'] || '',
       'Impactos diarios': data.dailyImpressions || data.impactos_diarios || data.impactosDiarios || data['Impactos diarios'] || null,
       'Enlace de Google Maps': data.googleMapsLink || data.google_maps_url || data.enlace_maps || data['Enlace de Google Maps'] || '',
+      latitud: data.latitud != null ? data.latitud : null,
+      longitud: data.longitud != null ? data.longitud : null,
+      streetViewHeading: data.streetViewHeading,
+      streetViewPitch: data.streetViewPitch,
+      streetViewZoom: data.streetViewZoom,
       'Propietario': data.owner || data.propietario || data.usuarioId || data['Propietario'] || '',
       'Iluminación': data.lighting || data.iluminacion || data['Iluminación'] || false,
       'Destacado': data.featured || data.destacado || data['Destacado'] || false

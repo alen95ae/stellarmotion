@@ -18,14 +18,14 @@ import SupportImage from "@/components/SupportImage"
 import Sidebar from "@/components/dashboard/Sidebar"
 import { PhotonAutocomplete } from "@/components/PhotonAutocomplete"
 import dynamic from "next/dynamic"
+import { buildGoogleMapsLinkFromCoords, extractCoordinatesFromGoogleMapsLink } from "@/lib/extract-google-maps-coords"
+import GoogleMapsLoader from "@/components/GoogleMapsLoader"
 
-// Importar LeafletHybridMap dinámicamente para evitar problemas de SSR
-const LeafletHybridMap = dynamic(() => import("@/components/LeafletHybridMap"), {
-  ssr: false,
-  loading: () => <div className="w-full h-96 bg-gray-100 rounded-lg flex items-center justify-center">Cargando mapa...</div>
-})
+const EditableGoogleMap = dynamic(() => import("@/components/EditableGoogleMap"), { ssr: false })
+const StreetViewGoogleMaps = dynamic(() => import("@/components/StreetViewGoogleMaps"), { ssr: false })
 
-import type { SupportPoint } from "@/components/LeafletHybridMap"
+const DEFAULT_MAP_CENTER = { lat: 40.4168, lng: -3.7038 }
+const MAP_HEIGHT = 380
 
 // Constantes para selects y colores
 const TYPE_OPTIONS = [
@@ -106,6 +106,7 @@ interface Support {
 export default function NuevoSoportePage() {
   const router = useRouter()
   const [saving, setSaving] = useState(false)
+  const [mapCoordsLoading, setMapCoordsLoading] = useState(false)
   const [formData, setFormData] = useState({
     internalCode: "",
     userCode: "",
@@ -127,7 +128,10 @@ export default function NuevoSoportePage() {
     priceMonth: "",
     available: true,
     latitud: 0,
-    longitud: 0
+    longitud: 0,
+    streetViewHeading: 0,
+    streetViewPitch: 0,
+    streetViewZoom: 1
   })
 
   const handleChange = (field: string, value: string | boolean) => {
@@ -202,6 +206,11 @@ export default function NuevoSoportePage() {
         'Código cliente': formData.userCode,
         'Impactos diarios': formData.dailyImpressions ? parseInt(formData.dailyImpressions) : null,
         'Enlace de Google Maps': formData.googleMapsLink,
+        latitud: formData.latitud || null,
+        longitud: formData.longitud || null,
+        streetViewHeading: formData.streetViewHeading,
+        streetViewPitch: formData.streetViewPitch,
+        streetViewZoom: formData.streetViewZoom,
         'Propietario': formData.owner,
         'Iluminación': formData.lighting,
         'Destacado': formData.featured
@@ -529,31 +538,80 @@ export default function NuevoSoportePage() {
                   id="googleMapsLink"
                   value={formData.googleMapsLink}
                   onChange={(e) => setFormData({...formData, googleMapsLink: e.target.value})}
+                  onBlur={async (e) => {
+                    const newLink = e.target.value.trim()
+                    if (newLink) {
+                      setMapCoordsLoading(true)
+                      try {
+                        const coords = await extractCoordinatesFromGoogleMapsLink(newLink)
+                        if (coords) {
+                          setFormData((prev) => ({
+                            ...prev,
+                            googleMapsLink: newLink,
+                            latitud: coords.lat,
+                            longitud: coords.lng
+                          }))
+                          toast.success("Coordenadas extraídas correctamente")
+                        } else {
+                          toast.error("No se pudieron extraer coordenadas del enlace")
+                        }
+                      } finally {
+                        setMapCoordsLoading(false)
+                      }
+                    }
+                  }}
+                  placeholder="Pega el enlace de Google Maps aquí"
                 />
+                <p className="text-xs text-gray-500 mt-1">Al pegar el enlace, se extraerán las coordenadas y se colocará la chincheta en el mapa.</p>
               </div>
 
-              {/* Mapa interactivo */}
-              <div>
-                <Label>Ubicación en el Mapa</Label>
-                <div className="mt-2">
-                  <LeafletHybridMap
-                    points={formData.latitud && formData.longitud ? [{
-                      id: '1',
-                      lat: formData.latitud,
-                      lng: formData.longitud,
-                      title: formData.title || 'Nuevo Soporte',
-                      type: 'billboard' as const,
-                      dimensions: formData.widthM && formData.heightM ? `${formData.widthM}m × ${formData.heightM}m` : undefined,
-                      image: formData.imageUrl || formData.images?.[0],
-                      monthlyPrice: formData.priceMonth ? parseFloat(formData.priceMonth) : undefined,
-                      city: formData.city,
-                      format: formData.type
-                    }] : []}
-                    height={400}
-                    center={formData.latitud && formData.longitud ? [formData.latitud, formData.longitud] : [40.4168, -3.7038]}
-                    zoom={15}
-                  />
-                </div>
+              <div className="mt-4">
+                <Label className="text-sm font-medium text-gray-700 mb-2 block">Ubicación del soporte</Label>
+                {mapCoordsLoading ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="rounded-lg border border-gray-300 h-[380px] flex items-center justify-center bg-gray-100">
+                      <span className="text-gray-500 text-sm">Obteniendo ubicación del enlace...</span>
+                    </div>
+                    <div className="rounded-lg border border-gray-300 h-[380px] bg-gray-100 flex items-center justify-center">
+                      <span className="text-gray-500 text-sm">Street View</span>
+                    </div>
+                  </div>
+                ) : (
+                  <GoogleMapsLoader loadingElement={<div className="grid grid-cols-1 md:grid-cols-2 gap-4"><div className="h-[380px] rounded-lg bg-gray-100 flex items-center justify-center text-gray-500">Cargando mapa...</div><div className="h-[380px] rounded-lg bg-gray-100 flex items-center justify-center text-gray-500">Cargando Street View...</div></div>}>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="rounded-lg overflow-hidden border border-gray-300">
+                        <EditableGoogleMap
+                          lat={formData.latitud && formData.longitud ? formData.latitud : DEFAULT_MAP_CENTER.lat}
+                          lng={formData.latitud && formData.longitud ? formData.longitud : DEFAULT_MAP_CENTER.lng}
+                          onChange={(c) => setFormData((prev) => ({
+                            ...prev,
+                            latitud: c.lat,
+                            longitud: c.lng,
+                            googleMapsLink: buildGoogleMapsLinkFromCoords(c.lat, c.lng)
+                          }))}
+                          height={MAP_HEIGHT}
+                        />
+                      </div>
+                      <div className="rounded-lg overflow-hidden border border-gray-300">
+                        <StreetViewGoogleMaps
+                          lat={formData.latitud && formData.longitud ? formData.latitud : DEFAULT_MAP_CENTER.lat}
+                          lng={formData.latitud && formData.longitud ? formData.longitud : DEFAULT_MAP_CENTER.lng}
+                          heading={formData.streetViewHeading}
+                          pitch={formData.streetViewPitch}
+                          zoom={formData.streetViewZoom}
+                          height={MAP_HEIGHT}
+                          onPovChange={(pov) => setFormData((prev) => ({
+                            ...prev,
+                            streetViewHeading: pov.heading,
+                            streetViewPitch: pov.pitch,
+                            streetViewZoom: pov.zoom
+                          }))}
+                        />
+                      </div>
+                    </div>
+                  </GoogleMapsLoader>
+                )}
+                <p className="text-sm text-gray-500 mt-2">Arrastra la chincheta o haz clic en el mapa para fijar la ubicación. Las coordenadas se guardan al guardar el soporte.</p>
               </div>
             </CardContent>
           </Card>

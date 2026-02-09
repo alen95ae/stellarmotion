@@ -37,6 +37,9 @@ export interface Soporte {
   ubicacion: string;
   latitud: number;
   longitud: number;
+  streetViewHeading?: number;
+  streetViewPitch?: number;
+  streetViewZoom?: number;
   tipo: string;
   estado: 'disponible' | 'ocupado' | 'reservado' | 'mantenimiento';
   precio: number;
@@ -279,6 +282,9 @@ function mapSoporteFromSupabase(record: any): Soporte {
       : undefined,
     iluminacion: record.iluminacion || false,
     destacado: record.destacado || false,
+    streetViewHeading: record.street_view_heading != null ? record.street_view_heading : 0,
+    streetViewPitch: record.street_view_pitch != null ? record.street_view_pitch : 0,
+    streetViewZoom: record.street_view_zoom != null ? record.street_view_zoom : 1,
     createdAt: new Date(record.created_at || Date.now()),
     updatedAt: new Date(record.updated_at || Date.now())
   };
@@ -566,6 +572,9 @@ export class SupabaseService {
         pais: data.pais || null,
         latitud: data.latitud || null,
         longitud: data.longitud || null,
+        street_view_heading: data.streetViewHeading != null ? data.streetViewHeading : null,
+        street_view_pitch: data.streetViewPitch != null ? data.streetViewPitch : null,
+        street_view_zoom: data.streetViewZoom != null ? data.streetViewZoom : null,
         google_maps_url: data['Enlace de Google Maps'] || data.googleMapsLink || null,
         impactos_diarios: data['Impactos diarios'] || data.impactosDiarios || null,
         impactos_diarios_m2: data['Impactos diarios por m²'] || data.impactosDiariosPorM2 || null,
@@ -703,6 +712,15 @@ export class SupabaseService {
       }
       if (data.longitud !== undefined) {
         updateData.longitud = data.longitud;
+      }
+      if (data.streetViewHeading !== undefined) {
+        updateData.street_view_heading = data.streetViewHeading;
+      }
+      if (data.streetViewPitch !== undefined) {
+        updateData.street_view_pitch = data.streetViewPitch;
+      }
+      if (data.streetViewZoom !== undefined) {
+        updateData.street_view_zoom = data.streetViewZoom;
       }
       if (data['Iluminación'] !== undefined || data.iluminacion !== undefined) {
         updateData.iluminacion = data['Iluminación'] !== undefined ? data['Iluminación'] : data.iluminacion;

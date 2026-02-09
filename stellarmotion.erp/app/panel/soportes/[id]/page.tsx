@@ -19,122 +19,27 @@ import SupportImage from "@/components/SupportImage"
 import Sidebar from "@/components/dashboard/Sidebar"
 import { PhotonAutocomplete } from "@/components/PhotonAutocomplete"
 import dynamic from "next/dynamic"
+import { buildGoogleMapsLinkFromCoords, extractCoordinatesFromGoogleMapsLink } from "@/lib/extract-google-maps-coords"
+import GoogleMapsLoader from "@/components/GoogleMapsLoader"
 
-// Importar LeafletHybridMap dinámicamente para evitar problemas de SSR
-const LeafletHybridMap = dynamic(() => import("@/components/LeafletHybridMap"), {
-  ssr: false,
-  loading: () => <div className="w-full h-96 bg-gray-100 rounded-lg flex items-center justify-center">Cargando mapa...</div>
-})
+const EditableGoogleMap = dynamic(() => import("@/components/EditableGoogleMap"), { ssr: false })
+const StreetViewGoogleMaps = dynamic(() => import("@/components/StreetViewGoogleMaps"), { ssr: false })
 
-import type { SupportPoint } from "@/components/LeafletHybridMap"
+const DEFAULT_MAP_CENTER = { lat: 40.4168, lng: -3.7038 }
 
-// Función para extraer coordenadas de un enlace de Google Maps
-async function extractCoordinatesFromGoogleMapsLink(link: string): Promise<{ lat: number; lng: number } | null> {
-  if (!link) return null;
+const MAP_HEIGHT = 380
 
-  try {
-    // Formato 1: https://maps.google.com/?q=lat,lng
-    const qMatch = link.match(/[?&]q=([^&]+)/);
-    if (qMatch) {
-      const coords = qMatch[1].split(',');
-      if (coords.length >= 2) {
-        const lat = parseFloat(coords[0]);
-        const lng = parseFloat(coords[1]);
-        if (!isNaN(lat) && !isNaN(lng)) {
-          return { lat, lng };
-        }
-      }
-    }
-
-    // Formato 2: https://www.google.com/maps/place/.../@lat,lng,zoom
-    const atMatch = link.match(/@([^,]+),([^,]+)/);
-    if (atMatch) {
-      const lat = parseFloat(atMatch[1]);
-      const lng = parseFloat(atMatch[2]);
-      if (!isNaN(lat) && !isNaN(lng)) {
-        return { lat, lng };
-      }
-    }
-
-    // Formato 3: https://maps.google.com/maps?ll=lat,lng
-    const llMatch = link.match(/[?&]ll=([^&]+)/);
-    if (llMatch) {
-      const coords = llMatch[1].split(',');
-      if (coords.length >= 2) {
-        const lat = parseFloat(coords[0]);
-        const lng = parseFloat(coords[1]);
-        if (!isNaN(lat) && !isNaN(lng)) {
-          return { lat, lng };
-        }
-      }
-    }
-
-    // Formato 4: https://maps.google.com/maps?q=lat,lng
-    const mapsQMatch = link.match(/maps\?q=([^&]+)/);
-    if (mapsQMatch) {
-      const coords = mapsQMatch[1].split(',');
-      if (coords.length >= 2) {
-        const lat = parseFloat(coords[0]);
-        const lng = parseFloat(coords[1]);
-        if (!isNaN(lat) && !isNaN(lng)) {
-          return { lat, lng };
-        }
-      }
-    }
-
-    // Formato 5: !3dlat!4dlng
-    const format5Match = link.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
-    if (format5Match) {
-      const lat = parseFloat(format5Match[1]);
-      const lng = parseFloat(format5Match[2]);
-      if (!isNaN(lat) && !isNaN(lng)) {
-        return { lat, lng };
-      }
-    }
-
-    // Para enlaces acortados, intentar seguir la redirección
-    if (link.includes('maps.app.goo.gl') || link.includes('goo.gl')) {
-      try {
-        const response = await fetch(link, { 
-          method: 'HEAD',
-          redirect: 'follow',
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-          }
-        });
-        
-        if (response.ok) {
-          const finalUrl = response.url;
-          
-          // Intentar extraer coordenadas de la URL final
-          const patterns = [
-            /\/search\/([+-]?\d+\.\d+),([+-]?\d+\.\d+)/, // /search/lat,lng
-            /@(-?\d+\.\d+),(-?\d+\.\d+)/, // @lat,lng
-            /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/, // !3dlat!4dlng
-            /ll=(-?\d+\.\d+),(-?\d+\.\d+)/, // ll=lat,lng
-            /q=(-?\d+\.\d+),(-?\d+\.\d+)/, // q=lat,lng
-          ];
-
-          for (const pattern of patterns) {
-            const match = finalUrl.match(pattern);
-            if (match) {
-              return {
-                lat: parseFloat(match[1]),
-                lng: parseFloat(match[2])
-              };
-            }
-          }
-        }
-      } catch (error) {
-        console.warn('Error following shortened link:', error);
-      }
-    }
-
-    return null;
-  } catch (error) {
-    console.error('Error extracting coordinates from Google Maps link:', error);
-    return null;
-  }
+/** Convierte owner (objeto con id, empresa, nombre, apellidos, email o string) a string para mostrar/guardar. */
+function ownerDisplayString(owner: any): string {
+  if (owner == null) return ""
+  if (typeof owner === "string") return owner
+  return (
+    (owner as any).name ||
+    [(owner as any).nombre, (owner as any).apellidos].filter(Boolean).join(" ") ||
+    (owner as any).empresa ||
+    (owner as any).email ||
+    ""
+  )
 }
 
 // Constantes para selects y colores
@@ -181,6 +86,9 @@ interface Support {
   available: boolean
   latitud?: number
   longitud?: number
+  streetViewHeading?: number
+  streetViewPitch?: number
+  streetViewZoom?: number
   company?: {
     name: string
   }
@@ -225,6 +133,7 @@ export default function SoporteDetailPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [editing, setEditing] = useState(isEditMode)
+  const [mapCoordsLoading, setMapCoordsLoading] = useState(false)
   const [formData, setFormData] = useState({
     internalCode: "",
     userCode: "",
@@ -246,7 +155,10 @@ export default function SoporteDetailPage() {
     priceMonth: "",
     available: true,
     latitud: 0,
-    longitud: 0
+    longitud: 0,
+    streetViewHeading: 0,
+    streetViewPitch: 0,
+    streetViewZoom: 1
   })
 
   useEffect(() => {
@@ -303,7 +215,7 @@ export default function SoporteDetailPage() {
           if (typeof iluminacionValue === 'number') return iluminacionValue > 0;
           return Boolean(iluminacionValue);
         })(),
-        owner: support.owner?.name || support.owner || "",
+        owner: ownerDisplayString(support.owner) || "",
         featured: (() => {
           const supportAny = support as any;
           const destacadoValue = supportAny.destacado || support.featured || supportAny.Destacado || false;
@@ -323,7 +235,10 @@ export default function SoporteDetailPage() {
         priceMonth: support.precio?.toString() || support.priceMonth || "",
         available: support.available !== false,
         latitud: support.latitud || (support as any).lat || 0,
-        longitud: support.longitud || (support as any).lng || 0
+        longitud: support.longitud || (support as any).lng || 0,
+        streetViewHeading: (support as any).streetViewHeading ?? 0,
+        streetViewPitch: (support as any).streetViewPitch ?? 0,
+        streetViewZoom: (support as any).streetViewZoom ?? 1
       })
     }
   }, [id, support, isEditMode])
@@ -405,7 +320,7 @@ export default function SoporteDetailPage() {
             console.log('✅ Iluminación final mapeada:', iluminacionFinal);
             return iluminacionFinal;
           })(),
-          owner: data['Propietario'] || data.owner?.name || data.owner || "",
+          owner: (typeof data["Propietario"] === "string" ? data["Propietario"] : "") || ownerDisplayString(data.owner) || "",
           featured: data['Destacado'] || data.featured || false,
           imageUrl: data.imagenes?.[0] || data.imageUrl || "",
           images: data.imagenes || data.images || [],
@@ -416,7 +331,10 @@ export default function SoporteDetailPage() {
           priceMonth: data['Precio por mes']?.toString() || data.precio?.toString() || data.priceMonth || "",
           available: data.available !== false,
           latitud: data.latitud || data.lat || 0,
-          longitud: data.longitud || data.lng || 0
+          longitud: data.longitud || data.lng || 0,
+          streetViewHeading: data.streetViewHeading ?? data.street_view_heading ?? 0,
+          streetViewPitch: data.streetViewPitch ?? data.street_view_pitch ?? 0,
+          streetViewZoom: data.streetViewZoom ?? data.street_view_zoom ?? 1
         })
         
         console.log('🎯 FormData mapeado:', {
@@ -468,6 +386,11 @@ export default function SoporteDetailPage() {
         'Código cliente': formData.userCode,
         'Impactos diarios': formData.dailyImpressions ? parseInt(formData.dailyImpressions) : null,
         'Enlace de Google Maps': formData.googleMapsLink,
+        latitud: formData.latitud ?? null,
+        longitud: formData.longitud ?? null,
+        streetViewHeading: formData.streetViewHeading,
+        streetViewPitch: formData.streetViewPitch,
+        streetViewZoom: formData.streetViewZoom,
         'Propietario': formData.owner,
         'Iluminación': formData.lighting,
         'Destacado': formData.featured
@@ -873,14 +796,14 @@ export default function SoporteDetailPage() {
                     {editing ? (
                       <Input
                         id="owner"
-                        value={formData.owner}
+                        value={typeof formData.owner === "string" ? formData.owner : ownerDisplayString(formData.owner)}
                         onChange={(e) => setFormData({...formData, owner: e.target.value})}
                         placeholder="Nombre del owner"
                       />
                     ) : (
                       <div className="mt-1">
                         <Badge className="bg-blue-100 text-blue-800 border-blue-200">
-                          {formData.owner || support?.owner?.name || support?.owner || "N/A"}
+                          {ownerDisplayString(formData.owner) || ownerDisplayString(support?.owner) || "N/A"}
                         </Badge>
                       </div>
                     )}
@@ -1104,25 +1027,29 @@ export default function SoporteDetailPage() {
                     onBlur={async (e) => {
                       const newLink = e.target.value.trim();
                       if (newLink) {
-                        // Extraer coordenadas del enlace
-                        const coords = await extractCoordinatesFromGoogleMapsLink(newLink);
-                        if (coords) {
-                          setFormData(prev => ({
-                            ...prev,
-                            googleMapsLink: newLink,
-                            latitud: coords.lat,
-                            longitud: coords.lng
-                          }));
-                          toast.success('Coordenadas extraídas correctamente');
-                        } else {
-                          toast.error('No se pudieron extraer coordenadas del enlace');
+                        setMapCoordsLoading(true);
+                        try {
+                          const coords = await extractCoordinatesFromGoogleMapsLink(newLink);
+                          if (coords) {
+                            setFormData(prev => ({
+                              ...prev,
+                              googleMapsLink: newLink,
+                              latitud: coords.lat,
+                              longitud: coords.lng
+                            }));
+                            toast.success('Coordenadas extraídas correctamente');
+                          } else {
+                            toast.error('No se pudieron extraer coordenadas del enlace');
+                          }
+                        } finally {
+                          setMapCoordsLoading(false);
                         }
                       }
                     }}
                     placeholder="Pega el enlace de Google Maps aquí"
                   />
                   <p className="text-xs text-gray-500">
-                    Al pegar el enlace, se extraerán automáticamente las coordenadas y se mostrará la ubicación en el mapa
+                    Al pegar el enlace, se extraerán automáticamente las coordenadas.
                   </p>
                 </div>
               ) : (
@@ -1144,32 +1071,54 @@ export default function SoporteDetailPage() {
               )}
             </div>
 
-            {/* Mapa interactivo */}
-            <div>
-              <Label>Ubicación en el Mapa</Label>
-              <div className="mt-2">
-                <LeafletHybridMap
-                  points={(formData.latitud && formData.longitud) || (support?.latitud && support?.longitud) ? [{
-                    id: support?.id || '1',
-                    lat: formData.latitud || support?.latitud || 0,
-                    lng: formData.longitud || support?.longitud || 0,
-                    title: formData.title || support?.title || support?.nombre || 'Soporte',
-                    type: 'billboard' as const,
-                    dimensions: (formData.widthM || support?.widthM) && (formData.heightM || support?.heightM) ? `${formData.widthM || support?.widthM}m × ${formData.heightM || support?.heightM}m` : undefined,
-                    image: formData.imageUrl || support?.imageUrl || support?.imagenes?.[0],
-                    monthlyPrice: formData.priceMonth || support?.priceMonth ? parseFloat(formData.priceMonth || support?.priceMonth || '0') : undefined,
-                    city: formData.city || support?.city || support?.ciudad,
-                    format: formData.type || support?.type || support?.tipo
-                  }] : []}
-                  height={400}
-                  center={(formData.latitud && formData.longitud) || (support?.latitud && support?.longitud) 
-                    ? [formData.latitud || support?.latitud || 0, formData.longitud || support?.longitud || 0]
-                    : [40.4168, -3.7038]}
-                  zoom={15}
-                />
-              </div>
+            <div className="mt-4">
+              <Label className="text-sm font-medium text-gray-700 mb-2 block">Ubicación del soporte</Label>
+              {mapCoordsLoading ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="rounded-lg border border-gray-300 h-[380px] flex items-center justify-center bg-gray-100">
+                    <span className="text-gray-500 text-sm">Obteniendo ubicación del enlace...</span>
+                  </div>
+                  <div className="rounded-lg border border-gray-300 h-[380px] bg-gray-100 flex items-center justify-center">
+                    <span className="text-gray-500 text-sm">Street View</span>
+                  </div>
+                </div>
+              ) : (
+                <GoogleMapsLoader loadingElement={<div className="grid grid-cols-1 md:grid-cols-2 gap-4"><div className="h-[380px] rounded-lg bg-gray-100 flex items-center justify-center text-gray-500">Cargando mapa...</div><div className="h-[380px] rounded-lg bg-gray-100 flex items-center justify-center text-gray-500">Cargando Street View...</div></div>}>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="rounded-lg overflow-hidden border border-gray-300">
+                      <EditableGoogleMap
+                        lat={formData.latitud ?? support?.latitud ?? DEFAULT_MAP_CENTER.lat}
+                        lng={formData.longitud ?? support?.longitud ?? DEFAULT_MAP_CENTER.lng}
+                        onChange={(c) => setFormData((prev) => ({
+                          ...prev,
+                          latitud: c.lat,
+                          longitud: c.lng,
+                          googleMapsLink: buildGoogleMapsLinkFromCoords(c.lat, c.lng)
+                        }))}
+                        height={MAP_HEIGHT}
+                      />
+                    </div>
+                    <div className="rounded-lg overflow-hidden border border-gray-300">
+                      <StreetViewGoogleMaps
+                        lat={formData.latitud ?? support?.latitud ?? DEFAULT_MAP_CENTER.lat}
+                        lng={formData.longitud ?? support?.longitud ?? DEFAULT_MAP_CENTER.lng}
+                        heading={formData.streetViewHeading}
+                        pitch={formData.streetViewPitch}
+                        zoom={formData.streetViewZoom}
+                        height={MAP_HEIGHT}
+                        onPovChange={(pov) => setFormData((prev) => ({
+                          ...prev,
+                          streetViewHeading: pov.heading,
+                          streetViewPitch: pov.pitch,
+                          streetViewZoom: pov.zoom
+                        }))}
+                      />
+                    </div>
+                  </div>
+                </GoogleMapsLoader>
+              )}
+              <p className="text-sm text-gray-500 mt-2">Arrastra la chincheta o haz clic en el mapa para fijar la ubicación. Las coordenadas se guardan en la base de datos.</p>
             </div>
-
 
           </CardContent>
         </Card>
