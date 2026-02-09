@@ -2,6 +2,24 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { verifySession } from '@/lib/auth/session';
 import { getRoleFromPayload } from '@/lib/auth/role';
 
+// Basic Auth para entorno dev (DEV_USER / DEV_PASS)
+function checkBasicAuth(req: NextRequest): NextResponse | null {
+  const auth = req.headers.get('authorization');
+  if (!auth) {
+    return new NextResponse('Auth required', {
+      status: 401,
+      headers: { 'WWW-Authenticate': 'Basic realm="StellarMotion Dev"' },
+    });
+  }
+  const [, encoded] = auth.split(' ');
+  const decoded = atob(encoded);
+  const [user, pass] = decoded.split(':');
+  if (user !== process.env.DEV_USER || pass !== process.env.DEV_PASS) {
+    return new NextResponse('Unauthorized', { status: 401 });
+  }
+  return null;
+}
+
 // Rutas públicas que no requieren autenticación
 const PUBLIC_ROUTES = [
   '/',
@@ -46,6 +64,13 @@ const CLIENT_ROUTES = [
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+
+  // Basic Auth (Vercel): cuando DEV_USER y DEV_PASS existen, SIEMPRE se exige.
+  // En Vercel, asegura que las variables estén en Environment Variables y disponibles en Runtime (no solo Build).
+  if (process.env.DEV_USER && process.env.DEV_PASS) {
+    const basicResponse = checkBasicAuth(req);
+    if (basicResponse) return basicResponse;
+  }
 
   // Permitir rutas de API (se protegen individualmente si es necesario)
   if (pathname.startsWith('/api/')) {
@@ -166,14 +191,5 @@ export async function middleware(req: NextRequest) {
   return NextResponse.next();
 }
 
-export const config = {
-  matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
-    '/((?!_next/static|_next/image|favicon.ico).*)',
-  ],
-};
+// Sin matcher = se ejecuta en TODAS las rutas (necesario para que Basic Auth corra en Vercel).
+// Opcional: si quieres excluir estáticos, usa: matcher: ['/((?!_next/static|_next/image|favicon.ico).*)']
