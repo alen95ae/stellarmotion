@@ -318,7 +318,7 @@ export default function NuevoSoportePage() {
                   </div>
 
                   <div>
-                    <Label htmlFor="userCode">Código Cliente</Label>
+                    <Label htmlFor="userCode">Código Brand</Label>
                     <Input
                       id="userCode"
                       value={formData.userCode}

@@ -14,7 +14,7 @@ export default function OwnerLayout({
   const router = useRouter();
 
   useEffect(() => {
-    // Verificar autorización del lado del cliente
+    // Verificar autorización del lado del usuario
     const checkAuth = async () => {
       try {
         const response = await fetch('/api/auth/me', { credentials: 'include' });
@@ -22,7 +22,7 @@ export default function OwnerLayout({
           router.push('/');
           return;
         }
-        // ✅ DEV: cualquier usuario autenticado puede ver Owner y Cliente
+        // ✅ DEV: cualquier usuario autenticado puede ver Owner y Brand
         // (selección de vista desde el header).
         setIsAuthorized(true);
       } catch (error) {

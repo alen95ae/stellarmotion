@@ -798,7 +798,7 @@ export default function SoporteDetailPage() {
                 </div>
 
                 <div>
-                  <Label htmlFor="userCode">Código Cliente</Label>
+                  <Label htmlFor="userCode">Código Brand</Label>
                   {editing ? (
                     <Input
                       id="userCode"

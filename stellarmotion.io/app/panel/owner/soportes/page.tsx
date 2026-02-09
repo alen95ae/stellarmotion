@@ -507,7 +507,7 @@ export default function SoportesPage() {
       <div className="space-y-1.5 -mt-10">
         <div className="flex items-center justify-between mb-1">
           <div>
-            <h1 className="text-lg font-bold text-gray-900">Gestión de Soportes</h1>
+            <h1 className="text-xl font-bold text-gray-900">Gestión de Soportes</h1>
             <p className="mt-0.5 text-xs text-gray-600 leading-tight">
               Administra todos tus espacios publicitarios
             </p>
@@ -537,7 +537,7 @@ export default function SoportesPage() {
     <div className="space-y-4 -mt-10">
       {/* Título */}
       <div>
-        <h1 className="text-lg font-bold text-gray-900">Gestión de Soportes</h1>
+        <h1 className="text-xl font-bold text-gray-900">Gestión de Soportes</h1>
         <p className="mt-0.5 text-xs text-gray-600 leading-tight">
           Administra todos tus espacios publicitarios
         </p>

@@ -229,7 +229,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Si NO EXISTE en owners (pero sí tiene user_id) -> CREAMOS EL REGISTRO
-      // Esto pasa si era un "Cliente" que nunca había sido "Owner" o es un primer registro
+      // Esto pasa si era un "Brand" que nunca había sido "Owner" o es un primer registro
       console.log('🆕 [API ERP] Usuario existe pero no en Owners. Creando perfil...');
 
       // Actualizar rol del usuario a owner

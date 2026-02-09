@@ -14,7 +14,7 @@ const ROLE_MAP: Record<string, AppRole> = {
   owner: 'owner',
   seller: 'seller',
   client: 'client',
-  cliente: 'client', // Mapeo para rol en español
+  cliente: 'client', // Brand (rol en BD: client)
 };
 
 /**

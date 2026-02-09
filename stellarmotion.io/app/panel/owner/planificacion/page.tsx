@@ -321,7 +321,7 @@ export default function PlanificacionPage() {
       switch (agrupador) {
         case "cliente":
           soporte.alquileres.forEach(a => {
-            valoresUnicos.add(a.cliente || "Sin cliente")
+            valoresUnicos.add(a.cliente || "Sin brand")
           })
           break
         case "estado":
@@ -505,13 +505,14 @@ export default function PlanificacionPage() {
   return (
     <div className="p-2 sm:p-3 lg:p-4">
       <Toaster />
-      <main className="w-full max-w-full py-4 overflow-hidden">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-800 mb-2">Planificación Anual</h1>
-          <p className="text-gray-600">Visualiza la ocupación de soportes publicitarios a lo largo del año</p>
-        </div>
+      <main className="w-full max-w-full py-4 overflow-hidden -mt-10">
+        <div className="space-y-4">
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">Planificación Anual</h1>
+            <p className="mt-0.5 text-xs text-gray-600 leading-tight">Visualiza la ocupación de soportes publicitarios a lo largo del año</p>
+          </div>
 
-        {/* Controls */}
+          {/* Controls */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
             <div className="flex flex-wrap gap-2 items-center flex-1">
@@ -553,7 +554,7 @@ export default function PlanificacionPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ninguno">Sin agrupar</SelectItem>
-                  <SelectItem value="cliente">Cliente</SelectItem>
+                  <SelectItem value="cliente">Brand</SelectItem>
                   <SelectItem value="estado">Estado</SelectItem>
                 </SelectContent>
               </Select>
@@ -705,7 +706,7 @@ export default function PlanificacionPage() {
                                       <Tooltip>
                                         <TooltipTrigger asChild>
                                           <div
-                                            className="absolute bg-pink-500 text-white text-xs p-2 rounded cursor-pointer hover:bg-pink-600 transition-colors"
+                                            className="absolute bg-[#e94446] text-white text-xs p-2 rounded cursor-pointer hover:bg-[#c93a3d] transition-colors"
                                             style={{
                                               left: `${left}%`,
                                               width: `${width}%`,
@@ -715,7 +716,7 @@ export default function PlanificacionPage() {
                                             }}
                                           >
                                             <div className="font-medium truncate leading-tight">
-                                              {reserva.cliente && reserva.cliente.length > 8 ? reserva.cliente.substring(0, 8) + '...' : (reserva.cliente || 'Sin cliente')}
+                                              {reserva.cliente && reserva.cliente.length > 8 ? reserva.cliente.substring(0, 8) + '...' : (reserva.cliente || 'Sin brand')}
                                             </div>
                                             <div className="text-xs opacity-75 leading-tight mt-0.5">
                                               {reserva.meses || reserva.duracion} mes{(reserva.meses || reserva.duracion) > 1 ? 'es' : ''}
@@ -751,7 +752,7 @@ export default function PlanificacionPage() {
                                                 <div className="text-gray-900">{reserva.soporte_codigo || '-'}</div>
                                               </div>
                                               <div className="col-span-2">
-                                                <span className="font-medium text-gray-600">Cliente:</span>
+                                                <span className="font-medium text-gray-600">Brand:</span>
                                                 <div className="text-gray-900">{reserva.cliente || '-'}</div>
                                               </div>
                                               <div className="col-span-2">
@@ -834,6 +835,7 @@ export default function PlanificacionPage() {
             )}
           </CardContent>
         </Card>
+        </div>
       </main>
     </div>
   )

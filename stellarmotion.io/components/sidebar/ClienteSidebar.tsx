@@ -2,22 +2,27 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { 
-  Calendar, 
-  FileText, 
-  TrendingUp, 
-  MessageSquare, 
+import {
+  FileText,
+  TrendingUp,
+  MessageSquare,
   Settings,
   Home,
   Megaphone,
   BarChart3,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
 } from 'lucide-react';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { FileAudioIcon } from '@hugeicons/core-free-icons';
+
+function SolicitudesMenuIcon({ className }: { className?: string }) {
+  return <HugeiconsIcon icon={FileAudioIcon} size={20} className={className} />;
+}
 
 const dashboardNavigation = [
   { name: 'Inicio', href: '/panel/cliente/inicio', icon: Home },
-  { name: 'Mis Alquileres', href: '/panel/cliente/alquileres', icon: Calendar },
+  { name: 'Solicitudes', href: '/panel/cliente/solicitudes', icon: SolicitudesMenuIcon },
   { name: 'Mis Anuncios', href: '/panel/cliente/anuncios', icon: Megaphone },
   { name: 'Métricas Anuncios', href: '/panel/cliente/anuncios/metricas', icon: BarChart3 },
   { name: 'Facturación', href: '/panel/cliente/facturacion', icon: FileText },

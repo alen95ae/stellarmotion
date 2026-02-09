@@ -199,7 +199,7 @@ export default function AlquileresPage() {
         <div className="relative w-full sm:w-[300px]">
           <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 h-3.5 w-3.5" />
           <Input
-            placeholder="Buscar por cliente o número..."
+            placeholder="Buscar por brand o número..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-8 h-8 text-sm"
@@ -278,7 +278,7 @@ export default function AlquileresPage() {
                     Número
                   </th>
                   <th className="px-2 py-1 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">
-                    Cliente
+                    Brand
                   </th>
                   <th className="px-2 py-1 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">
                     Soporte

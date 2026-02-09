@@ -17,8 +17,8 @@ import {
 } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'Clientes - Panel de Control | StellarMotion',
-  description: 'Gestión de clientes y contactos'
+  title: 'Brands - Panel de Control | StellarMotion',
+  description: 'Gestión de brands y contactos'
 };
 
 // Mock data
@@ -121,7 +121,7 @@ export default function ClientesPage() {
       <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-4">
         <Card className="p-2">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 px-2 py-1.5">
-            <CardTitle className="text-sm font-medium">Total Clientes</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Brands</CardTitle>
             <Users className="h-3.5 w-3.5 text-muted-foreground" />
           </CardHeader>
           <CardContent className="px-2 py-2">
@@ -197,10 +197,10 @@ export default function ClientesPage() {
         </CardContent>
       </Card>
 
-      {/* Clientes Table */}
+      {/* Brands Table */}
       <Card className="p-2">
         <CardHeader className="px-2 pb-1">
-          <CardTitle className="text-sm font-semibold">Lista de Clientes</CardTitle>
+          <CardTitle className="text-sm font-semibold">Lista de Brands</CardTitle>
         </CardHeader>
         <CardContent className="px-2">
           <div className="overflow-x-auto">
@@ -208,7 +208,7 @@ export default function ClientesPage() {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-2 py-1 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">
-                    Cliente
+                    Brand
                   </th>
                   <th className="px-2 py-1 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">
                     Contacto

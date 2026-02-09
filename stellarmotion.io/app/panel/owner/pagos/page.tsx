@@ -83,7 +83,7 @@ const facturas = [
     fechaVencimiento: '2024-12-31',
     fechaPago: null,
     estado: 'vencida',
-    notas: 'Factura vencida - contactar al cliente'
+    notas: 'Factura vencida - contactar al brand'
   },
   {
     id: '5',
@@ -221,7 +221,7 @@ export default function FacturacionPage() {
               <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
               <input
                 type="text"
-                placeholder="Buscar por número o cliente..."
+                placeholder="Buscar por número o brand..."
                 className="pl-8 pr-3 py-1.5 h-8 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>

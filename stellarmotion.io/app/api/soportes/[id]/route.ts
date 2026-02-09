@@ -121,7 +121,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       impactosDiariosPorM2: support.impactosDiariosPorM2,
       resumenAutomatico: support.resumenAutomatico,
       usuarioId: support.usuarioId,
-      owner: support.owner,
+      owner: support.owner ?? (support.usuario ? {
+        id: support.usuario.id,
+        empresa: support.usuario.companyName ?? null,
+        nombre: support.usuario.name?.split(/\s+/)[0] ?? null,
+        apellidos: support.usuario.name?.split(/\s+/).slice(1).join(' ') || null,
+        email: support.usuario.email ?? null
+      } : null),
       iluminacion: support.iluminacion,
       destacado: support.destacado
     };

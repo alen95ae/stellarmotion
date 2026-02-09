@@ -102,13 +102,13 @@ export default function DashboardPage() {
     { id: 'soportes', name: 'Soportes', icon: Monitor },
     { id: 'logistica', name: 'Logística', icon: Globe2 },
     { id: 'owners', name: 'Owners', icon: Rabbit },
-    { id: 'clientes', name: 'Clientes', icon: Rat },
+    { id: 'clientes', name: 'Brands', icon: Rat },
     { id: 'proyectos', name: 'Proyectos', icon: Terminal },
     { id: 'crm', name: 'CRM', icon: Filter },
     { id: 'legal', name: 'Legal', icon: Scale },
     { id: 'iyd', name: 'I+D', icon: FlaskConical },
     { id: 'facturacion', name: 'Facturación', icon: Receipt },
-    { id: 'atencion', name: 'Atención al cliente', icon: MessageCircle },
+    { id: 'atencion', name: 'Atención a brands', icon: MessageCircle },
     { id: 'sitio', name: 'Sitio web', icon: Globe },
     { id: 'ajustes', name: 'Ajustes', icon: Settings }
   ]
@@ -588,7 +588,7 @@ export default function DashboardPage() {
                       : 'border-gray-300 hover:bg-gray-100 text-gray-900'
                   }`}>
                     <Users className="w-4 h-4 mr-2" />
-                    Agregar Cliente
+                    Agregar Brand
                     <ArrowRight className="w-4 h-4 ml-auto" />
                   </Button>
                   <Button variant="outline" className={`w-full justify-start ${

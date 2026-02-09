@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
       ));
     }
 
-    console.log('✅ [REGISTER CLIENT] Cliente creado exitosamente:', user.id);
+    console.log('✅ [REGISTER CLIENT] Brand creado exitosamente:', user.id);
     
     // Crear sesión y cookie
     let token;

@@ -5,10 +5,11 @@ import { ChevronLeft, ChevronRight, MapPin, Heart, Eye, Ruler, Building, Globe, 
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { OwnersSection } from "@/components/OwnersSection"
 import SearchBarGooglePlaces from "@/components/SearchBarGooglePlaces"
 import { CATEGORIES } from "@/lib/categories"
 import CategoryIcon from "@/components/CategoryIcon"
+import PlatformAnalyticsSection from "@/components/PlatformAnalyticsSection"
+import OccupationTimelineSection from "@/components/OccupationTimelineSection"
 // Los productos destacados se cargarán dinámicamente desde la API
 
 export default function HomeClient() {
@@ -173,11 +174,6 @@ export default function HomeClient() {
 
         {/* Contenido existente de la home */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Search Section */}
-        <div className="mb-16">
-          <SearchBarGooglePlaces />
-        </div>
-
         {/* Categories Section */}
         <section className="mb-16">
           <div className="text-center mb-12">
@@ -231,6 +227,160 @@ export default function HomeClient() {
             >
               <ChevronRight className="w-5 h-5 text-gray-600" />
             </button>
+          </div>
+
+          {/* Buscador debajo de los iconos de categorías */}
+          <div className="mt-10">
+            <SearchBarGooglePlaces />
+          </div>
+        </section>
+
+        {/* Featured Spaces Section */}
+        <section className="mb-16">
+          <div className="text-center mb-12">
+            <div className="inline-block">
+              <div className="w-12 h-1 bg-[#e94446] mx-auto mb-4"></div>
+              <h2 className="text-3xl font-bold text-gray-900 mb-2">Espacios destacados</h2>
+              <p className="text-gray-600">Consulta nuestros soportes publicitarios más valorados y con mayor alcance.</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+            {loadingFeatured ? (
+              // Loading skeleton
+              Array.from({ length: 5 }).map((_, index) => (
+                <div key={index} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden animate-pulse">
+                  <div className="h-[150px] bg-gray-200"></div>
+                  <div className="p-4">
+                    <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                    <div className="h-3 bg-gray-200 rounded mb-4"></div>
+                    <div className="flex justify-between items-center">
+                      <div className="h-6 bg-gray-200 rounded w-20"></div>
+                      <div className="h-8 bg-gray-200 rounded w-16"></div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : featuredSoportes.length === 0 ? (
+              // No featured soportes message
+              <div className="col-span-full text-center py-12">
+                <p className="text-gray-500">No hay soportes destacados disponibles en este momento.</p>
+              </div>
+            ) : (
+              featuredSoportes.map((soporte) => {
+                const status = getAvailabilityStatus(soporte.status || soporte.estado, soporte.available);
+                // Usar siempre el ID del soporte, no el slug
+                const soporteId = soporte.id;
+                const handleClick = () => {
+                  if (soporteId && soporteId !== 'null') {
+                    console.log('🔗 Navegando a soporte con ID:', soporteId);
+                    router.push(`/product/${soporteId}`);
+                  } else {
+                    console.warn('⚠️ ID de soporte inválido:', soporteId, soporte);
+                  }
+                };
+
+                return (
+                  <div
+                    key={soporte.id}
+                    className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
+                  >
+                    <div className="relative cursor-pointer" onClick={handleClick}>
+                      <img
+                        src={(Array.isArray(soporte.images) ? soporte.images[0] : soporte.images) || '/placeholder.svg'}
+                        alt={soporte.title || soporte.nombre}
+                        className="w-full h-[150px] object-cover"
+                      />
+                      <div className="absolute top-3 left-3 flex flex-col gap-2">
+                        {(() => {
+                          const estadoRaw = soporte.status || soporte.estado;
+                          // Debug: ver qué valores están llegando
+                          if (process.env.NODE_ENV === 'development') {
+                            console.log('🔍 Estado del soporte:', {
+                              id: soporte.id,
+                              status: estadoRaw,
+                              estado: soporte.estado,
+                              available: soporte.available
+                            });
+                          }
+                          const status = getAvailabilityStatus(estadoRaw, soporte.available);
+                          return (
+                            <span className={`${status.className} text-xs font-medium px-2 py-1 rounded-full`}>
+                              {status.text}
+                            </span>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                    
+                    <div className="p-4">
+                      <h3 className="font-semibold text-gray-900 mb-2 text-lg line-clamp-2">{soporte.title || soporte.nombre}</h3>
+                      
+                      {/* Características con iconos - 2 columnas */}
+                      <div className="grid grid-cols-2 gap-2 mb-4">
+                        {/* Tipo */}
+                        <div className="flex items-center space-x-1.5">
+                          <div className="w-3 h-3 flex items-center justify-center flex-shrink-0">
+                            <Building className="w-2.5 h-2.5 text-gray-500" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs text-gray-500 truncate">Tipo</p>
+                            <p className="text-xs font-medium text-gray-900 truncate">{soporte.type || soporte.tipo}</p>
+                          </div>
+                        </div>
+                        
+                        {/* Iluminación */}
+                        <div className="flex items-center space-x-1.5">
+                          <div className="w-3 h-3 flex items-center justify-center flex-shrink-0">
+                            <Lightbulb className={`w-2.5 h-2.5 ${(soporte.lighting || soporte.iluminacion) ? 'text-yellow-500' : 'text-gray-400'}`} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs text-gray-500 truncate">Iluminación</p>
+                            <p className="text-xs font-medium text-gray-900 truncate">{(soporte.lighting || soporte.iluminacion) ? 'Sí' : 'No'}</p>
+                          </div>
+                        </div>
+                        
+                        {/* Medidas */}
+                        <div className="flex items-center space-x-1.5">
+                          <div className="w-3 h-3 flex items-center justify-center flex-shrink-0">
+                            <Ruler className="w-2.5 h-2.5 text-gray-500" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs text-gray-500 truncate">Medidas</p>
+                            <p className="text-xs font-medium text-gray-900 truncate">{soporte.dimensions || soporte.dimensiones || 'N/A'}</p>
+                          </div>
+                        </div>
+                        
+                        {/* Ciudad */}
+                        <div className="flex items-center space-x-1.5">
+                          <div className="w-3 h-3 flex items-center justify-center flex-shrink-0">
+                            <MapPin className="w-2.5 h-2.5 text-gray-500" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs text-gray-500 truncate">Ciudad</p>
+                            <p className="text-xs font-medium text-gray-900 truncate">{soporte.city || soporte.ciudad || 'N/A'}</p>
+                          </div>
+                        </div>
+                      </div>
+                    
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="text-lg font-bold text-[#e94446]">${(soporte.pricePerMonth || soporte.precio || 0).toLocaleString()}</span>
+                          <span className="text-gray-600 text-xs"> / mes</span>
+                        </div>
+                        <button
+                          onClick={handleClick}
+                          className="flex items-center px-3 py-1.5 rounded-lg text-sm bg-[#e94446] text-white font-medium hover:bg-[#D7514C] transition-colors"
+                        >
+                          <Eye className="w-3 h-3 mr-1" />
+                          Ver
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         </section>
 
@@ -397,157 +547,9 @@ export default function HomeClient() {
           </div>
         </section>
 
-        {/* Featured Spaces Section */}
-        <section className="mb-16">
-          <div className="text-center mb-12">
-            <div className="inline-block">
-              <div className="w-12 h-1 bg-[#e94446] mx-auto mb-4"></div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">Espacios destacados</h2>
-              <p className="text-gray-600">Consulta nuestros soportes publicitarios más valorados y con mayor alcance.</p>
-            </div>
-          </div>
+        <PlatformAnalyticsSection />
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-            {loadingFeatured ? (
-              // Loading skeleton
-              Array.from({ length: 5 }).map((_, index) => (
-                <div key={index} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden animate-pulse">
-                  <div className="h-[150px] bg-gray-200"></div>
-                  <div className="p-4">
-                    <div className="h-4 bg-gray-200 rounded mb-2"></div>
-                    <div className="h-3 bg-gray-200 rounded mb-4"></div>
-                    <div className="flex justify-between items-center">
-                      <div className="h-6 bg-gray-200 rounded w-20"></div>
-                      <div className="h-8 bg-gray-200 rounded w-16"></div>
-                    </div>
-                  </div>
-                </div>
-              ))
-            ) : featuredSoportes.length === 0 ? (
-              // No featured soportes message
-              <div className="col-span-full text-center py-12">
-                <p className="text-gray-500">No hay soportes destacados disponibles en este momento.</p>
-              </div>
-            ) : (
-              featuredSoportes.map((soporte) => {
-                const status = getAvailabilityStatus(soporte.status || soporte.estado, soporte.available);
-                // Usar siempre el ID del soporte, no el slug
-                const soporteId = soporte.id;
-                const handleClick = () => {
-                  if (soporteId && soporteId !== 'null') {
-                    console.log('🔗 Navegando a soporte con ID:', soporteId);
-                    router.push(`/product/${soporteId}`);
-                  } else {
-                    console.warn('⚠️ ID de soporte inválido:', soporteId, soporte);
-                  }
-                };
-
-                return (
-                  <div
-                    key={soporte.id}
-                    className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
-                  >
-                    <div className="relative cursor-pointer" onClick={handleClick}>
-                      <img
-                        src={(Array.isArray(soporte.images) ? soporte.images[0] : soporte.images) || '/placeholder.svg'}
-                        alt={soporte.title || soporte.nombre}
-                        className="w-full h-[150px] object-cover"
-                      />
-                      <div className="absolute top-3 left-3 flex flex-col gap-2">
-                        {(() => {
-                          const estadoRaw = soporte.status || soporte.estado;
-                          // Debug: ver qué valores están llegando
-                          if (process.env.NODE_ENV === 'development') {
-                            console.log('🔍 Estado del soporte:', {
-                              id: soporte.id,
-                              status: estadoRaw,
-                              estado: soporte.estado,
-                              available: soporte.available
-                            });
-                          }
-                          const status = getAvailabilityStatus(estadoRaw, soporte.available);
-                          return (
-                            <span className={`${status.className} text-xs font-medium px-2 py-1 rounded-full`}>
-                              {status.text}
-                            </span>
-                          );
-                        })()}
-                      </div>
-                    </div>
-                    
-                    <div className="p-4">
-                      <h3 className="font-semibold text-gray-900 mb-2 text-lg line-clamp-2">{soporte.title || soporte.nombre}</h3>
-                      
-                      {/* Características con iconos - 2 columnas */}
-                      <div className="grid grid-cols-2 gap-2 mb-4">
-                        {/* Tipo */}
-                        <div className="flex items-center space-x-1.5">
-                          <div className="w-3 h-3 flex items-center justify-center flex-shrink-0">
-                            <Building className="w-2.5 h-2.5 text-gray-500" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs text-gray-500 truncate">Tipo</p>
-                            <p className="text-xs font-medium text-gray-900 truncate">{soporte.type || soporte.tipo}</p>
-                          </div>
-                        </div>
-                        
-                        {/* Iluminación */}
-                        <div className="flex items-center space-x-1.5">
-                          <div className="w-3 h-3 flex items-center justify-center flex-shrink-0">
-                            <Lightbulb className={`w-2.5 h-2.5 ${(soporte.lighting || soporte.iluminacion) ? 'text-yellow-500' : 'text-gray-400'}`} />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs text-gray-500 truncate">Iluminación</p>
-                            <p className="text-xs font-medium text-gray-900 truncate">{(soporte.lighting || soporte.iluminacion) ? 'Sí' : 'No'}</p>
-                          </div>
-                        </div>
-                        
-                        {/* Medidas */}
-                        <div className="flex items-center space-x-1.5">
-                          <div className="w-3 h-3 flex items-center justify-center flex-shrink-0">
-                            <Ruler className="w-2.5 h-2.5 text-gray-500" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs text-gray-500 truncate">Medidas</p>
-                            <p className="text-xs font-medium text-gray-900 truncate">{soporte.dimensions || soporte.dimensiones || 'N/A'}</p>
-                          </div>
-                        </div>
-                        
-                        {/* Ciudad */}
-                        <div className="flex items-center space-x-1.5">
-                          <div className="w-3 h-3 flex items-center justify-center flex-shrink-0">
-                            <MapPin className="w-2.5 h-2.5 text-gray-500" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs text-gray-500 truncate">Ciudad</p>
-                            <p className="text-xs font-medium text-gray-900 truncate">{soporte.city || soporte.ciudad || 'N/A'}</p>
-                          </div>
-                        </div>
-                      </div>
-                    
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <span className="text-lg font-bold text-[#e94446]">${(soporte.pricePerMonth || soporte.precio || 0).toLocaleString()}</span>
-                          <span className="text-gray-600 text-xs"> / mes</span>
-                        </div>
-                        <button
-                          onClick={handleClick}
-                          className="flex items-center px-3 py-1.5 rounded-lg text-sm bg-[#e94446] text-white font-medium hover:bg-[#D7514C] transition-colors"
-                        >
-                          <Eye className="w-3 h-3 mr-1" />
-                          Ver
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </section>
-
-        {/* Owners Section */}
-        <OwnersSection />
+        <OccupationTimelineSection />
 
         {/* Blog Section */}
         <section className="mb-16 mt-16">

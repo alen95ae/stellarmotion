@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server"
+import { cookies } from "next/headers"
 import { SupabaseService } from "@/lib/supabase-service"
+import { verifySession } from "@/lib/auth"
 
 // Forzar runtime Node.js (no edge) para asegurar carga correcta de variables de entorno
 export const runtime = "nodejs"
@@ -35,8 +37,21 @@ export async function GET(request: Request) {
     const estado = searchParams.get("estado") || searchParams.get("status") || ""
     const tipo = searchParams.get("tipo") || ""
     const usuarioId = searchParams.get("usuarioId") || ""
+    let ownerId = searchParams.get("ownerId") || ""
     const page = parseInt(searchParams.get("page") || "1")
     const limit = parseInt(searchParams.get("limit") || "10")
+
+    if (!ownerId) {
+      try {
+        const cookieStore = await cookies()
+        const token = cookieStore.get("st_session")?.value
+        if (token) {
+          const payload = await verifySession(token)
+          const role = (payload?.role as string)?.toLowerCase?.()
+          if (role === "owner" && payload?.sub) ownerId = payload.sub
+        }
+      } catch (_) {}
+    }
 
     console.log('🔍 Filtros recibidos:', { 
       search, 
@@ -44,7 +59,8 @@ export async function GET(request: Request) {
       estado, 
       tipo, 
       usuarioId,
-      page, 
+      ownerId: ownerId || undefined,
+      page,
       limit,
       allParams: Object.fromEntries(searchParams.entries())
     });
@@ -60,6 +76,7 @@ export async function GET(request: Request) {
       estado: estadoFilter,
       tipo: tipo || undefined,
       usuarioId: usuarioId || undefined,
+      ownerId: ownerId || undefined,
       page,
       limit
     })

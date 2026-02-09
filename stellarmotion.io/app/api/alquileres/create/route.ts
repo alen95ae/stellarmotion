@@ -1,6 +1,6 @@
 /**
  * API Route para crear alquileres (Público)
- * POST /api/alquileres/create - Crear nuevo alquiler desde cliente público
+ * POST /api/alquileres/create - Crear nuevo alquiler desde brand (público)
  */
 
 import { NextRequest, NextResponse } from 'next/server';

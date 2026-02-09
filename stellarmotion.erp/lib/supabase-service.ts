@@ -259,13 +259,24 @@ function mapSoporteFromSupabase(record: any): Soporte {
     impactosDiarios: record.impactos_diarios || 0,
     impactosDiariosPorM2: record.impactos_diarios_m2 || 0,
     resumenAutomatico: record.resumen || '',
-    usuarioId: record.usuario_id || null,
-    usuario: record.usuario ? {
-      id: record.usuario.id || record.usuario_id || '',
-      name: record.usuario.nombre || record.usuario.name || '',
-      companyName: record.usuario.company_name || record.usuario.empresa || null,
-      email: record.usuario.email || ''
-    } : undefined,
+    usuarioId: record.owner_id ?? record.owner?.id ?? null,
+    owner: record.owner
+      ? {
+          id: record.owner.id,
+          empresa: record.owner.empresa ?? null,
+          nombre: record.owner.nombre ?? null,
+          apellidos: record.owner.apellidos ?? null,
+          email: record.owner.email ?? null
+        }
+      : undefined,
+    usuario: record.owner
+      ? {
+          id: record.owner.id,
+          name: [record.owner.nombre, record.owner.apellidos].filter(Boolean).join(' ') || record.owner.email || '',
+          companyName: record.owner.empresa ?? undefined,
+          email: record.owner.email || ''
+        }
+      : undefined,
     iluminacion: record.iluminacion || false,
     destacado: record.destacado || false,
     createdAt: new Date(record.created_at || Date.now()),
@@ -341,12 +352,27 @@ export class SupabaseService {
       const from = (page - 1) * limit;
       const to = from + limit - 1;
 
-      // Query base con count para obtener el total
+      // Query: JOIN soportes.owner_id → usuarios.id (Supabase detecta la FK automáticamente)
       let query = supabaseAdmin
         .from('soportes')
-        .select('*', { count: 'exact' });
+        .select(
+          `
+          *,
+          owner:usuarios (
+            id,
+            empresa,
+            nombre,
+            apellidos,
+            email
+          )
+          `,
+          { count: 'exact' }
+        );
 
-      // Aplicar filtros en la DB (más eficiente)
+      // Aplicar filtros en la DB (soportes.owner_id)
+      if (filters?.ownerId) {
+        query = query.eq('owner_id', filters.ownerId);
+      }
       if (filters?.estado) {
         // Mapear estado a formato ENUM
         const estadoMap: Record<string, string> = {
@@ -372,7 +398,7 @@ export class SupabaseService {
       }
 
       if (filters?.usuarioId) {
-        query = query.eq('usuario_id', filters.usuarioId);
+        query = query.eq('owner_id', filters.usuarioId);
       }
 
       // Búsqueda por texto (si se proporciona)
@@ -412,8 +438,9 @@ export class SupabaseService {
 
       const soportes = (data || []).map((record: any) => {
         try {
-          // Log temporal para depurar
-          console.log('🔍 [getSoportes] Procesando record ID:', record.id, 'imagenes type:', typeof record.imagenes, 'imagenes value:', JSON.stringify(record.imagenes));
+          if (record.owner) {
+            console.log('🔍 [getSoportes] record.owner:', { empresa: record.owner.empresa, nombre: record.owner.nombre, apellidos: record.owner.apellidos, email: record.owner.email });
+          }
           return mapSoporteFromSupabase(record);
         } catch (mapError) {
           console.error('❌ Error mapping record:', mapError);
@@ -443,7 +470,18 @@ export class SupabaseService {
 
       const { data, error } = await supabaseAdmin
         .from('soportes')
-        .select('*')
+        .select(
+          `
+          *,
+          owner:usuarios (
+            id,
+            empresa,
+            nombre,
+            apellidos,
+            email
+          )
+          `
+        )
         .eq('id', id)
         .single();
 
@@ -535,7 +573,7 @@ export class SupabaseService {
         // propietario: NO existe en tabla soportes
         iluminacion: data['Iluminación'] !== undefined ? data['Iluminación'] : (data.iluminacion !== undefined ? data.iluminacion : false),
         destacado: data['Destacado'] !== undefined ? data['Destacado'] : (data.destacado !== undefined ? data.destacado : false),
-        usuario_id: data.usuarioId || null,
+        owner_id: data.ownerId ?? data.owner ?? data['Propietario'] ?? null,
         resumen: data['Resumen automático'] || data.resumenAutomatico || null,
         // Usar SOLO campo JSONB imagenes (no usar imagen_1, imagen_2, imagen_3)
         imagenes: imagenesPaths.length > 0 ? imagenesPaths : []
@@ -677,6 +715,9 @@ export class SupabaseService {
       }
       if (data['Resumen automático'] !== undefined || data.resumenAutomatico !== undefined) {
         updateData.resumen = data['Resumen automático'] || data.resumenAutomatico;
+      }
+      if (data.ownerId !== undefined || data.owner !== undefined) {
+        updateData.owner_id = data.ownerId ?? data.owner ?? null;
       }
 
       console.log('📤 Enviando campos a Supabase:', updateData);

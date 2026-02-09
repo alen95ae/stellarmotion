@@ -305,7 +305,7 @@ function calcularPrecioServicios(serviciosIds: string[]): number {
 }
 
 /**
- * Crear nuevo alquiler desde cliente público
+ * Crear nuevo alquiler desde brand (público)
  */
 export async function createAlquiler(data: CreateAlquilerDTO): Promise<CreateAlquilerResponse> {
   try {

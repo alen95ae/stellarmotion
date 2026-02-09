@@ -508,7 +508,7 @@ export default function ClientesPage() {
             <Link href="/dashboard" className="text-gray-600 hover:text-gray-800 mr-4">
               ← Dashboard
             </Link>
-            <div className="text-xl font-bold text-slate-800">Clientes</div>
+            <div className="text-xl font-bold text-slate-800">Brands</div>
           </div>
           <div className="flex items-center gap-4">
             <span className="text-gray-600">Buscar</span>
@@ -520,8 +520,8 @@ export default function ClientesPage() {
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-800 mb-2">Gestión de Clientes</h1>
-          <p className="text-gray-600">Administra tu base de datos de clientes comerciales</p>
+          <h1 className="text-3xl font-bold text-slate-800 mb-2">Gestión de Brands</h1>
+          <p className="text-gray-600">Administra tu base de datos de brands comerciales</p>
         </div>
 
         {/* Barra superior sticky */}
@@ -530,7 +530,7 @@ export default function ClientesPage() {
             {/* Búsqueda - Izquierda */}
             <div className="flex-1 min-w-[200px] max-w-md">
               <Input
-                placeholder="Buscar clientes..."
+                placeholder="Buscar brands..."
                 value={filters.q}
                 onChange={(e) => setFilters(prev => ({ ...prev, q: e.target.value }))}
                 className="w-full"
@@ -544,7 +544,7 @@ export default function ClientesPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="ALL">Relación</SelectItem>
-                <SelectItem value="Cliente">Cliente</SelectItem>
+                <SelectItem value="Cliente">Brand</SelectItem>
                 <SelectItem value="Proveedor">Proveedor</SelectItem>
                 <SelectItem value="Ambos">Ambos</SelectItem>
               </SelectContent>
@@ -580,7 +580,7 @@ export default function ClientesPage() {
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>Importar clientes (CSV)</DialogTitle>
+                    <DialogTitle>Importar brands (CSV)</DialogTitle>
                     <DialogDescription>
                       Columnas: Nombre, Tipo de Contacto, Empresa, Email, Teléfono, NIT, Dirección, Ciudad, Código Postal, País, Relación, Sitio Web, Notas
                       <br/>
@@ -616,8 +616,8 @@ export default function ClientesPage() {
                 <div className="flex items-center gap-3">
                   <span className="text-sm font-medium text-blue-800">
                     {selectAllMode === 'all' 
-                      ? `${allContactIds.length} cliente(s) seleccionado(s) (todos)` 
-                      : `${selectedContacts.size} cliente(s) seleccionado(s)`
+                      ? `${allContactIds.length} brand(s) seleccionado(s) (todos)` 
+                      : `${selectedContacts.size} brand(s) seleccionado(s)`
                     }
                   </span>
                   <Select onValueChange={(value) => handleBulkFieldChange('relation', value)}>
@@ -625,7 +625,7 @@ export default function ClientesPage() {
                       <SelectValue placeholder="Relación" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Cliente">Cliente</SelectItem>
+                      <SelectItem value="Cliente">Brand</SelectItem>
                       <SelectItem value="Proveedor">Proveedor</SelectItem>
                       <SelectItem value="Ambos">Ambos</SelectItem>
                     </SelectContent>
@@ -669,9 +669,9 @@ export default function ClientesPage() {
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>
-                        <AlertDialogTitle>¿Eliminar clientes?</AlertDialogTitle>
+                        <AlertDialogTitle>¿Eliminar brands?</AlertDialogTitle>
                         <AlertDialogDescription>
-                          Esta acción eliminará {selectedContacts.size} cliente(s) seleccionado(s).
+                          Esta acción eliminará {selectedContacts.size} brand(s) seleccionado(s).
                           Esta acción no se puede deshacer.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
@@ -696,7 +696,7 @@ export default function ClientesPage() {
             <div className="mt-2 p-3 bg-cyan-50 border border-cyan-200 rounded-lg">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-cyan-900">
-                  Los {contacts.length} clientes de esta página están seleccionados.
+                  Los {contacts.length} brands de esta página están seleccionados.
                 </span>
                 <Button
                   variant="link"
@@ -705,10 +705,10 @@ export default function ClientesPage() {
                   onClick={() => {
                     setSelectedContacts(new Set(allContactIds))
                     setSelectAllMode('all')
-                    toast.success(`${allContactIds.length} clientes seleccionados`)
+                    toast.success(`${allContactIds.length} brands seleccionados`)
                   }}
                 >
-                  Seleccionar los {allContactIds.length} clientes
+                  Seleccionar los {allContactIds.length} brands
                 </Button>
               </div>
             </div>
@@ -736,9 +736,9 @@ export default function ClientesPage() {
           )}
         </div>
 
-        {/* Tabla de clientes */}
+        {/* Tabla de brands */}
         <div className="mb-3 text-sm text-slate-700">
-          Clientes ({pagination.total || contacts.length})
+          Brands ({pagination.total || contacts.length})
         </div>
         <Card>
           <CardContent className="p-0">
@@ -748,15 +748,15 @@ export default function ClientesPage() {
               <div className="text-center py-12">
                 <div className="text-gray-400 mb-4">
                   {filters.q || filters.relation !== "ALL" || filters.kind !== "ALL" ? (
-                    "No se encontraron clientes con los filtros aplicados"
+                    "No se encontraron brands con los filtros aplicados"
                   ) : (
-                    "No hay clientes registrados"
+                    "No hay brands registrados"
                   )}
                 </div>
                 <Link href="/panel/contactos/nuevo">
                   <Button className="bg-[#e94446] hover:bg-[#D7514C]">
                     <Plus className="w-4 h-4 mr-2" />
-                    Crear primer cliente
+                    Crear primer brand
                   </Button>
                 </Link>
               </div>
@@ -913,7 +913,7 @@ export default function ClientesPage() {
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="Cliente">Cliente</SelectItem>
+                                <SelectItem value="Cliente">Brand</SelectItem>
                                 <SelectItem value="Proveedor">Proveedor</SelectItem>
                                 <SelectItem value="Ambos">Ambos</SelectItem>
                               </SelectContent>
@@ -938,7 +938,7 @@ export default function ClientesPage() {
                               variant="outline"
                               size="sm"
                               onClick={() => handleDelete(contact.id)}
-                              title="Eliminar cliente"
+                              title="Eliminar brand"
                               className="text-red-600 hover:text-red-700 hover:border-red-600"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -1007,10 +1007,10 @@ export default function ClientesPage() {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <AlertTriangle className="w-5 h-5 text-yellow-500" />
-                Clientes duplicados detectados ({duplicates.length} grupos)
+                Brands duplicados detectados ({duplicates.length} grupos)
               </DialogTitle>
               <DialogDescription>
-                Se encontraron grupos de clientes con similitudes en Nombre, NIT, Teléfono o Email.
+                Se encontraron grupos de brands con similitudes en Nombre, NIT, Teléfono o Email.
                 Elige el principal de cada grupo y fusiona los demás.
               </DialogDescription>
             </DialogHeader>
@@ -1028,7 +1028,7 @@ export default function ClientesPage() {
                     <CardContent className="p-4">
                       <div className="space-y-3">
                         <div className="font-medium text-sm text-yellow-800">
-                          Grupo {index + 1} - Clientes similares (elige el principal)
+                          Grupo {index + 1} - Brands similares (elige el principal)
                         </div>
 
                         <RadioGroup

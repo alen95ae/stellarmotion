@@ -23,9 +23,10 @@ import {
 const dashboardNavigation = [
   { name: 'Inicio', href: '/panel/owner/inicio', icon: Home },
   { name: 'Soportes', href: '/panel/owner/soportes', icon: Monitor },
+  { name: 'Solicitudes', href: '/panel/owner/solicitudes', icon: FileText },
   { name: 'Alquileres', href: '/panel/owner/alquileres', icon: CalendarDays },
   { name: 'Planificación', href: '/panel/owner/planificacion', icon: CalendarRange },
-  { name: 'Clientes', href: '/panel/owner/clientes', icon: Users },
+  { name: 'Brands', href: '/panel/owner/clientes', icon: Users },
   { name: 'Pagos', href: '/panel/owner/pagos', icon: CreditCard },
   { name: 'Marketing', href: '/panel/owner/marketing', icon: Megaphone },
   { name: 'Impresiones', href: '/panel/owner/impresiones', icon: Printer },

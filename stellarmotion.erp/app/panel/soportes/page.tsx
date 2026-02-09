@@ -84,6 +84,23 @@ const CITIES_BY_COUNTRY: Record<string, string[]> = {
   'Uruguay': ['Montevideo', 'Salto', 'Ciudad de la Costa', 'Paysandú', 'Las Piedras', 'Rivera', 'Maldonado', 'Tacuarembó', 'Melo', 'Mercedes']
 };
 
+interface OwnerDisplay {
+  id: string
+  empresa?: string | null
+  nombre?: string | null
+  apellidos?: string | null
+  email?: string | null
+}
+
+function ownerLabel(owner: OwnerDisplay | null | undefined): string {
+  if (!owner) return '—'
+  if (owner.empresa?.trim()) return owner.empresa.trim()
+  const fullName = [owner.nombre, owner.apellidos].filter(Boolean).join(' ').trim()
+  if (fullName) return fullName
+  if (owner.email?.trim()) return owner.email.trim()
+  return '—'
+}
+
 interface Support {
   id: string
   code: string  // Código interno (SM-0001, SM-0002, etc.)
@@ -100,6 +117,7 @@ interface Support {
   pricePerM2: number | null
   productionCost: number | null
   usuarioId: string | null
+  owner?: OwnerDisplay | null
   usuario: {
     id: string
     name: string
@@ -192,38 +210,30 @@ export default function SoportesPage() {
         const data = await response.json()
         // La API devuelve { soportes: [...], pagination: {...} }
         const soportes = data.soportes || data || []
-        
-        // Debug: ver qué datos se están cargando
-        console.log('📊 Datos cargados:', soportes.length, 'soportes')
-        console.log('📋 Primer soporte:', soportes[0])
-        
-        // Mapear datos de la API a la interfaz Support
+
+        // Mapear datos de la API a la interfaz Support (incluir owner para la columna Owner)
         const mappedSupports = soportes.map((soporte: any) => ({
           id: soporte.id,
-          code: soporte.codigoInterno || soporte.id, // Usar código interno
-          title: soporte.nombre, // Título del soporte
-          type: soporte.tipo, // Tipo de soporte
+          code: soporte.codigoInterno || soporte.id,
+          title: soporte.nombre,
+          type: soporte.tipo,
           status: soporte.estado || 'disponible',
           widthM: soporte.dimensiones?.ancho || null,
           heightM: soporte.dimensiones?.alto || null,
-          city: soporte.ciudad || soporte.ubicacion?.split(',')[0]?.trim() || 'N/A', // Ciudad
-          country: soporte.pais || soporte.ubicacion?.split(',')[1]?.trim() || 'N/A', // País
-          priceMonth: soporte.precio || null, // Precio por mes
+          city: soporte.ciudad || soporte.ubicacion?.split(',')[0]?.trim() || 'N/A',
+          country: soporte.pais || soporte.ubicacion?.split(',')[1]?.trim() || 'N/A',
+          priceMonth: soporte.precio || null,
           available: soporte.estado === 'disponible',
           areaM2: soporte.dimensiones?.area || null,
           pricePerM2: null,
           productionCost: null,
           usuarioId: soporte.usuarioId || null,
+          owner: soporte.owner ?? null,
           usuario: soporte.usuario || null,
           imageUrl: soporte.imagenes?.[0] || null,
           company: { name: soporte.categoria || 'N/A' }
         }))
-        
-        // Debug: ver los datos mapeados
-        console.log('🎯 Datos mapeados:', mappedSupports.length, 'supports')
-        console.log('🔍 Primer support mapeado:', mappedSupports[0])
-        console.log('📊 Status del primer support:', mappedSupports[0]?.status)
-        
+
         setSupports(mappedSupports)
       } else {
         toast.error("Error al cargar los soportes")
@@ -646,16 +656,8 @@ export default function SoportesPage() {
                           onSave={handleFieldSave}
                         />
                       </TableCell>
-                      <TableCell>
-                        <EditableField 
-                          support={support} 
-                          field="owner" 
-                          value={support.owner}
-                          type="text"
-                          className="truncate max-w-[20ch]"
-                          title={support.owner || ''}
-                          onSave={handleFieldSave}
-                        />
+                      <TableCell className="truncate max-w-[20ch]" title={ownerLabel(support.owner)}>
+                        {ownerLabel(support.owner)}
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2">

@@ -35,8 +35,8 @@ const dashboardCards = [
     color: 'bg-red-100'
   },
   {
-    title: 'Clientes',
-    description: 'Administra tu base de clientes',
+    title: 'Brands',
+    description: 'Administra tu base de brands',
     href: '/panel/clientes',
     icon: Users,
     color: 'bg-red-100'
@@ -81,7 +81,7 @@ const quickActions = [
   },
   {
     title: 'Mensajería',
-    description: 'Comunicación con clientes',
+    description: 'Comunicación con brands',
     href: '/panel/mensajeria',
     icon: MessageSquare,
     color: 'bg-red-100'
@@ -254,7 +254,7 @@ export default function DashboardPage() {
               <Users className="h-3.5 w-3.5 text-red-600" />
             </div>
             <div className="ml-2">
-              <p className="text-[11px] font-medium text-gray-500">Clientes Estimados</p>
+              <p className="text-[11px] font-medium text-gray-500">Brands estimados</p>
               <p className="text-base font-semibold text-gray-900">
                 {loading ? '...' : stats.totalClients}
               </p>

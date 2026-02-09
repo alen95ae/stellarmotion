@@ -8,7 +8,7 @@ export default function ClienteInicioPage() {
   return (
     <div className="space-y-1.5">
       <div className="mb-1">
-        <h1 className="text-lg font-bold tracking-tight">Dashboard Cliente</h1>
+        <h1 className="text-lg font-bold tracking-tight">Dashboard Brand</h1>
         <p className="text-muted-foreground mt-0.5 text-xs leading-tight">
           Bienvenido a tu panel de control
         </p>
@@ -16,17 +16,17 @@ export default function ClienteInicioPage() {
 
       <div className="grid gap-1.5 md:grid-cols-2 lg:grid-cols-4">
         <Card className="p-2">
-          <Link href="/panel/cliente/alquileres">
+          <Link href="/panel/cliente/solicitudes">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 px-2 py-1.5">
               <CardTitle className="text-sm font-medium">
-                Mis Alquileres
+                Solicitudes
               </CardTitle>
               <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
             </CardHeader>
             <CardContent className="px-2 py-2">
               <div className="text-base font-bold">-</div>
               <p className="text-[11px] text-muted-foreground leading-tight">
-                Ver todos tus alquileres
+                Ver tus solicitudes de cotización
               </p>
             </CardContent>
           </Link>

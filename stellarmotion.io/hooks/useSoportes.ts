@@ -27,11 +27,13 @@ export interface Soporte {
   impactosDiariosPorM2?: number;
   resumenAutomatico?: string;
   usuarioId?: string;
+  /** Resuelto por backend: JOIN soportes.usuario_id → usuarios */
   owner?: {
     id: string;
-    name: string;
-    companyName?: string;
-    email: string;
+    empresa?: string | null;
+    nombre?: string | null;
+    apellidos?: string | null;
+    email?: string | null;
   };
   iluminacion?: boolean;
   destacado?: boolean;

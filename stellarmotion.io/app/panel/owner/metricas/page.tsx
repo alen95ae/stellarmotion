@@ -97,7 +97,7 @@ export default function MetricasPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Clientes Activos</CardTitle>
+            <CardTitle className="text-sm font-medium">Brands Activos</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -116,7 +116,7 @@ export default function MetricasPage() {
           <CardContent>
             <div className="text-2xl font-bold">Bs. {metricas.ingresoPromedioCliente.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">
-              Por cliente
+              Por brand
             </p>
           </CardContent>
         </Card>
@@ -197,7 +197,7 @@ export default function MetricasPage() {
         <CardHeader>
           <CardTitle className="flex items-center">
             <Users className="w-5 h-5 mr-2" />
-            Ranking de Clientes por Gasto
+            Ranking de Brands por Gasto
           </CardTitle>
         </CardHeader>
         <CardContent>

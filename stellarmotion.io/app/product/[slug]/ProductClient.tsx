@@ -66,6 +66,7 @@ export default function ProductClient({ productId }: ProductClientProps) {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [successNumber, setSuccessNumber] = useState<string | null>(null);
+  const [brandMessage, setBrandMessage] = useState('');
 
 
   // Estado para searchLocation
@@ -210,13 +211,8 @@ export default function ProductClient({ productId }: ProductClientProps) {
   ].filter(Boolean);
 
   const formatPrice = (price: number) => {
-    // Si el precio es NaN o no válido, mostrar un precio por defecto
     const validPrice = isNaN(price) || price <= 0 ? 350 : price;
-    return new Intl.NumberFormat('es-BO', {
-      style: 'currency',
-      currency: 'BOB',
-      minimumFractionDigits: 0,
-    }).format(validPrice);
+    return `$${validPrice.toLocaleString('es-ES', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
   };
 
   const formatImpressions = (impressions: number) => {
@@ -348,21 +344,31 @@ export default function ProductClient({ productId }: ProductClientProps) {
       const fechaFin = new Date(fechaInicio);
       fechaFin.setMonth(fechaFin.getMonth() + selectedDates.months!);
 
-      // Preparar datos para enviar
-      // El usuario_id se obtiene automáticamente del JWT en el backend
-      const alquilerData = {
+      const basePrice = isNaN(soporte?.precio) || soporte?.precio <= 0 ? 350 : soporte.precio;
+      const subtotal = calculateSubtotal();
+      const comisionPlataforma = calculateCommission();
+      const totalEstimado = calculateTotal();
+
+      // Crear solicitud (no alquiler). brand_user_id se obtiene del JWT en el backend.
+      const solicitudData = {
         soporte_id: soporte.id,
         fecha_inicio: fechaInicio.toISOString().split('T')[0],
+        fecha_fin: fechaFin.toISOString().split('T')[0],
         meses: selectedDates.months!,
-        servicios_adicionales: getSelectedServiceIds()
+        servicios_adicionales: getSelectedServiceIds(),
+        precio_mes_snapshot: basePrice,
+        subtotal,
+        comision_plataforma: comisionPlataforma,
+        total_estimado: totalEstimado,
+        ...(brandMessage.trim() ? { brand_message: brandMessage.trim() } : {}),
       };
 
-      const response = await fetch('/api/alquileres/create', {
+      const response = await fetch('/api/solicitudes', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(alquilerData),
+        body: JSON.stringify(solicitudData),
       });
 
       let data;
@@ -379,7 +385,7 @@ export default function ProductClient({ productId }: ProductClientProps) {
           statusText: response.statusText,
           data
         });
-        const errorMessage = data?.error || data?.details || data?.message || `Error al crear el alquiler (${response.status})`;
+        const errorMessage = data?.error || data?.details || data?.message || `Error al crear la solicitud (${response.status})`;
         throw new Error(errorMessage);
       }
 
@@ -405,11 +411,11 @@ export default function ProductClient({ productId }: ProductClientProps) {
           }
         }, 100);
       } else {
-        throw new Error(data.message || 'Error al crear el alquiler');
+        throw new Error(data.message || 'Error al crear la solicitud');
       }
     } catch (error: any) {
-      console.error('Error creando alquiler:', error);
-      const errorMessage = error?.message || error?.toString() || 'Error al crear el alquiler. Por favor intenta de nuevo.';
+      console.error('Error creando solicitud:', error);
+      const errorMessage = error?.message || error?.toString() || 'Error al crear la solicitud. Por favor intenta de nuevo.';
       setSubmitError(errorMessage);
       // También mostrar en consola para debugging
       console.error('Detalles del error:', {
@@ -583,14 +589,31 @@ export default function ProductClient({ productId }: ProductClientProps) {
                 </div>
               </div>
 
-              {/* Host Info */}
+              {/* Host Info: owner.empresa → nombre+apellidos → email (nunca usuario_id como nombre) */}
               <div className="flex items-center space-x-3 mb-6">
                 <div className="w-12 h-12 bg-[#D7514C] rounded-full flex items-center justify-center text-white font-bold">
-                  SM
+                  {(() => {
+                    const o = soporte?.owner;
+                    if (!o) return 'SM';
+                    if (o.empresa?.trim()) return o.empresa.slice(0, 2).toUpperCase();
+                    const full = [o.nombre, o.apellidos].filter(Boolean).join(' ');
+                    if (full) return full.split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase().slice(0, 2);
+                    if (o.email) return o.email.slice(0, 2).toUpperCase();
+                    return 'SM';
+                  })()}
                 </div>
                 <div>
-                  <p className="font-medium text-gray-900">StellarMotion</p>
-                  <p className="text-sm text-gray-500">Miembro desde enero 2024</p>
+                  <p className="font-medium text-gray-900">
+                    {(() => {
+                      const o = soporte?.owner;
+                      if (!o) return 'StellarMotion';
+                      if (o.empresa?.trim()) return o.empresa.trim();
+                      const full = [o.nombre, o.apellidos].filter(Boolean).join(' ').trim();
+                      if (full) return full;
+                      if (o.email?.trim()) return o.email.trim();
+                      return 'StellarMotion';
+                    })()}
+                  </p>
                 </div>
               </div>
             </div>
@@ -665,7 +688,7 @@ export default function ProductClient({ productId }: ProductClientProps) {
                 }] : []}
                 lat={soporteCoords?.lat || 40.4637}
                 lng={soporteCoords?.lng || -3.7492}
-                zoom={15}
+                zoom={17}
                 height={400}
                 style="streets"
                 showControls={true}
@@ -970,12 +993,22 @@ export default function ProductClient({ productId }: ProductClientProps) {
                           )}
                           <p>Comisión de la plataforma (3%): {formatPrice(calculateCommission())}</p>
                         </div>
+                        <div className="mb-4">
+                          <label className="block text-sm opacity-90 mb-1">Mensaje para el propietario (opcional)</label>
+                          <textarea
+                            value={brandMessage}
+                            onChange={(e) => setBrandMessage(e.target.value)}
+                            placeholder="Escribe un mensaje si lo deseas..."
+                            className="w-full px-3 py-2 rounded-lg border border-white/30 bg-white/10 text-white placeholder-white/60 text-sm min-h-[80px]"
+                            rows={3}
+                          />
+                        </div>
                         <Button 
                           className="w-full bg-white text-[#D7514C] hover:bg-gray-100 font-semibold py-3 disabled:opacity-50 disabled:cursor-not-allowed"
                           onClick={handleCreateAlquiler}
                           disabled={isSubmitting || !isFormValid()}
                         >
-                          {isSubmitting ? 'Procesando...' : 'Solicitud de cotización'}
+                          {isSubmitting ? 'Procesando...' : 'Enviar solicitud'}
                         </Button>
                       </div>
                     )}

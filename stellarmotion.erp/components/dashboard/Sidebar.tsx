@@ -93,13 +93,13 @@ export default function Sidebar({ children }: SidebarProps) {
     { id: 'soportes', name: 'Soportes', icon: Monitor, path: '/panel/soportes' },
     { id: 'logistica', name: 'Logística', icon: Globe2, path: '/panel/logistica' },
     { id: 'owners', name: 'Owners', icon: Rabbit, path: '/panel/owners' },
-    { id: 'clientes', name: 'Clientes', icon: Rat, path: '/panel/clientes' },
+    { id: 'clientes', name: 'Brands', icon: Rat, path: '/panel/clientes' },
     { id: 'proyectos', name: 'Proyectos', icon: Terminal, path: '/panel/proyectos' },
     { id: 'crm', name: 'CRM', icon: Filter, path: '/panel/crm' },
     { id: 'legal', name: 'Legal', icon: Scale, path: '/panel/legal' },
     { id: 'iyd', name: 'I+D', icon: FlaskConical, path: '/panel/iyd' },
     { id: 'facturacion', name: 'Facturación', icon: Receipt, path: '/panel/facturacion' },
-    { id: 'atencion', name: 'Atención al cliente', icon: MessageCircle, path: '/panel/atencion' },
+    { id: 'atencion', name: 'Atención a brands', icon: MessageCircle, path: '/panel/atencion' },
     { id: 'sitio', name: 'Sitio web', icon: Globe, path: '/panel/sitio' },
     { id: 'ajustes', name: 'Ajustes', icon: Settings, path: '/panel/ajustes' }
   ]

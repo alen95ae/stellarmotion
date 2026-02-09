@@ -188,7 +188,7 @@ export default function Header() {
   // Obtener el rol del usuario usando el helper centralizado
   const userRole = user ? getRoleFromPayload(user.role) : undefined
 
-  // Persistir preferencia de vista Owner/Cliente para todos los usuarios
+  // Persistir preferencia de vista Owner/Brand para todos los usuarios
   useEffect(() => {
     if (!user) return
     try {
@@ -419,7 +419,7 @@ export default function Header() {
 
                 {isUserMenuOpen && (
                   <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-950 rounded-md shadow-lg py-1 z-[60] border border-gray-200 dark:border-gray-800">
-                    {/* Selector de vista (Owner / Cliente) - disponible para todos los usuarios */}
+                    {/* Selector de vista (Owner / Brand) - disponible para todos los usuarios */}
                     <div className="px-4 py-2">
                       <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Vista del dashboard</div>
                       <div className="w-full rounded-full border border-[#e94446] p-1 flex">
@@ -443,7 +443,7 @@ export default function Header() {
                               : "bg-white dark:bg-gray-900 text-[#e94446] hover:bg-[#e94446]/5"
                           }`}
                         >
-                          Cliente
+                          Brand
                         </button>
                       </div>
                     </div>

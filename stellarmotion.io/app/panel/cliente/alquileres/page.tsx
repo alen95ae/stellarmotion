@@ -1,17 +1,20 @@
 'use client';
 
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+
+/**
+ * El módulo de alquileres del dashboard Brand fue sustituido por Solicitudes.
+ * Redirigir a solicitudes para no romper enlaces antiguos.
+ */
 export default function ClienteAlquileresPage() {
+  const router = useRouter();
+  useEffect(() => {
+    router.replace('/panel/cliente/solicitudes');
+  }, [router]);
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Mis Alquileres</h1>
-        <p className="text-muted-foreground">
-          Gestiona tus alquileres activos
-        </p>
-      </div>
-      <div className="text-center py-12 text-muted-foreground">
-        <p>Funcionalidad en desarrollo</p>
-      </div>
+    <div className="flex items-center justify-center py-12">
+      <p className="text-muted-foreground">Redirigiendo a Solicitudes...</p>
     </div>
   );
 }
