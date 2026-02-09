@@ -54,4 +54,15 @@ console.log('✅ [Supabase Admin] Cliente Admin inicializado correctamente');
 console.log(`✅ [Supabase Admin] Usando SERVICE_ROLE_KEY (bypassa RLS)`);
 console.log(`✅ [Supabase Admin] Schema: public`);
 
+export function getAdminSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+      auth: {
+        persistSession: false,
+      },
+    }
+  );
+}
 
