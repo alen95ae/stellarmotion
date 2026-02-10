@@ -16,18 +16,20 @@ interface BulkActionsProps {
   selectedCount: number
   onBulkDelete: () => void
   onBulkStatusChange: (status: string) => void
+  darkMode?: boolean
 }
 
 export default function BulkActions({ 
   selectedCount, 
   onBulkDelete, 
-  onBulkStatusChange 
+  onBulkStatusChange,
+  darkMode = false
 }: BulkActionsProps) {
   if (selectedCount === 0) return null
 
   return (
-    <div className="flex items-center gap-2 p-4 bg-gray-50 border-t">
-      <span className="text-sm text-gray-600">
+    <div className={`flex items-center gap-2 p-4 border-t ${darkMode ? "bg-slate-800/50 border-slate-800" : "bg-gray-50 border-gray-200"}`}>
+      <span className={`text-sm ${darkMode ? "text-slate-300" : "text-gray-600"}`}>
         {selectedCount} elemento{selectedCount !== 1 ? 's' : ''} seleccionado{selectedCount !== 1 ? 's' : ''}
       </span>
       

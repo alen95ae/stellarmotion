@@ -7,9 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Loader2, CheckCircle, XCircle, X } from 'lucide-react';
-import { HugeiconsIcon } from '@hugeicons/react';
-import { ViewIcon, Delete02Icon } from '@hugeicons/core-free-icons';
+import { Search, Loader2, CheckCircle, XCircle, X, Eye, Trash2 } from 'lucide-react';
 import { SolicitudWithRelations } from '@/types/solicitudes';
 import {
   Dialog,
@@ -303,7 +301,7 @@ export default function OwnerSolicitudesPage() {
                               title="Ver solicitud"
                               className="h-8 w-8 rounded-lg p-0 text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100 transition-colors"
                             >
-                              <HugeiconsIcon icon={ViewIcon} size={18} />
+                              <Eye className="w-[18px] h-[18px]" />
                             </Button>
                           </Link>
                           <Button
@@ -313,7 +311,7 @@ export default function OwnerSolicitudesPage() {
                             title="Eliminar"
                             className="h-8 w-8 rounded-lg p-0 text-gray-500 hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-950/40 dark:hover:text-red-400 transition-colors"
                           >
-                            <HugeiconsIcon icon={Delete02Icon} size={18} />
+                            <Trash2 className="w-[18px] h-[18px]" />
                           </Button>
                           {s.estado === 'pendiente' && (
                             <>

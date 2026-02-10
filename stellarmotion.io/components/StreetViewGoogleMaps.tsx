@@ -2,6 +2,12 @@
 import { useEffect, useRef, useState } from "react";
 import { useGoogleMaps } from "@/hooks/useGoogleMaps";
 
+export interface StreetViewPov {
+  heading: number;
+  pitch: number;
+  zoom: number;
+}
+
 export interface StreetViewGoogleMapsProps {
   lat: number;
   lng: number;
@@ -11,6 +17,7 @@ export interface StreetViewGoogleMapsProps {
   height?: string | number;
   width?: string | number;
   className?: string;
+  onPovChange?: (pov: StreetViewPov) => void;
 }
 
 declare global {
@@ -28,9 +35,12 @@ export default function StreetViewGoogleMaps({
   height = "400px",
   width = "100%",
   className = "",
+  onPovChange,
 }: StreetViewGoogleMapsProps) {
   const streetViewContainer = useRef<HTMLDivElement>(null);
   const panorama = useRef<any>(null);
+  const onPovChangeRef = useRef(onPovChange);
+  onPovChangeRef.current = onPovChange;
   const { isLoaded: googleMapsLoaded } = useGoogleMaps();
   const [isStreetViewReady, setIsStreetViewReady] = useState(false);
   const [hasStreetView, setHasStreetView] = useState(true);
@@ -73,6 +83,28 @@ export default function StreetViewGoogleMaps({
                 setIsStreetViewReady(true);
               }
             });
+
+            const throttledNotifyPov = () => {
+              if (panorama.current && onPovChangeRef.current) {
+                const pov = panorama.current.getPov();
+                const zoomVal = panorama.current.getZoom();
+                onPovChangeRef.current({
+                  heading: typeof pov?.heading === "number" ? pov.heading : 0,
+                  pitch: typeof pov?.pitch === "number" ? pov.pitch : 0,
+                  zoom: typeof zoomVal === "number" ? zoomVal : 1,
+                });
+              }
+            };
+            let throttleTimer: ReturnType<typeof setTimeout> | null = null;
+            const schedulePovNotify = () => {
+              if (throttleTimer !== null) return;
+              throttleTimer = setTimeout(() => {
+                throttleTimer = null;
+                throttledNotifyPov();
+              }, 150);
+            };
+            panorama.current.addListener("pov_changed", schedulePovNotify);
+            panorama.current.addListener("zoom_changed", schedulePovNotify);
 
             setIsStreetViewReady(true);
             setHasStreetView(true);

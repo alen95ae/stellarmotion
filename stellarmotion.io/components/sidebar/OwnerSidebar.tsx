@@ -2,64 +2,65 @@
 
 import Link from 'next/link';
 import { useState, useRef, useEffect } from 'react';
-import { HugeiconsIcon } from '@hugeicons/react';
 import {
-  Home02Icon,
-  FileAudioIcon,
-  Calendar03Icon,
-  Calendar02Icon,
-  UserIcon,
-  Money01Icon,
-  MarketingIcon,
-  PrinterIcon,
-  WaterfallDown01Icon,
-  Message01Icon,
-  Settings02Icon,
-  ToolsIcon,
-  ComputerIcon,
-} from '@hugeicons/core-free-icons';
-import { ChevronLeft, ChevronRight, Crown } from 'lucide-react';
+  ChevronLeft,
+  ChevronRight,
+  Crown,
+  Home,
+  Monitor,
+  FileText,
+  CalendarDays,
+  CalendarRange,
+  User,
+  Banknote,
+  Megaphone,
+  Printer,
+  ChartArea,
+  Wrench,
+  MessageCircle,
+  Settings,
+} from 'lucide-react';
 
-const ICON_SIZE = 24;
+const iconClass = "h-6 w-6 shrink-0";
 
 function InicioIcon({ className }: { className?: string }) {
-  return <HugeiconsIcon icon={Home02Icon} size={ICON_SIZE} className={className} />;
+  return <Home className={className ?? iconClass} />;
 }
 function SoportesIcon({ className }: { className?: string }) {
-  return <HugeiconsIcon icon={ComputerIcon} size={ICON_SIZE} className={className} />;
+  return <Monitor className={className ?? iconClass} />;
 }
 function SolicitudesMenuIcon({ className }: { className?: string }) {
-  return <HugeiconsIcon icon={FileAudioIcon} size={ICON_SIZE} className={className} />;
+  return <FileText className={className ?? iconClass} />;
 }
 function AlquileresIcon({ className }: { className?: string }) {
-  return <HugeiconsIcon icon={Calendar03Icon} size={ICON_SIZE} className={className} />;
+  return <CalendarDays className={className ?? iconClass} />;
 }
 function PlanificacionIcon({ className }: { className?: string }) {
-  return <HugeiconsIcon icon={Calendar02Icon} size={ICON_SIZE} className={className} />;
+  return <CalendarRange className={className ?? iconClass} />;
 }
 function ClientesIcon({ className }: { className?: string }) {
-  return <HugeiconsIcon icon={UserIcon} size={ICON_SIZE} className={className} />;
+  return <User className={className ?? iconClass} />;
 }
 function FacturacionIcon({ className }: { className?: string }) {
-  return <HugeiconsIcon icon={Money01Icon} size={ICON_SIZE} className={className} />;
+  return <CircleDollarSign className={className ?? iconClass} />;
 }
 function MarketingNavIcon({ className }: { className?: string }) {
-  return <HugeiconsIcon icon={MarketingIcon} size={ICON_SIZE} className={className} />;
+  return <Megaphone className={className ?? iconClass} />;
 }
 function ImpresionesIcon({ className }: { className?: string }) {
-  return <HugeiconsIcon icon={PrinterIcon} size={ICON_SIZE} className={className} />;
+  return <Printer className={className ?? iconClass} />;
 }
 function MetricasIcon({ className }: { className?: string }) {
-  return <HugeiconsIcon icon={WaterfallDown01Icon} size={ICON_SIZE} className={className} />;
+  return <ChartArea className={className ?? iconClass} />;
 }
 function MantenimientoIcon({ className }: { className?: string }) {
-  return <HugeiconsIcon icon={ToolsIcon} size={ICON_SIZE} className={className} />;
+  return <Wrench className={className ?? iconClass} />;
 }
 function MensajeriaIcon({ className }: { className?: string }) {
-  return <HugeiconsIcon icon={Message01Icon} size={ICON_SIZE} className={className} />;
+  return <MessageCircle className={className ?? iconClass} />;
 }
 function AjustesIcon({ className }: { className?: string }) {
-  return <HugeiconsIcon icon={Settings02Icon} size={ICON_SIZE} className={className} />;
+  return <Settings className={className ?? iconClass} />;
 }
 
 const navigation = [

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { MapPin, Heart, Eye, Ruler, Building, Globe, Lightbulb, Star, Calendar, Send, MessageSquare, Edit, CheckCircle, X } from 'lucide-react';
+import { MapPin, Heart, Eye, Ruler, Building, Globe, Lightbulb, Star, Calendar, Send, MessageSquare, Edit, CheckCircle, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { IconBox } from '@/components/ui/IconBox';
 import { FEATURE_ICONS } from '@/lib/icons';
@@ -166,41 +166,15 @@ export default function ProductClient({ productId }: ProductClientProps) {
   const clampedSelectedIndex = Math.min(selectedImage, Math.max(displayedImages.length - 1, 0));
   const mainImage = displayedImages[clampedSelectedIndex] || '/placeholder.svg?height=400&width=600';
 
-  // Funciones para el carrusel infinito
-  const getCarouselImages = () => {
-    if (displayedImages.length <= 1) return { left: null, center: displayedImages[0], right: null };
-    if (displayedImages.length === 2) {
-      return {
-        left: displayedImages[1],
-        center: displayedImages[0],
-        right: displayedImages[1]
-      };
-    }
-    
-    const currentIndex = clampedSelectedIndex;
-    const leftIndex = currentIndex === 0 ? displayedImages.length - 1 : currentIndex - 1;
-    const rightIndex = currentIndex === displayedImages.length - 1 ? 0 : currentIndex + 1;
-    
-    return {
-      left: displayedImages[leftIndex],
-      center: displayedImages[currentIndex],
-      right: displayedImages[rightIndex]
-    };
-  };
-
-  const handleImageClick = (direction: 'left' | 'right') => {
+  const handlePrevImage = () => {
     if (displayedImages.length <= 1) return;
-    
-    if (direction === 'left') {
-      const newIndex = clampedSelectedIndex === 0 ? displayedImages.length - 1 : clampedSelectedIndex - 1;
-      setSelectedImage(newIndex);
-    } else {
-      const newIndex = clampedSelectedIndex === displayedImages.length - 1 ? 0 : clampedSelectedIndex + 1;
-      setSelectedImage(newIndex);
-    }
+    setSelectedImage(clampedSelectedIndex === 0 ? displayedImages.length - 1 : clampedSelectedIndex - 1);
   };
 
-  const carouselImages = getCarouselImages();
+  const handleNextImage = () => {
+    if (displayedImages.length <= 1) return;
+    setSelectedImage(clampedSelectedIndex === displayedImages.length - 1 ? 0 : clampedSelectedIndex + 1);
+  };
   
   // Crear tags basados en las características del soporte
   const safeTags = [
@@ -457,86 +431,56 @@ export default function ProductClient({ productId }: ProductClientProps) {
           </ol>
         </nav>
 
-        {/* Top Section - Infinite Carousel */}
-        <div className="mb-8">
-          {displayedImages.length === 1 ? (
-            /* Single Image - 250x150 Aspect Ratio, Smaller */
-            <div className="max-w-2xl mx-auto">
-              <div className="bg-white rounded-2xl overflow-hidden border border-gray-200">
-                <div className="aspect-[250/150] w-full">
+        {/* Top Section - Horizontal Scroll Carousel */}
+        <div className="mb-8 relative">
+          <div
+            className="flex gap-4 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-2 -mx-4 px-4 scrollbar-hide"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            ref={(el) => {
+              if (el) (window as any).__productCarousel = el;
+            }}
+          >
+            {displayedImages.map((img, index) => (
+              <div
+                key={index}
+                className="flex-shrink-0 snap-start rounded-2xl overflow-hidden border border-gray-200"
+                style={{ width: 'calc(50% - 8px)' }}
+              >
+                <div className="aspect-[4/3] w-full">
                   <img
-                    src={displayedImages[0] || '/placeholder.svg?height=400&width=600'}
-                    alt={soporte?.nombre || 'Soporte'}
+                    src={img || '/placeholder.svg?height=400&width=600'}
+                    alt={`${soporte?.nombre || 'Soporte'} - ${index + 1}`}
                     className="w-full h-full object-cover"
                   />
                 </div>
               </div>
-            </div>
-          ) : (
-            /* Infinite Carousel - 3 Images Layout */
-            <div className="max-w-5xl mx-auto">
-              <div className="flex items-center justify-center gap-4">
-                {/* Left Image - 1/3 size */}
-                {carouselImages.left && (
-                  <button
-                    onClick={() => handleImageClick('left')}
-                    className="flex-shrink-0 bg-white rounded-xl overflow-hidden border border-gray-200 hover:border-[#D7514C] transition-colors group"
-                  >
-                    <div className="aspect-[250/150] w-32 opacity-70 group-hover:opacity-100 transition-opacity">
-                      <img
-                        src={carouselImages.left}
-                        alt={`${soporte?.nombre} anterior`}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  </button>
-                )}
-                
-                {/* Center Image - Main Image */}
-                <div className="flex-1 max-w-2xl">
-                  <div className="bg-white rounded-2xl overflow-hidden border-2 border-[#D7514C] shadow-lg">
-                    <div className="aspect-[250/150] w-full">
-                      <img
-                        src={carouselImages.center}
-                        alt={soporte?.nombre || 'Soporte'}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Right Image - 1/3 size */}
-                {carouselImages.right && (
-                  <button
-                    onClick={() => handleImageClick('right')}
-                    className="flex-shrink-0 bg-white rounded-xl overflow-hidden border border-gray-200 hover:border-[#D7514C] transition-colors group"
-                  >
-                    <div className="aspect-[250/150] w-32 opacity-70 group-hover:opacity-100 transition-opacity">
-                      <img
-                        src={carouselImages.right}
-                        alt={`${soporte?.nombre} siguiente`}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  </button>
-                )}
-              </div>
-              
-              {/* Navigation Dots */}
-              {displayedImages.length > 1 && (
-                <div className="flex justify-center mt-4 gap-2">
-                  {displayedImages.map((_, index) => (
-                    <button
-                      key={index}
-                      onClick={() => setSelectedImage(index)}
-                      className={`w-2 h-2 rounded-full transition-colors ${
-                        index === clampedSelectedIndex ? 'bg-[#D7514C]' : 'bg-gray-300'
-                      }`}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
+            ))}
+          </div>
+
+          {/* Arrow buttons */}
+          {displayedImages.length > 2 && (
+            <>
+              <button
+                onClick={() => {
+                  const el = (window as any).__productCarousel;
+                  if (el) el.scrollBy({ left: -(el.offsetWidth / 2), behavior: 'smooth' });
+                }}
+                className="absolute left-1 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-full bg-white/90 border border-gray-200 shadow-md hover:bg-white hover:scale-105 transition-all z-10"
+                aria-label="Imagen anterior"
+              >
+                <ChevronLeft className="w-5 h-5 text-gray-700" />
+              </button>
+              <button
+                onClick={() => {
+                  const el = (window as any).__productCarousel;
+                  if (el) el.scrollBy({ left: el.offsetWidth / 2, behavior: 'smooth' });
+                }}
+                className="absolute right-1 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-full bg-white/90 border border-gray-200 shadow-md hover:bg-white hover:scale-105 transition-all z-10"
+                aria-label="Imagen siguiente"
+              >
+                <ChevronRight className="w-5 h-5 text-gray-700" />
+              </button>
+            </>
           )}
         </div>
 
@@ -688,7 +632,7 @@ export default function ProductClient({ productId }: ProductClientProps) {
                 }] : []}
                 lat={soporteCoords?.lat || 40.4637}
                 lng={soporteCoords?.lng || -3.7492}
-                zoom={17}
+                zoom={16}
                 height={400}
                 style="streets"
                 showControls={true}
@@ -709,9 +653,9 @@ export default function ProductClient({ productId }: ProductClientProps) {
                     lat={soporteCoords.lat}
                     lng={soporteCoords.lng}
                     height={400}
-                    heading={0}
-                    pitch={0}
-                    zoom={1}
+                    heading={soporte?.streetViewHeading ?? 0}
+                    pitch={soporte?.streetViewPitch ?? 0}
+                    zoom={soporte?.streetViewZoom ?? 1}
                   />
                 </div>
               )}

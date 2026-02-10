@@ -41,7 +41,9 @@ import {
   Globe2,
   HeartHandshake,
   Rabbit,
-  Rat
+  Rat,
+  Sun,
+  Moon
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -346,14 +348,38 @@ export default function DashboardPage() {
               <Button variant="ghost" size="sm" className={darkMode ? 'text-white hover:bg-slate-700' : 'text-gray-900 hover:bg-gray-100'}>
                 <Bell className="w-5 h-5" />
               </Button>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className={darkMode ? 'text-white hover:bg-slate-700' : 'text-gray-900 hover:bg-gray-100'}
-                onClick={() => setDarkMode(!darkMode)}
+              <div
+                role="group"
+                aria-label="Tema"
+                className={`inline-flex items-center rounded-full border p-0.5 ${
+                  darkMode ? 'border-slate-600 bg-slate-800' : 'border-gray-200 bg-gray-100'
+                }`}
               >
-                <Settings className="w-5 h-5" />
-              </Button>
+                <button
+                  type="button"
+                  onClick={() => setDarkMode(false)}
+                  className={`p-1.5 rounded-full transition-colors ${
+                    !darkMode
+                      ? 'bg-gray-300 text-gray-800'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                  aria-label="Tema claro"
+                >
+                  <Sun className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDarkMode(true)}
+                  className={`p-1.5 rounded-full transition-colors ${
+                    darkMode
+                      ? 'bg-slate-600 text-white'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                  aria-label="Tema oscuro"
+                >
+                  <Moon className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           </div>
 

@@ -15,7 +15,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { ArrowLeft, Save, MapPin, Trash2, Edit, Eye, Calculator, Hash, Link as LinkIcon, Upload, Globe } from "lucide-react"
 import { toast } from "sonner"
-import SupportImage from "@/components/SupportImage"
 import Sidebar from "@/components/dashboard/Sidebar"
 import { PhotonAutocomplete } from "@/components/PhotonAutocomplete"
 import dynamic from "next/dynamic"
@@ -910,72 +909,39 @@ export default function SoporteDetailPage() {
               )}
             </div>
 
-            {/* Images */}
+            {/* Images - proporción 4/3 como en marketplace */}
             <div>
               <Label>Imágenes</Label>
-              <div className="mt-2">
-                {formData.images && formData.images.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {formData.images.filter(image => image && typeof image === 'string').map((image, index) => (
-                      <div key={index} className="relative">
-                        <SupportImage 
-                          src={image} 
-                          alt={`Imagen ${index + 1}`}
-                          className="w-full h-32 object-cover rounded-lg border"
-                        />
-                        {editing && (
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            className="absolute top-2 right-2 h-6 w-6 p-0"
-                            onClick={() => handleImageDelete(image, index)}
-                          >
-                            ×
-                          </Button>
-                        )}
+              <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {formData.images.filter(image => image && typeof image === 'string').map((image, index) => (
+                  <div key={index} className="relative aspect-[4/3] rounded-lg overflow-hidden group bg-gray-100 border border-gray-200">
+                    <img src={image} className="w-full h-full object-cover" alt={`Soporte ${index + 1}`} />
+                    {editing && (
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          className="h-8 w-8 p-0"
+                          onClick={() => handleImageDelete(image, index)}
+                        >
+                          ×
+                        </Button>
                       </div>
-                    ))}
+                    )}
                   </div>
-                ) : (
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                    <Upload className="w-8 h-8 mx-auto text-gray-400 mb-2" />
-                    <p className="text-sm text-gray-600 mb-2">Arrastra imágenes aquí o</p>
+                ))}
+                {editing && (
+                  <label className="aspect-[4/3] rounded-lg border-2 border-dashed border-gray-300 hover:border-blue-500 hover:bg-gray-50 flex flex-col items-center justify-center cursor-pointer transition-colors text-gray-500 hover:text-blue-600">
+                    <Upload className="w-6 h-6 mb-2" />
+                    <span className="text-xs">Subir</span>
                     <input
                       type="file"
                       multiple
                       accept="image/*"
                       onChange={(e) => e.target.files && handleImageUpload(e.target.files)}
                       className="hidden"
-                      id="image-upload"
                     />
-                    <Button
-                      variant="outline"
-                      onClick={() => document.getElementById('image-upload')?.click()}
-                    >
-                      Seleccionar archivos
-                    </Button>
-                  </div>
-                )}
-                
-                {editing && formData.images && formData.images.length > 0 && (
-                  <div className="mt-4 border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                    <Upload className="w-8 h-8 mx-auto text-gray-400 mb-2" />
-                    <p className="text-sm text-gray-600 mb-2">Agregar más imágenes</p>
-                    <input
-                      type="file"
-                      multiple
-                      accept="image/*"
-                      onChange={(e) => e.target.files && handleImageUpload(e.target.files)}
-                      className="hidden"
-                      id="image-upload-more"
-                    />
-                    <Button
-                      variant="outline"
-                      onClick={() => document.getElementById('image-upload-more')?.click()}
-                    >
-                      Seleccionar archivos
-                    </Button>
-                  </div>
+                  </label>
                 )}
               </div>
             </div>
@@ -1073,50 +1039,45 @@ export default function SoporteDetailPage() {
 
             <div className="mt-4">
               <Label className="text-sm font-medium text-gray-700 mb-2 block">Ubicación del soporte</Label>
-              {mapCoordsLoading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="rounded-lg border border-gray-300 h-[380px] flex items-center justify-center bg-gray-100">
-                    <span className="text-gray-500 text-sm">Obteniendo ubicación del enlace...</span>
-                  </div>
-                  <div className="rounded-lg border border-gray-300 h-[380px] bg-gray-100 flex items-center justify-center">
-                    <span className="text-gray-500 text-sm">Street View</span>
-                  </div>
-                </div>
-              ) : (
-                <GoogleMapsLoader loadingElement={<div className="grid grid-cols-1 md:grid-cols-2 gap-4"><div className="h-[380px] rounded-lg bg-gray-100 flex items-center justify-center text-gray-500">Cargando mapa...</div><div className="h-[380px] rounded-lg bg-gray-100 flex items-center justify-center text-gray-500">Cargando Street View...</div></div>}>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="rounded-lg overflow-hidden border border-gray-300">
-                      <EditableGoogleMap
-                        lat={formData.latitud ?? support?.latitud ?? DEFAULT_MAP_CENTER.lat}
-                        lng={formData.longitud ?? support?.longitud ?? DEFAULT_MAP_CENTER.lng}
-                        onChange={(c) => setFormData((prev) => ({
-                          ...prev,
-                          latitud: c.lat,
-                          longitud: c.lng,
-                          googleMapsLink: buildGoogleMapsLinkFromCoords(c.lat, c.lng)
-                        }))}
-                        height={MAP_HEIGHT}
-                      />
+              <div className="w-full rounded-xl border border-gray-200 bg-gray-50 overflow-hidden" style={{ height: MAP_HEIGHT }}>
+                {mapCoordsLoading ? (
+                  <div className="h-full w-full flex items-center justify-center text-gray-500 bg-gray-100">Cargando mapa...</div>
+                ) : (
+                  <GoogleMapsLoader loadingElement={<div className="h-full bg-gray-100 flex items-center justify-center text-gray-500">Cargando...</div>}>
+                    <div className="grid grid-cols-2 gap-3 h-full w-full">
+                      <div className="bg-gray-100 h-full overflow-hidden">
+                        <EditableGoogleMap
+                          lat={formData.latitud ?? support?.latitud ?? DEFAULT_MAP_CENTER.lat}
+                          lng={formData.longitud ?? support?.longitud ?? DEFAULT_MAP_CENTER.lng}
+                          height={MAP_HEIGHT}
+                          onChange={editing ? (c) => setFormData((prev) => ({
+                            ...prev,
+                            latitud: c.lat,
+                            longitud: c.lng,
+                            googleMapsLink: buildGoogleMapsLinkFromCoords(c.lat, c.lng)
+                          })) : undefined}
+                        />
+                      </div>
+                      <div className="bg-gray-100 h-full overflow-hidden">
+                        <StreetViewGoogleMaps
+                          lat={formData.latitud ?? support?.latitud ?? DEFAULT_MAP_CENTER.lat}
+                          lng={formData.longitud ?? support?.longitud ?? DEFAULT_MAP_CENTER.lng}
+                          heading={formData.streetViewHeading}
+                          pitch={formData.streetViewPitch}
+                          zoom={formData.streetViewZoom}
+                          height={MAP_HEIGHT}
+                          onPovChange={editing ? (pov) => setFormData((prev) => ({
+                            ...prev,
+                            streetViewHeading: pov.heading,
+                            streetViewPitch: pov.pitch,
+                            streetViewZoom: pov.zoom
+                          })) : undefined}
+                        />
+                      </div>
                     </div>
-                    <div className="rounded-lg overflow-hidden border border-gray-300">
-                      <StreetViewGoogleMaps
-                        lat={formData.latitud ?? support?.latitud ?? DEFAULT_MAP_CENTER.lat}
-                        lng={formData.longitud ?? support?.longitud ?? DEFAULT_MAP_CENTER.lng}
-                        heading={formData.streetViewHeading}
-                        pitch={formData.streetViewPitch}
-                        zoom={formData.streetViewZoom}
-                        height={MAP_HEIGHT}
-                        onPovChange={(pov) => setFormData((prev) => ({
-                          ...prev,
-                          streetViewHeading: pov.heading,
-                          streetViewPitch: pov.pitch,
-                          streetViewZoom: pov.zoom
-                        }))}
-                      />
-                    </div>
-                  </div>
-                </GoogleMapsLoader>
-              )}
+                  </GoogleMapsLoader>
+                )}
+              </div>
               <p className="text-sm text-gray-500 mt-2">Arrastra la chincheta o haz clic en el mapa para fijar la ubicación. Las coordenadas se guardan en la base de datos.</p>
             </div>
 

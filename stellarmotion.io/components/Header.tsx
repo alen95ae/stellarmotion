@@ -2,25 +2,23 @@
 import { useState, useRef, useEffect, useMemo } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { ChevronDown, User, LogOut, LayoutDashboard, Menu, Store } from "lucide-react"
+import { ChevronDown, User, LogOut, LayoutDashboard, Menu, Store, Megaphone, Monitor } from "lucide-react"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { HugeiconsIcon } from "@hugeicons/react"
-import { Store01Icon, DashboardSquare03Icon, Megaphone03Icon, ComputerDollarIcon } from "@hugeicons/core-free-icons"
 // Removed Supabase Auth - using JWT-based auth
 import { getRoleFromPayload } from "@/lib/auth/role"
 
 function MarketplaceNavIcon({ className }: { className?: string }) {
-  return <HugeiconsIcon icon={Store01Icon} size={20} className={className} />
+  return <Store className={className ?? "w-5 h-5"} />
 }
 function PanelOwnersNavIcon({ className }: { className?: string }) {
-  return <HugeiconsIcon icon={DashboardSquare03Icon} size={20} className={className} />
+  return <LayoutDashboard className={className ?? "w-5 h-5"} />
 }
 function PanelBrandsNavIcon({ className }: { className?: string }) {
-  return <HugeiconsIcon icon={Megaphone03Icon} size={20} className={className} />
+  return <Megaphone className={className ?? "w-5 h-5"} />
 }
 function InvertirSoportesNavIcon({ className }: { className?: string }) {
-  return <HugeiconsIcon icon={ComputerDollarIcon} size={20} className={className} />
+  return <Monitor className={className ?? "w-5 h-5"} />
 }
 
 const PRODUCTOS_ITEMS = [

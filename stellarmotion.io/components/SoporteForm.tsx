@@ -12,6 +12,7 @@ import { CATEGORIES, getCategoryIconPath } from '@/lib/categories';
 import Image from 'next/image';
 import { PhotonAutocomplete } from '@/components/PhotonAutocomplete';
 import EditableGoogleMap from '@/components/EditableGoogleMap';
+import StreetViewGoogleMaps from '@/components/StreetViewGoogleMaps';
 
 export interface FormData {
   title: string;
@@ -50,6 +51,12 @@ interface SoporteFormProps {
   mapCoordsLoading?: boolean;
   /** Se llama cuando el usuario arrastra la chincheta o hace clic en el mapa */
   onMapCoordsChange?: (coords: { lat: number; lng: number }) => void;
+  /** Orientación de Street View guardada (heading, pitch, zoom) */
+  streetViewHeading?: number;
+  streetViewPitch?: number;
+  streetViewZoom?: number;
+  /** Se llama cuando el usuario gira o hace zoom en Street View */
+  onPovChange?: (pov: { heading: number; pitch: number; zoom: number }) => void;
 }
 
 const DEFAULT_MAP_CENTER = { lat: 40.4168, lng: -3.7038 }; // Madrid
@@ -299,27 +306,45 @@ export function SoporteForm({
             </p>
           </div>
 
-          {/* Mapa siempre visible; chincheta arrastrable. Al resolver enlace solo mostramos loader para evitar duplicar mapa */}
+          {/* Mapa y Street View: misma vista que se guarda y se muestra en la ficha del soporte */}
           <div className="mt-4">
             <Label className="text-sm font-medium text-gray-700 mb-2 block">
               Ubicación del soporte
             </Label>
             {mapCoordsLoading ? (
-              <div className="rounded-2xl border border-gray-300 h-[280px] flex items-center justify-center bg-gray-100">
-                <span className="text-gray-500 text-sm">Obteniendo ubicación del enlace...</span>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="rounded-2xl border border-gray-300 h-[280px] flex items-center justify-center bg-gray-100">
+                  <span className="text-gray-500 text-sm">Obteniendo ubicación del enlace...</span>
+                </div>
+                <div className="rounded-2xl border border-gray-300 h-[280px] flex items-center justify-center bg-gray-100">
+                  <span className="text-gray-500 text-sm">Street View</span>
+                </div>
               </div>
             ) : (
-              <div className="rounded-2xl overflow-hidden border border-gray-300 shadow-sm">
-                <EditableGoogleMap
-                  lat={mapCoords?.lat ?? DEFAULT_MAP_CENTER.lat}
-                  lng={mapCoords?.lng ?? DEFAULT_MAP_CENTER.lng}
-                  onChange={(c) => onMapCoordsChange?.(c)}
-                  height={280}
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="rounded-2xl overflow-hidden border border-gray-300 shadow-sm">
+                  <EditableGoogleMap
+                    lat={mapCoords?.lat ?? DEFAULT_MAP_CENTER.lat}
+                    lng={mapCoords?.lng ?? DEFAULT_MAP_CENTER.lng}
+                    onChange={(c) => onMapCoordsChange?.(c)}
+                    height={280}
+                  />
+                </div>
+                <div className="rounded-2xl overflow-hidden border border-gray-300 shadow-sm">
+                  <StreetViewGoogleMaps
+                    lat={mapCoords?.lat ?? DEFAULT_MAP_CENTER.lat}
+                    lng={mapCoords?.lng ?? DEFAULT_MAP_CENTER.lng}
+                    heading={streetViewHeading}
+                    pitch={streetViewPitch}
+                    zoom={streetViewZoom}
+                    height={280}
+                    onPovChange={onPovChange}
+                  />
+                </div>
               </div>
             )}
             <p className="text-sm text-gray-500 mt-2">
-              Arrastra la chincheta o haz clic en el mapa para fijar la ubicación.
+              Arrastra la chincheta o haz clic en el mapa para fijar la ubicación. Gira el Street View para guardar la vista que verán los clientes.
             </p>
           </div>
         </CardContent>

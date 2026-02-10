@@ -28,6 +28,8 @@ export default function EditableGoogleMap({ lat, lng, onChange, height = 280 }: 
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<any>(null);
   const marker = useRef<any>(null);
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
 
   const center = useMemo(() => ({ lat: pos.lat, lng: pos.lng }), [pos]);
   const mapContainerStyle = useMemo(
@@ -51,10 +53,13 @@ export default function EditableGoogleMap({ lat, lng, onChange, height = 280 }: 
   }, [lat, lng]);
 
   useEffect(() => {
-    if (typeof window === "undefined" || !window.google?.maps || !mapContainer.current || map.current) return;
+    if (typeof window === "undefined" || !mapContainer.current || map.current) return;
+    const g = window.google;
+    if (!g?.maps?.Map || typeof g.maps.Map !== "function") return;
 
     const initMap = () => {
       if (!mapContainer.current) return;
+      if (typeof window.google?.maps?.Map !== "function") return;
 
       map.current = new window.google.maps.Map(mapContainer.current, {
         center: center,
@@ -84,14 +89,14 @@ export default function EditableGoogleMap({ lat, lng, onChange, height = 280 }: 
         const clickedLng = e.latLng.lng();
         setPos({ lat: clickedLat, lng: clickedLng });
         marker.current.setPosition(e.latLng);
-        onChange({ lat: clickedLat, lng: clickedLng });
+        onChangeRef.current({ lat: clickedLat, lng: clickedLng });
       });
 
       marker.current.addListener("dragend", (e: any) => {
         const draggedLat = e.latLng.lat();
         const draggedLng = e.latLng.lng();
         setPos({ lat: draggedLat, lng: draggedLng });
-        onChange({ lat: draggedLat, lng: draggedLng });
+        onChangeRef.current({ lat: draggedLat, lng: draggedLng });
       });
     };
 
@@ -109,7 +114,7 @@ export default function EditableGoogleMap({ lat, lng, onChange, height = 280 }: 
         }
       }
     };
-  }, [onChange]);
+  }, []);
 
   return (
     <div className="relative">

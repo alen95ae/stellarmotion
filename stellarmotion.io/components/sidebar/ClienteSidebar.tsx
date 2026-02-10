@@ -2,40 +2,40 @@
 
 import Link from 'next/link';
 import { useState, useRef, useEffect } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { HugeiconsIcon } from '@hugeicons/react';
 import {
-  FileAudioIcon,
-  Home02Icon,
-  Megaphone03Icon,
-  WaterfallDown01Icon,
-  CreditCardIcon,
-  Message01Icon,
-  Settings02Icon,
-} from '@hugeicons/core-free-icons';
+  ChevronLeft,
+  ChevronRight,
+  FileText,
+  Home,
+  Megaphone,
+  BarChart2,
+  CreditCard,
+  MessageCircle,
+  Settings,
+} from 'lucide-react';
 
-const ICON_SIZE = 24;
+const iconClass = "h-6 w-6 shrink-0";
 
 function SolicitudesMenuIcon({ className }: { className?: string }) {
-  return <HugeiconsIcon icon={FileAudioIcon} size={ICON_SIZE} className={className} />;
+  return <FileText className={className ?? iconClass} />;
 }
 function InicioIcon({ className }: { className?: string }) {
-  return <HugeiconsIcon icon={Home02Icon} size={ICON_SIZE} className={className} />;
+  return <Home className={className ?? iconClass} />;
 }
 function MisAnunciosIcon({ className }: { className?: string }) {
-  return <HugeiconsIcon icon={Megaphone03Icon} size={ICON_SIZE} className={className} />;
+  return <Megaphone className={className ?? iconClass} />;
 }
 function MetricasAnunciosIcon({ className }: { className?: string }) {
-  return <HugeiconsIcon icon={WaterfallDown01Icon} size={ICON_SIZE} className={className} />;
+  return <ChartLine className={className ?? iconClass} />;
 }
 function PagosIcon({ className }: { className?: string }) {
-  return <HugeiconsIcon icon={CreditCardIcon} size={ICON_SIZE} className={className} />;
+  return <Banknote className={className ?? iconClass} />;
 }
 function MensajeriaIcon({ className }: { className?: string }) {
-  return <HugeiconsIcon icon={Message01Icon} size={ICON_SIZE} className={className} />;
+  return <MessageCircle className={className ?? iconClass} />;
 }
 function AjustesIcon({ className }: { className?: string }) {
-  return <HugeiconsIcon icon={Settings02Icon} size={ICON_SIZE} className={className} />;
+  return <Settings className={className ?? iconClass} />;
 }
 
 const navigation = [

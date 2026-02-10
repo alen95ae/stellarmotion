@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { LoadScript } from "@react-google-maps/api";
+import { useJsApiLoader } from "@react-google-maps/api";
 
 const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
@@ -11,11 +10,16 @@ type Props = {
 };
 
 /**
- * Carga explícita del script de Google Maps con LoadScript (@react-google-maps/api).
- * Si NEXT_PUBLIC_GOOGLE_MAPS_API_KEY no está definida, no se carga el mapa.
- * Si la API ya está cargada (p. ej. navegación), renderiza children sin volver a inyectar el script.
+ * Carga el script de Google Maps y solo renderiza children cuando isLoaded es true.
+ * Evita "window.google.maps.Map is not a constructor" por montaje prematuro.
  */
 export default function GoogleMapsLoader({ children, loadingElement }: Props) {
+  const { isLoaded, loadError } = useJsApiLoader({
+    id: "google-maps-erp",
+    googleMapsApiKey: GOOGLE_MAPS_API_KEY || "",
+    preventGoogleFontsLoading: true,
+  });
+
   if (!GOOGLE_MAPS_API_KEY) {
     return (
       <div className="flex items-center justify-center rounded-lg border border-gray-300 bg-gray-100 p-6 text-gray-600">
@@ -24,16 +28,19 @@ export default function GoogleMapsLoader({ children, loadingElement }: Props) {
     );
   }
 
-  if (typeof window !== "undefined" && window.google?.maps) {
-    return <>{children}</>;
+  if (loadError) {
+    return (
+      <div className="flex items-center justify-center rounded-lg border border-gray-300 bg-gray-100 p-6 text-red-600">
+        Error al cargar Google Maps.
+      </div>
+    );
   }
 
-  return (
-    <LoadScript
-      googleMapsApiKey={GOOGLE_MAPS_API_KEY}
-      loadingElement={loadingElement ?? <div className="flex h-[380px] items-center justify-center rounded-lg bg-gray-100 text-gray-500">Cargando mapa...</div>}
-    >
-      {children}
-    </LoadScript>
-  );
+  if (!isLoaded) {
+    return (
+      <>{loadingElement ?? <div className="flex h-[380px] items-center justify-center rounded-lg bg-gray-100 text-gray-500">Cargando mapa...</div>}</>
+    );
+  }
+
+  return <>{children}</>;
 }

@@ -1,17 +1,10 @@
 "use client"
 import Link from "next/link"
-import { useTheme } from "next-themes"
-import { HugeiconsIcon } from "@hugeicons/react"
-import { Sun03Icon, Moon02Icon, InstagramIcon, Facebook01Icon, NewTwitterRectangleIcon, InternetIcon, RulerIcon, CoinsDollarIcon } from "@hugeicons/core-free-icons"
-import { useState, useEffect } from "react"
+import { Globe, CircleDollarSign, Facebook, Instagram, Linkedin } from "lucide-react"
 
 export default function Footer() {
-  const { theme, setTheme } = useTheme()
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => setMounted(true), [])
-
   return (
-    <footer className="bg-white dark:bg-gray-950 border-t border-gray-200 dark:border-gray-800">
+    <footer className="bg-white border-t border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Main Footer Content */}
         <div className="flex flex-col lg:flex-row gap-8 mb-8">
@@ -164,69 +157,30 @@ export default function Footer() {
               </div>
             </div>
 
-            {/* Right Side - Theme, Language, Currency, Units and Social Media */}
+            {/* Right Side - Language, Currency and Social Media */}
             <div className="flex items-center space-x-4">
-              {/* Theme Toggle - pill con sol y luna visibles, activo en gris oscuro */}
-              {mounted && (
-                <div
-                  role="group"
-                  aria-label="Tema"
-                  className="inline-flex items-center rounded-full border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800/80 p-0.5"
-                >
-                  <button
-                    type="button"
-                    onClick={() => setTheme("light")}
-                    className={`p-1.5 rounded-full transition-colors ${
-                      theme === "light"
-                        ? "bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-100"
-                        : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-                    }`}
-                    aria-label="Tema claro"
-                  >
-                    <HugeiconsIcon icon={Sun03Icon} size={18} className="shrink-0" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setTheme("dark")}
-                    className={`p-1.5 rounded-full transition-colors ${
-                      theme === "dark"
-                        ? "bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-100"
-                        : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-                    }`}
-                    aria-label="Tema oscuro"
-                  >
-                    <HugeiconsIcon icon={Moon02Icon} size={18} className="shrink-0" />
-                  </button>
-                </div>
-              )}
               {/* Language Selector */}
               <div className="flex items-center space-x-1">
-                <HugeiconsIcon icon={InternetIcon} size={16} className="text-gray-600 dark:text-gray-400 shrink-0" />
-                <span className="text-gray-600 dark:text-gray-400 text-xs">Español (ES)</span>
-              </div>
-
-              {/* Medida - a la izquierda de moneda */}
-              <div className="flex items-center space-x-1">
-                <HugeiconsIcon icon={RulerIcon} size={16} className="text-gray-600 dark:text-gray-400 shrink-0" />
-                <span className="text-gray-600 dark:text-gray-400 text-xs">m</span>
+                <Globe className="w-4 h-4 text-gray-600 shrink-0" />
+                <span className="text-gray-600 text-xs">Español (ES)</span>
               </div>
 
               {/* Moneda */}
               <div className="flex items-center space-x-1">
-                <HugeiconsIcon icon={CoinsDollarIcon} size={16} className="text-gray-600 dark:text-gray-400 shrink-0" />
-                <span className="text-gray-600 dark:text-gray-400 text-xs">USD</span>
+                <CircleDollarSign className="w-4 h-4 text-gray-600 shrink-0" />
+                <span className="text-gray-600 text-xs">USD</span>
               </div>
 
-              {/* Social Media Icons - orden: Instagram, Facebook, Twitter */}
+              {/* Social Media Icons - Facebook, Instagram, LinkedIn */}
               <div className="flex items-center space-x-3">
-                <Link prefetch={false} href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors" aria-label="Instagram">
-                  <HugeiconsIcon icon={InstagramIcon} size={20} />
+                <Link prefetch={false} href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-gray-900 transition-colors" aria-label="Facebook">
+                  <Facebook className="w-5 h-5" />
                 </Link>
-                <Link prefetch={false} href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors" aria-label="Facebook">
-                  <HugeiconsIcon icon={Facebook01Icon} size={20} />
+                <Link prefetch={false} href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-gray-900 transition-colors" aria-label="Instagram">
+                  <Instagram className="w-5 h-5" />
                 </Link>
-                <Link prefetch={false} href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors" aria-label="Twitter">
-                  <HugeiconsIcon icon={NewTwitterRectangleIcon} size={20} />
+                <Link prefetch={false} href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-gray-900 transition-colors" aria-label="LinkedIn">
+                  <Linkedin className="w-5 h-5" />
                 </Link>
               </div>
             </div>

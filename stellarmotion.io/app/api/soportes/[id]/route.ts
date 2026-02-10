@@ -129,7 +129,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         email: support.usuario.email ?? null
       } : null),
       iluminacion: support.iluminacion,
-      destacado: support.destacado
+      destacado: support.destacado,
+      streetViewHeading: support.streetViewHeading ?? 0,
+      streetViewPitch: support.streetViewPitch ?? 0,
+      streetViewZoom: support.streetViewZoom ?? 1,
     };
     
     return NextResponse.json(transformedSupport);
@@ -172,6 +175,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     let lng = parseFloat(formData.get('lng') as string) || 0;
     const code = formData.get('code') as string;
     const status = formData.get('status') as string;
+    const streetViewHeading = parseFloat(formData.get('streetViewHeading') as string);
+    const streetViewPitch = parseFloat(formData.get('streetViewPitch') as string);
+    const streetViewZoom = parseFloat(formData.get('streetViewZoom') as string);
     
     console.log('Datos extraídos del FormData:', {
       title, pricePerMonth, city, country, dimensions, lighting, type, 
@@ -381,6 +387,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       status: status,
       categoryId: null,
       code: code || '',
+      streetViewHeading: !isNaN(streetViewHeading) ? streetViewHeading : undefined,
+      streetViewPitch: !isNaN(streetViewPitch) ? streetViewPitch : undefined,
+      streetViewZoom: !isNaN(streetViewZoom) ? streetViewZoom : undefined,
     };
 
     // Actualizar el soporte en el backend

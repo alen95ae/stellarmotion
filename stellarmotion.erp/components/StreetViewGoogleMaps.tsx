@@ -75,7 +75,7 @@ export default function StreetViewGoogleMaps({
                 setIsStreetViewReady(true);
               }
             });
-            const notifyPov = () => {
+            const throttledNotifyPov = () => {
               if (panorama.current && onPovChangeRef.current) {
                 const pov = panorama.current.getPov();
                 const zoomVal = panorama.current.getZoom();
@@ -86,8 +86,16 @@ export default function StreetViewGoogleMaps({
                 });
               }
             };
-            panorama.current.addListener("pov_changed", notifyPov);
-            panorama.current.addListener("zoom_changed", notifyPov);
+            let throttleTimer: ReturnType<typeof setTimeout> | null = null;
+            const schedulePovNotify = () => {
+              if (throttleTimer !== null) return;
+              throttleTimer = setTimeout(() => {
+                throttleTimer = null;
+                throttledNotifyPov();
+              }, 150);
+            };
+            panorama.current.addListener("pov_changed", schedulePovNotify);
+            panorama.current.addListener("zoom_changed", schedulePovNotify);
             setIsStreetViewReady(true);
             setHasStreetView(true);
           } else {

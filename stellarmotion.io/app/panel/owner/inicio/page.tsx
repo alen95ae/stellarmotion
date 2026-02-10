@@ -3,25 +3,24 @@
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
-import { HugeiconsIcon } from '@hugeicons/react';
 import {
-  Home02Icon,
-  FileAudioIcon,
-  Calendar03Icon,
-  Calendar02Icon,
-  UserIcon,
-  CreditCardIcon,
-  MarketingIcon,
-  PrinterIcon,
-  WaterfallDown01Icon,
-  Message01Icon,
-  Settings02Icon,
-  ToolsIcon,
-  Add01Icon,
-  ComputerIcon,
-  Money01Icon,
-} from '@hugeicons/core-free-icons';
-import { MapPin, ChevronRight, Crown } from 'lucide-react';
+  MapPin,
+  ChevronRight,
+  Crown,
+  Monitor,
+  FileText,
+  CalendarDays,
+  CalendarRange,
+  Wrench,
+  User,
+  MessageCircle,
+  Megaphone,
+  Banknote,
+  Printer,
+  ChartArea,
+  Settings,
+  Plus,
+} from 'lucide-react';
 
 // --- Types ---
 interface DashboardStats {
@@ -137,28 +136,28 @@ const ESTADO_LABELS: Record<string, string> = {
 
 // --- Module grid config (same icons as sidebar, routes /panel/owner/*) ---
 const MODULES_OPERATIVO = [
-  { name: 'Soportes', href: '/panel/owner/soportes', description: 'Gestiona tu inventario de soportes', icon: ComputerIcon, hugeicon: true },
-  { name: 'Solicitudes', href: '/panel/owner/solicitudes', description: 'Cotizaciones y solicitudes entrantes', icon: FileAudioIcon, hugeicon: true },
-  { name: 'Alquileres', href: '/panel/owner/alquileres', description: 'Contratos y alquileres activos', icon: Calendar03Icon, hugeicon: true },
-  { name: 'Planificación', href: '/panel/owner/planificacion', description: 'Calendario y ocupación', icon: Calendar02Icon, hugeicon: true, crown: true },
-  { name: 'Mantenimiento', href: '/panel/owner/mantenimiento', description: 'Estado y mantenimiento', icon: ToolsIcon, hugeicon: true, crown: true },
+  { name: 'Soportes', href: '/panel/owner/soportes', description: 'Gestiona tu inventario de soportes', icon: Monitor },
+  { name: 'Solicitudes', href: '/panel/owner/solicitudes', description: 'Cotizaciones y solicitudes entrantes', icon: FileText },
+  { name: 'Alquileres', href: '/panel/owner/alquileres', description: 'Contratos y alquileres activos', icon: CalendarDays },
+  { name: 'Planificación', href: '/panel/owner/planificacion', description: 'Calendario y ocupación', icon: CalendarRange, crown: true },
+  { name: 'Mantenimiento', href: '/panel/owner/mantenimiento', description: 'Estado y mantenimiento', icon: Wrench, crown: true },
   { name: 'Mapa', href: '/panel/owner/mapa', description: 'Ubicación de tus soportes', icon: MapPin, iconSize: 22 },
 ];
 
 const MODULES_COMERCIAL = [
-  { name: 'Clientes', href: '/panel/owner/clientes', description: 'Brands y contactos', icon: UserIcon, hugeicon: true, crown: true },
-  { name: 'Mensajería', href: '/panel/owner/mensajeria', description: 'Conversaciones con brands', icon: Message01Icon, hugeicon: true },
-  { name: 'Marketing', href: '/panel/owner/marketing', description: 'Campañas y promoción', icon: MarketingIcon, hugeicon: true },
+  { name: 'Clientes', href: '/panel/owner/clientes', description: 'Brands y contactos', icon: User, crown: true },
+  { name: 'Mensajería', href: '/panel/owner/mensajeria', description: 'Conversaciones con brands', icon: MessageCircle },
+  { name: 'Marketing', href: '/panel/owner/marketing', description: 'Campañas y promoción', icon: Megaphone },
 ];
 
 const MODULES_FINANZAS = [
-  { name: 'Facturación', href: '/panel/owner/pagos', description: 'Ingresos y cobros', icon: Money01Icon, hugeicon: true },
-  { name: 'Impresiones', href: '/panel/owner/impresiones', description: 'Producción e impresión', icon: PrinterIcon, hugeicon: true, crown: true },
-  { name: 'Métricas', href: '/panel/owner/metricas', description: 'Rendimiento y análisis', icon: WaterfallDown01Icon, hugeicon: true, crown: true },
+  { name: 'Facturación', href: '/panel/owner/pagos', description: 'Ingresos y cobros', icon: CircleDollarSign },
+  { name: 'Impresiones', href: '/panel/owner/impresiones', description: 'Producción e impresión', icon: Printer, crown: true },
+  { name: 'Métricas', href: '/panel/owner/metricas', description: 'Rendimiento y análisis', icon: BarChart2, crown: true },
 ];
 
 const MODULES_CUENTA = [
-  { name: 'Ajustes', href: '/panel/owner/ajustes', description: 'Perfil y configuración', icon: Settings02Icon, hugeicon: true },
+  { name: 'Ajustes', href: '/panel/owner/ajustes', description: 'Perfil y configuración', icon: Settings },
 ];
 
 // --- KPI Skeleton ---
@@ -181,14 +180,12 @@ function KpiCard({
   label,
   value,
   icon: Icon,
-  hugeicon = false,
   sub,
   accent = 'red',
 }: {
   label: string;
   value: string | number;
-  icon: React.ComponentType<{ className?: string; size?: number }>;
-  hugeicon?: boolean;
+  icon: React.ComponentType<{ className?: string }>;
   sub?: string;
   accent?: 'red' | 'green' | 'amber';
 }) {
@@ -208,11 +205,7 @@ function KpiCard({
           )}
         </div>
         <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border ${accentClasses[accent]}`} aria-hidden="true">
-          {hugeicon ? (
-            <HugeiconsIcon icon={Icon as never} size={22} className="shrink-0" />
-          ) : (
-            <Icon className="h-5 w-5 shrink-0" style={{ width: 22, height: 22 }} />
-          )}
+          <Icon className="h-[22px] w-[22px] shrink-0" />
         </div>
       </div>
     </div>
@@ -225,7 +218,6 @@ function ModuleCard({
   href,
   description,
   icon: Icon,
-  hugeicon = false,
   iconSize = 24,
   badge,
   crown = false,
@@ -233,8 +225,7 @@ function ModuleCard({
   name: string;
   href: string;
   description: string;
-  icon: React.ComponentType<{ className?: string; size?: number }>;
-  hugeicon?: boolean;
+  icon: React.ComponentType<{ className?: string }>;
   iconSize?: number;
   badge?: string | number;
   crown?: boolean;
@@ -247,11 +238,7 @@ function ModuleCard({
       aria-label={`Ir a ${name}: ${description}`}
     >
       <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-900/50">
-        {hugeicon ? (
-          <HugeiconsIcon icon={Icon as never} size={iconSize} className="shrink-0" aria-hidden="true" />
-        ) : (
-          <Icon className="shrink-0" style={{ width: iconSize, height: iconSize }} aria-hidden="true" />
-        )}
+        <Icon className="shrink-0" style={{ width: iconSize, height: iconSize }} aria-hidden="true" />
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
@@ -315,29 +302,25 @@ export default function OwnerInicioPage() {
               <KpiCard
                 label="Soportes totales"
                 value={stats.totalSupports}
-                icon={ComputerIcon}
-                hugeicon
+                icon={Monitor}
                 sub={stats.availableSupports !== stats.totalSupports ? `${stats.availableSupports} disponibles` : undefined}
               />
               <KpiCard
                 label="Disponibles / Ocupados"
                 value={`${stats.availableSupports} / ${stats.occupiedSupports}`}
-                icon={Calendar03Icon}
-                hugeicon
+                icon={CalendarDays}
                 accent="green"
               />
               <KpiCard
                 label="Solicitudes pendientes"
                 value={stats.pendingSolicitudes}
-                icon={FileAudioIcon}
-                hugeicon
+                icon={FileText}
                 accent="amber"
               />
               <KpiCard
                 label="Ingresos potenciales (mes)"
                 value={formatCurrency(stats.monthlyRevenue)}
-                icon={CreditCardIcon}
-                hugeicon
+                icon={Banknote}
                 sub={stats.revenueTrend != null ? `${stats.revenueTrend > 0 ? '+' : ''}${stats.revenueTrend}% vs anterior` : undefined}
               />
             </>
@@ -357,7 +340,7 @@ export default function OwnerInicioPage() {
           className="inline-flex items-center gap-2 rounded-lg bg-[#e94446] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-[#d63a3a] hover:shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e94446] focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-950 active:scale-[0.98]"
           aria-label="Publicar un nuevo soporte"
         >
-          <HugeiconsIcon icon={Add01Icon} size={18} aria-hidden="true" />
+          <Plus className="w-[18px] h-[18px]" aria-hidden="true" />
           Nuevo soporte
         </Link>
         <Link
@@ -365,7 +348,7 @@ export default function OwnerInicioPage() {
           className="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-200 shadow-sm transition-all duration-200 hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-[#e94446]/40 dark:hover:border-[#e94446]/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e94446] focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-950 active:scale-[0.98]"
           aria-label="Ver solicitudes pendientes"
         >
-          <HugeiconsIcon icon={FileAudioIcon} size={18} aria-hidden="true" />
+          <FileText className="w-[18px] h-[18px]" aria-hidden="true" />
           Ver solicitudes pendientes
           {!loading && stats.pendingSolicitudes > 0 && (
             <span className="inline-flex items-center rounded-full bg-[#e94446] px-2 py-0.5 text-xs font-medium text-white">
@@ -391,7 +374,6 @@ export default function OwnerInicioPage() {
                 href={m.href}
                 description={m.description}
                 icon={m.icon}
-                hugeicon={m.hugeicon}
                 iconSize={'iconSize' in m ? m.iconSize : 24}
                 badge={m.name === 'Solicitudes' && !loading && stats.pendingSolicitudes > 0 ? stats.pendingSolicitudes : undefined}
                 crown={'crown' in m ? m.crown : false}
@@ -404,7 +386,7 @@ export default function OwnerInicioPage() {
           <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">Comercial</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {MODULES_COMERCIAL.map((m) => (
-              <ModuleCard key={m.name} name={m.name} href={m.href} description={m.description} icon={m.icon} hugeicon={m.hugeicon} crown={'crown' in m ? m.crown : false} />
+              <ModuleCard key={m.name} name={m.name} href={m.href} description={m.description} icon={m.icon} iconSize={'iconSize' in m ? m.iconSize : 24} crown={'crown' in m ? m.crown : false} />
             ))}
           </div>
         </div>
@@ -413,7 +395,7 @@ export default function OwnerInicioPage() {
           <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">Finanzas y análisis</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {MODULES_FINANZAS.map((m) => (
-              <ModuleCard key={m.name} name={m.name} href={m.href} description={m.description} icon={m.icon} hugeicon={m.hugeicon} crown={'crown' in m ? m.crown : false} />
+              <ModuleCard key={m.name} name={m.name} href={m.href} description={m.description} icon={m.icon} iconSize={'iconSize' in m ? m.iconSize : 24} crown={'crown' in m ? m.crown : false} />
             ))}
           </div>
         </div>
@@ -422,7 +404,7 @@ export default function OwnerInicioPage() {
           <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">Cuenta</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {MODULES_CUENTA.map((m) => (
-              <ModuleCard key={m.name} name={m.name} href={m.href} description={m.description} icon={m.icon} hugeicon={m.hugeicon} />
+              <ModuleCard key={m.name} name={m.name} href={m.href} description={m.description} icon={m.icon} />
             ))}
           </div>
         </div>

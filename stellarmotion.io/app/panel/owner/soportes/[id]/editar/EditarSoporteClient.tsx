@@ -91,6 +91,7 @@ export default function EditarSoporteClient({ supportId }: EditarSoporteClientPr
     googleMapsLink: '',
     status: 'all'
   });
+  const [streetViewPov, setStreetViewPov] = useState({ heading: 0, pitch: 0, zoom: 1 });
 
   // Cargar datos del soporte
   useEffect(() => {
@@ -130,6 +131,11 @@ export default function EditarSoporteClient({ supportId }: EditarSoporteClientPr
           description: supportData.description || '',
           googleMapsLink: supportData.googleMapsLink || '',
           status
+        });
+        setStreetViewPov({
+          heading: supportData.streetViewHeading ?? 0,
+          pitch: supportData.streetViewPitch ?? 0,
+          zoom: supportData.streetViewZoom ?? 1
         });
       } catch (error) {
         console.error('Error fetching support:', error);
@@ -385,6 +391,10 @@ export default function EditarSoporteClient({ supportId }: EditarSoporteClientPr
         formDataToSend.append('lng', support.lng.toString());
       }
 
+      formDataToSend.append('streetViewHeading', streetViewPov.heading.toString());
+      formDataToSend.append('streetViewPitch', streetViewPov.pitch.toString());
+      formDataToSend.append('streetViewZoom', streetViewPov.zoom.toString());
+
       // Agregar imágenes
       formData.images.forEach((image, index) => {
         formDataToSend.append(`image_${index}`, image);
@@ -532,6 +542,10 @@ export default function EditarSoporteClient({ supportId }: EditarSoporteClientPr
             setMapCoords(c);
             handleInputChange('googleMapsLink', buildGoogleMapsLinkFromCoords(c.lat, c.lng));
           }}
+          streetViewHeading={streetViewPov.heading}
+          streetViewPitch={streetViewPov.pitch}
+          streetViewZoom={streetViewPov.zoom}
+          onPovChange={(pov) => setStreetViewPov({ heading: pov.heading, pitch: pov.pitch, zoom: pov.zoom })}
         />
 
         {/* Indicador de Progreso */}

@@ -680,12 +680,16 @@ export default function MapViewerGoogleMaps({
       }
 
       // Ajustar bounds para mostrar todos los marcadores
-      if (points.length > 0) {
+      if (points.length > 1) {
         const bounds = new window.google.maps.LatLngBounds();
         points.forEach(point => {
           bounds.extend({ lat: point.lat, lng: point.lng });
         });
         map.current.fitBounds(bounds);
+      } else if (points.length === 1) {
+        // Un solo punto: centrar y respetar el zoom del prop (no usar fitBounds que sobreescribe el zoom)
+        map.current.setCenter({ lat: points[0].lat, lng: points[0].lng });
+        map.current.setZoom(zoom);
       }
     }
   }, [points, route, circle, polygon, editablePolygon, useCategoryIcons, showPrices, circuits, enableClustering, isMapReady, onMarkerClick, onPolygonChange]);
