@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { API_ENDPOINTS, fetchFromERP } from "@/lib/api-config";
+import { ERP_ENDPOINTS, fetchFromERP } from "@/lib/api-config";
 import { CATEGORIES } from "@/lib/categories";
 
 // Forzar runtime Node.js para acceso a process.env
@@ -7,8 +7,8 @@ export const runtime = 'nodejs';
 
 export async function GET() {
   try {
-    // Obtener categorías del backend
-    const categories = await fetchFromERP(API_ENDPOINTS.categories);
+    // Llamar al ERP con URL absoluta (en servidor la relativa /api/categories falla o se resuelve mal)
+    const categories = await fetchFromERP(ERP_ENDPOINTS.categories);
 
     const categoriesArray = Array.isArray(categories) ? categories : [];
 

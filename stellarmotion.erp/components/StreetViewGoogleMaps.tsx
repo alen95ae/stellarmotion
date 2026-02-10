@@ -42,6 +42,8 @@ export default function StreetViewGoogleMaps({
 }: StreetViewGoogleMapsProps) {
   const streetViewContainer = useRef<HTMLDivElement>(null);
   const panorama = useRef<any>(null);
+  const onPovChangeRef = useRef(onPovChange);
+  onPovChangeRef.current = onPovChange;
   const [isStreetViewReady, setIsStreetViewReady] = useState(false);
   const [hasStreetView, setHasStreetView] = useState(true);
 
@@ -74,10 +76,10 @@ export default function StreetViewGoogleMaps({
               }
             });
             const notifyPov = () => {
-              if (panorama.current && onPovChange) {
+              if (panorama.current && onPovChangeRef.current) {
                 const pov = panorama.current.getPov();
                 const zoomVal = panorama.current.getZoom();
-                onPovChange({
+                onPovChangeRef.current({
                   heading: typeof pov?.heading === "number" ? pov.heading : 0,
                   pitch: typeof pov?.pitch === "number" ? pov.pitch : 0,
                   zoom: typeof zoomVal === "number" ? zoomVal : 1,

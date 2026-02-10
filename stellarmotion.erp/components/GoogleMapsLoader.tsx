@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { LoadScript } from "@react-google-maps/api";
 
 const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
@@ -12,6 +13,7 @@ type Props = {
 /**
  * Carga explícita del script de Google Maps con LoadScript (@react-google-maps/api).
  * Si NEXT_PUBLIC_GOOGLE_MAPS_API_KEY no está definida, no se carga el mapa.
+ * Si la API ya está cargada (p. ej. navegación), renderiza children sin volver a inyectar el script.
  */
 export default function GoogleMapsLoader({ children, loadingElement }: Props) {
   if (!GOOGLE_MAPS_API_KEY) {
@@ -20,6 +22,10 @@ export default function GoogleMapsLoader({ children, loadingElement }: Props) {
         Configura NEXT_PUBLIC_GOOGLE_MAPS_API_KEY en .env.local para cargar el mapa.
       </div>
     );
+  }
+
+  if (typeof window !== "undefined" && window.google?.maps) {
+    return <>{children}</>;
   }
 
   return (
