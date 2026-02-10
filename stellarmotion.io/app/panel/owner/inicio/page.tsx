@@ -151,9 +151,9 @@ const MODULES_COMERCIAL = [
 ];
 
 const MODULES_FINANZAS = [
-  { name: 'Facturación', href: '/panel/owner/pagos', description: 'Ingresos y cobros', icon: CircleDollarSign },
+  { name: 'Facturación', href: '/panel/owner/pagos', description: 'Ingresos y cobros', icon: Banknote },
   { name: 'Impresiones', href: '/panel/owner/impresiones', description: 'Producción e impresión', icon: Printer, crown: true },
-  { name: 'Métricas', href: '/panel/owner/metricas', description: 'Rendimiento y análisis', icon: BarChart2, crown: true },
+  { name: 'Métricas', href: '/panel/owner/metricas', description: 'Rendimiento y análisis', icon: ChartArea, crown: true },
 ];
 
 const MODULES_CUENTA = [
