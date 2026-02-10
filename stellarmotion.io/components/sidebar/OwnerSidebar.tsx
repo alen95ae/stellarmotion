@@ -42,7 +42,7 @@ function ClientesIcon({ className }: { className?: string }) {
   return <User className={className ?? iconClass} />;
 }
 function FacturacionIcon({ className }: { className?: string }) {
-  return <CircleDollarSign className={className ?? iconClass} />;
+  return <Banknote className={className ?? iconClass} />;
 }
 function MarketingNavIcon({ className }: { className?: string }) {
   return <Megaphone className={className ?? iconClass} />;

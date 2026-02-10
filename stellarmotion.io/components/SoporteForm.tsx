@@ -14,7 +14,7 @@ import { PhotonAutocomplete } from '@/components/PhotonAutocomplete';
 import EditableGoogleMap from '@/components/EditableGoogleMap';
 import StreetViewGoogleMaps from '@/components/StreetViewGoogleMaps';
 
-export interface FormData {
+export interface SoporteFormData {
   title: string;
   pricePerMonth: string;
   images: File[];
@@ -32,8 +32,8 @@ export interface FormData {
 }
 
 interface SoporteFormProps {
-  formData: FormData;
-  onInputChange: (field: keyof FormData, value: string | boolean | File[]) => void;
+  formData: SoporteFormData;
+  onInputChange: (field: keyof SoporteFormData, value: string | boolean | File[]) => void;
   onCountryChange: (country: string) => void;
   onImageUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onRemoveImage: (index: number) => void;
@@ -143,6 +143,10 @@ export function SoporteForm({
   mapCoords = null,
   mapCoordsLoading = false,
   onMapCoordsChange,
+  streetViewHeading = 0,
+  streetViewPitch = 0,
+  streetViewZoom = 1,
+  onPovChange,
 }: SoporteFormProps) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(
     formData.type ? TYPE_TO_CATEGORY[formData.type] || null : null

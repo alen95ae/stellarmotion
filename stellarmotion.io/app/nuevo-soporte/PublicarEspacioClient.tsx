@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
-import { SoporteForm, FormData } from '@/components/SoporteForm';
+import { SoporteForm, SoporteFormData } from '@/components/SoporteForm';
 import { extractCoordinatesFromGoogleMapsLink, buildGoogleMapsLinkFromCoords } from '@/lib/extract-google-maps-coords';
 
 const CITIES_BY_COUNTRY: Record<string, string[]> = {
@@ -54,7 +54,7 @@ export function PublicarEspacioClient() {
     status: 'all',
   });
 
-  const handleInputChange = (field: keyof FormData, value: string | boolean | File[]) => {
+  const handleInputChange = (field: keyof SoporteFormData, value: string | boolean | File[]) => {
     setFormData(prev => ({
       ...prev,
       [field]: value

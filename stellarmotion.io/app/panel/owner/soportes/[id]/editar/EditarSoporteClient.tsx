@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
-import { SoporteForm, type FormData } from '@/components/SoporteForm';
+import { SoporteForm, type SoporteFormData } from '@/components/SoporteForm';
 import { extractCoordinatesFromGoogleMapsLink, buildGoogleMapsLinkFromCoords } from '@/lib/extract-google-maps-coords';
 
 interface Support {
@@ -75,7 +75,7 @@ export default function EditarSoporteClient({ supportId }: EditarSoporteClientPr
   const [support, setSupport] = useState<Support | null>(null);
   const [mapCoords, setMapCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [mapCoordsLoading, setMapCoordsLoading] = useState(false);
-  const [formData, setFormData] = useState<FormData>({
+  const [formData, setFormData] = useState<SoporteFormData>({
     title: '',
     pricePerMonth: '',
     images: [],
@@ -153,7 +153,7 @@ export default function EditarSoporteClient({ supportId }: EditarSoporteClientPr
     fetchSupport();
   }, [supportId, router, toast]);
 
-  const handleInputChange = (field: keyof FormData, value: string | boolean | File[]) => {
+  const handleInputChange = (field: keyof SoporteFormData, value: string | boolean | File[]) => {
     setFormData(prev => ({
       ...prev,
       [field]: value

@@ -8,8 +8,8 @@ import {
   FileText,
   Home,
   Megaphone,
-  BarChart2,
-  CreditCard,
+  ChartLine,
+  Banknote,
   MessageCircle,
   Settings,
 } from 'lucide-react';
