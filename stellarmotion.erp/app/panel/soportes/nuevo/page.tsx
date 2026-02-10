@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ArrowLeft, Save, MapPin, Upload, Globe } from "lucide-react"
 import { toast } from "sonner"
+import { ThemeToggle } from "@/components/ThemeToggle"
 import Sidebar from "@/components/dashboard/Sidebar"
 import { PhotonAutocomplete } from "@/components/PhotonAutocomplete"
 import dynamic from "next/dynamic"
@@ -39,10 +40,10 @@ const TYPE_OPTIONS = [
 ] as const
 
 const STATUS_META = {
-  DISPONIBLE:   { label: 'Disponible',    className: 'bg-green-100 text-green-800 border-green-200' },
-  RESERVADO:    { label: 'Reservado',     className: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
-  OCUPADO:      { label: 'Ocupado',       className: 'bg-red-100 text-red-800 border-red-200' },
-  MANTENIMIENTO:{ label: 'Mantenimiento', className: 'bg-gray-100 text-gray-800 border-gray-200' },
+  DISPONIBLE:   { label: 'Disponible',    className: 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800' },
+  RESERVADO:    { label: 'Reservado',     className: 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800' },
+  OCUPADO:      { label: 'Ocupado',       className: 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800' },
+  MANTENIMIENTO:{ label: 'Mantenimiento', className: 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700' },
 } as const
 
 interface Support {
@@ -258,9 +259,9 @@ export default function NuevoSoportePage() {
 
   return (
     <Sidebar>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-muted/40">
         {/* Header */}
-        <header className="bg-white border-b border-gray-200 px-6 py-4">
+        <header className="bg-background border-b border-border px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               <Link prefetch={false} href="/panel/soportes" className="text-[#e94446] hover:text-[#d63d3f] font-medium mr-8">
@@ -268,8 +269,9 @@ export default function NuevoSoportePage() {
               </Link>
             </div>
             <div className="flex items-center gap-4">
-              <span className="text-gray-600">Buscar</span>
-              <span className="text-gray-800 font-medium">admin</span>
+              <span className="text-muted-foreground">Buscar</span>
+              <span className="text-foreground font-medium">admin</span>
+              <ThemeToggle />
             </div>
           </div>
         </header>
@@ -278,10 +280,10 @@ export default function NuevoSoportePage() {
         <main className="container mx-auto px-6 py-8">
           <div className="mb-8 flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-slate-800 mb-2">
+              <h1 className="text-3xl font-bold text-foreground mb-2">
                 Nuevo Soporte
               </h1>
-              <p className="text-gray-600">
+              <p className="text-muted-foreground">
                 Crear un nuevo soporte publicitario
               </p>
             </div>
@@ -468,7 +470,7 @@ export default function NuevoSoportePage() {
                 <Label>Imágenes</Label>
                 <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {formData.images.filter(image => image && typeof image === 'string').map((image, index) => (
-                    <div key={index} className="relative aspect-[4/3] rounded-lg overflow-hidden group bg-gray-100 border border-gray-200">
+                    <div key={index} className="relative aspect-[4/3] rounded-lg overflow-hidden group bg-muted border border-border">
                       <img src={image} className="w-full h-full object-cover" alt={`Soporte ${index + 1}`} />
                       <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                         <Button
@@ -485,7 +487,7 @@ export default function NuevoSoportePage() {
                       </div>
                     </div>
                   ))}
-                  <label className="aspect-[4/3] rounded-lg border-2 border-dashed border-gray-300 hover:border-blue-500 hover:bg-gray-50 flex flex-col items-center justify-center cursor-pointer transition-colors text-gray-500 hover:text-blue-600">
+                  <label className="aspect-[4/3] rounded-lg border-2 border-dashed border-border hover:border-blue-500 hover:bg-muted/50 flex flex-col items-center justify-center cursor-pointer transition-colors text-muted-foreground hover:text-blue-600">
                     <Upload className="w-6 h-6 mb-2" />
                     <span className="text-xs">Subir</span>
                     <input
@@ -547,18 +549,18 @@ export default function NuevoSoportePage() {
                   }}
                   placeholder="Pega el enlace de Google Maps aquí"
                 />
-                <p className="text-xs text-gray-500 mt-1">Al pegar el enlace, se extraerán las coordenadas y se colocará la chincheta en el mapa.</p>
+                <p className="text-xs text-muted-foreground mt-1">Al pegar el enlace, se extraerán las coordenadas y se colocará la chincheta en el mapa.</p>
               </div>
 
               <div className="mt-4">
-                <Label className="text-sm font-medium text-gray-700 mb-2 block">Ubicación del soporte</Label>
-                <div className="w-full rounded-xl border border-gray-200 bg-gray-50 overflow-hidden" style={{ height: MAP_HEIGHT }}>
+                <Label className="text-sm font-medium text-muted-foreground mb-2 block">Ubicación del soporte</Label>
+                <div className="w-full rounded-xl border border-border bg-muted/40 overflow-hidden" style={{ height: MAP_HEIGHT }}>
                   {mapCoordsLoading ? (
-                    <div className="h-full w-full flex items-center justify-center text-gray-500 bg-gray-100">Cargando mapa...</div>
+                    <div className="h-full w-full flex items-center justify-center text-muted-foreground bg-muted">Cargando mapa...</div>
                   ) : (
-                    <GoogleMapsLoader loadingElement={<div className="h-full bg-gray-100 flex items-center justify-center text-gray-500">Cargando...</div>}>
+                    <GoogleMapsLoader loadingElement={<div className="h-full bg-muted flex items-center justify-center text-muted-foreground">Cargando...</div>}>
                       <div className="grid grid-cols-2 gap-3 h-full w-full">
-                        <div className="bg-gray-100 h-full overflow-hidden">
+                        <div className="bg-muted h-full overflow-hidden">
                           <EditableGoogleMap
                             lat={formData.latitud && formData.longitud ? formData.latitud : DEFAULT_MAP_CENTER.lat}
                             lng={formData.latitud && formData.longitud ? formData.longitud : DEFAULT_MAP_CENTER.lng}
@@ -571,7 +573,7 @@ export default function NuevoSoportePage() {
                             height={MAP_HEIGHT}
                           />
                         </div>
-                        <div className="bg-gray-100 h-full overflow-hidden">
+                        <div className="bg-muted h-full overflow-hidden">
                           <StreetViewGoogleMaps
                             lat={formData.latitud && formData.longitud ? formData.latitud : DEFAULT_MAP_CENTER.lat}
                             lng={formData.latitud && formData.longitud ? formData.longitud : DEFAULT_MAP_CENTER.lng}
@@ -591,7 +593,7 @@ export default function NuevoSoportePage() {
                     </GoogleMapsLoader>
                   )}
                 </div>
-                <p className="text-sm text-gray-500 mt-2">Arrastra la chincheta o haz clic en el mapa para fijar la ubicación. Las coordenadas se guardan al guardar el soporte.</p>
+                <p className="text-sm text-muted-foreground mt-2">Arrastra la chincheta o haz clic en el mapa para fijar la ubicación. Las coordenadas se guardan al guardar el soporte.</p>
               </div>
             </CardContent>
           </Card>

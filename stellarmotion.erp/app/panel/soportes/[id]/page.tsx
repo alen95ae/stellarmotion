@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { ArrowLeft, Save, MapPin, Trash2, Edit, Eye, Calculator, Hash, Link as LinkIcon, Upload, Globe } from "lucide-react"
 import { toast } from "sonner"
+import { ThemeToggle } from "@/components/ThemeToggle"
 import Sidebar from "@/components/dashboard/Sidebar"
 import { PhotonAutocomplete } from "@/components/PhotonAutocomplete"
 import dynamic from "next/dynamic"
@@ -54,10 +55,10 @@ const TYPE_OPTIONS = [
 ] as const
 
 const STATUS_META = {
-  DISPONIBLE:   { label: 'Disponible',    className: 'bg-green-100 text-green-800 border-green-200' },
-  RESERVADO:    { label: 'Reservado',     className: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
-  OCUPADO:      { label: 'Ocupado',       className: 'bg-red-100 text-red-800 border-red-200' },
-  MANTENIMIENTO:{ label: 'Mantenimiento', className: 'bg-gray-100 text-gray-800 border-gray-200' },
+  DISPONIBLE:   { label: 'Disponible',    className: 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800' },
+  RESERVADO:    { label: 'Reservado',     className: 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800' },
+  OCUPADO:      { label: 'Ocupado',       className: 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800' },
+  MANTENIMIENTO:{ label: 'Mantenimiento', className: 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700' },
 } as const
 
 // COUNTRIES array removed - now using Photon autocomplete
@@ -579,8 +580,8 @@ export default function SoporteDetailPage() {
   if (loading) {
     return (
       <Sidebar>
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-          <div className="text-center text-gray-500">Cargando...</div>
+        <div className="min-h-screen bg-muted/40 flex items-center justify-center">
+          <div className="text-center text-muted-foreground">Cargando...</div>
         </div>
       </Sidebar>
     )
@@ -589,8 +590,8 @@ export default function SoporteDetailPage() {
   if (!support) {
     return (
       <Sidebar>
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-          <div className="text-center text-gray-500">Soporte no encontrado</div>
+        <div className="min-h-screen bg-muted/40 flex items-center justify-center">
+          <div className="text-center text-muted-foreground">Soporte no encontrado</div>
         </div>
       </Sidebar>
     )
@@ -598,9 +599,9 @@ export default function SoporteDetailPage() {
 
   return (
     <Sidebar>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-muted/40">
         {/* Header */}
-        <header className="bg-white border-b border-gray-200 px-6 py-4">
+        <header className="bg-background border-b border-border px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
             <Link prefetch={false} href="/panel/soportes" className="text-[#e94446] hover:text-[#d63d3f] font-medium mr-8">
@@ -608,8 +609,9 @@ export default function SoporteDetailPage() {
             </Link>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-gray-600">Buscar</span>
-            <span className="text-gray-800 font-medium">admin</span>
+            <span className="text-muted-foreground">Buscar</span>
+            <span className="text-foreground font-medium">admin</span>
+            <ThemeToggle />
           </div>
         </div>
       </header>
@@ -618,10 +620,10 @@ export default function SoporteDetailPage() {
       <main className="container mx-auto px-6 py-8">
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-slate-800 mb-2">
+            <h1 className="text-3xl font-bold text-foreground mb-2">
               {editing ? "Editar Soporte" : support?.title || "Soporte"}
             </h1>
-            <p className="text-gray-600">
+            <p className="text-muted-foreground">
               {editing ? "Modifica los datos del soporte" : "Detalles del soporte publicitario"}
             </p>
           </div>
@@ -715,7 +717,7 @@ export default function SoporteDetailPage() {
                       onChange={(e) => setFormData({...formData, internalCode: e.target.value})}
                     />
                   ) : (
-                    <p className="text-sm text-gray-600 mt-1">{formData.internalCode || support?.internalCode || "N/A"}</p>
+                    <p className="text-sm text-muted-foreground mt-1">{formData.internalCode || support?.internalCode || "N/A"}</p>
                   )}
                 </div>
 
@@ -728,7 +730,7 @@ export default function SoporteDetailPage() {
                       onChange={(e) => setFormData({...formData, userCode: e.target.value})}
                     />
                   ) : (
-                    <p className="text-sm text-gray-600 mt-1">{formData.userCode || support?.userCode || "N/A"}</p>
+                    <p className="text-sm text-muted-foreground mt-1">{formData.userCode || support?.userCode || "N/A"}</p>
                   )}
                 </div>
 
@@ -741,7 +743,7 @@ export default function SoporteDetailPage() {
                       onChange={(e) => setFormData({...formData, title: e.target.value})}
                     />
                   ) : (
-                    <p className="text-sm text-gray-600 mt-1">{formData.title || support?.title || "N/A"}</p>
+                    <p className="text-sm text-muted-foreground mt-1">{formData.title || support?.title || "N/A"}</p>
                   )}
                 </div>
 
@@ -761,7 +763,7 @@ export default function SoporteDetailPage() {
                       </SelectContent>
                     </Select>
                   ) : (
-                    <p className="text-sm text-gray-600 mt-1">{formData.type || support?.type || "N/A"}</p>
+                    <p className="text-sm text-muted-foreground mt-1">{formData.type || support?.type || "N/A"}</p>
                   )}
                 </div>
 
@@ -801,7 +803,7 @@ export default function SoporteDetailPage() {
                       />
                     ) : (
                       <div className="mt-1">
-                        <Badge className="bg-blue-100 text-blue-800 border-blue-200">
+                        <Badge className="bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800">
                           {ownerDisplayString(formData.owner) || ownerDisplayString(support?.owner) || "N/A"}
                         </Badge>
                       </div>
@@ -821,7 +823,7 @@ export default function SoporteDetailPage() {
                       onChange={(e) => setFormData({...formData, widthM: e.target.value})}
                     />
                   ) : (
-                    <p className="text-sm text-gray-600 mt-1">{formData.widthM ? `${formData.widthM}m` : "N/A"}</p>
+                    <p className="text-sm text-muted-foreground mt-1">{formData.widthM ? `${formData.widthM}m` : "N/A"}</p>
                   )}
                 </div>
 
@@ -835,7 +837,7 @@ export default function SoporteDetailPage() {
                       onChange={(e) => setFormData({...formData, heightM: e.target.value})}
                     />
                   ) : (
-                    <p className="text-sm text-gray-600 mt-1">{formData.heightM ? `${formData.heightM}m` : "N/A"}</p>
+                    <p className="text-sm text-muted-foreground mt-1">{formData.heightM ? `${formData.heightM}m` : "N/A"}</p>
                   )}
                 </div>
 
@@ -849,7 +851,7 @@ export default function SoporteDetailPage() {
                       onChange={(e) => setFormData({...formData, dailyImpressions: e.target.value})}
                     />
                   ) : (
-                    <p className="text-sm text-gray-600 mt-1">{formData.dailyImpressions || "N/A"}</p>
+                    <p className="text-sm text-muted-foreground mt-1">{formData.dailyImpressions || "N/A"}</p>
                   )}
                 </div>
 
@@ -885,7 +887,7 @@ export default function SoporteDetailPage() {
                       onChange={(e) => setFormData({...formData, priceMonth: e.target.value})}
                     />
                   ) : (
-                    <p className="text-sm text-gray-600 mt-1">
+                    <p className="text-sm text-muted-foreground mt-1">
                       {formData.priceMonth ? formatPrice(parseFloat(formData.priceMonth)) : "No especificado"}
                     </p>
                   )}
@@ -905,7 +907,7 @@ export default function SoporteDetailPage() {
                   rows={4}
                 />
               ) : (
-                <p className="text-sm text-gray-600 mt-1">{formData.description || support?.description || "N/A"}</p>
+                <p className="text-sm text-muted-foreground mt-1">{formData.description || support?.description || "N/A"}</p>
               )}
             </div>
 
@@ -914,7 +916,7 @@ export default function SoporteDetailPage() {
               <Label>Imágenes</Label>
               <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {formData.images.filter(image => image && typeof image === 'string').map((image, index) => (
-                  <div key={index} className="relative aspect-[4/3] rounded-lg overflow-hidden group bg-gray-100 border border-gray-200">
+                  <div key={index} className="relative aspect-[4/3] rounded-lg overflow-hidden group bg-muted border border-border">
                     <img src={image} className="w-full h-full object-cover" alt={`Soporte ${index + 1}`} />
                     {editing && (
                       <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -931,7 +933,7 @@ export default function SoporteDetailPage() {
                   </div>
                 ))}
                 {editing && (
-                  <label className="aspect-[4/3] rounded-lg border-2 border-dashed border-gray-300 hover:border-blue-500 hover:bg-gray-50 flex flex-col items-center justify-center cursor-pointer transition-colors text-gray-500 hover:text-blue-600">
+                  <label className="aspect-[4/3] rounded-lg border-2 border-dashed border-border hover:border-blue-500 hover:bg-muted/50 flex flex-col items-center justify-center cursor-pointer transition-colors text-muted-foreground hover:text-blue-600">
                     <Upload className="w-6 h-6 mb-2" />
                     <span className="text-xs">Subir</span>
                     <input
@@ -959,7 +961,7 @@ export default function SoporteDetailPage() {
                 ) : (
                   <div>
                     <Label htmlFor="city">Ciudad</Label>
-                    <p className="text-sm text-gray-600 mt-1">{formData.city || support?.city || "N/A"}</p>
+                    <p className="text-sm text-muted-foreground mt-1">{formData.city || support?.city || "N/A"}</p>
                   </div>
                 )}
               </div>
@@ -976,7 +978,7 @@ export default function SoporteDetailPage() {
                 ) : (
                   <div>
                     <Label htmlFor="country">País</Label>
-                    <p className="text-sm text-gray-600 mt-1">{formData.country || support?.country || "N/A"}</p>
+                    <p className="text-sm text-muted-foreground mt-1">{formData.country || support?.country || "N/A"}</p>
                   </div>
                 )}
               </div>
@@ -1014,7 +1016,7 @@ export default function SoporteDetailPage() {
                     }}
                     placeholder="Pega el enlace de Google Maps aquí"
                   />
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-muted-foreground">
                     Al pegar el enlace, se extraerán automáticamente las coordenadas.
                   </p>
                 </div>
@@ -1031,21 +1033,21 @@ export default function SoporteDetailPage() {
                       Ver en Google Maps
                     </a>
                   ) : (
-                    <p className="text-sm text-gray-600">No disponible</p>
+                    <p className="text-sm text-muted-foreground">No disponible</p>
                   )}
                 </div>
               )}
             </div>
 
             <div className="mt-4">
-              <Label className="text-sm font-medium text-gray-700 mb-2 block">Ubicación del soporte</Label>
-              <div className="w-full rounded-xl border border-gray-200 bg-gray-50 overflow-hidden" style={{ height: MAP_HEIGHT }}>
+              <Label className="text-sm font-medium text-muted-foreground mb-2 block">Ubicación del soporte</Label>
+              <div className="w-full rounded-xl border border-border bg-muted/40 overflow-hidden" style={{ height: MAP_HEIGHT }}>
                 {mapCoordsLoading ? (
-                  <div className="h-full w-full flex items-center justify-center text-gray-500 bg-gray-100">Cargando mapa...</div>
+                  <div className="h-full w-full flex items-center justify-center text-muted-foreground bg-muted">Cargando mapa...</div>
                 ) : (
-                  <GoogleMapsLoader loadingElement={<div className="h-full bg-gray-100 flex items-center justify-center text-gray-500">Cargando...</div>}>
+                  <GoogleMapsLoader loadingElement={<div className="h-full bg-muted flex items-center justify-center text-muted-foreground">Cargando...</div>}>
                     <div className="grid grid-cols-2 gap-3 h-full w-full">
-                      <div className="bg-gray-100 h-full overflow-hidden">
+                      <div className="bg-muted h-full overflow-hidden">
                         <EditableGoogleMap
                           lat={formData.latitud ?? support?.latitud ?? DEFAULT_MAP_CENTER.lat}
                           lng={formData.longitud ?? support?.longitud ?? DEFAULT_MAP_CENTER.lng}
@@ -1058,7 +1060,7 @@ export default function SoporteDetailPage() {
                           })) : undefined}
                         />
                       </div>
-                      <div className="bg-gray-100 h-full overflow-hidden">
+                      <div className="bg-muted h-full overflow-hidden">
                         <StreetViewGoogleMaps
                           lat={formData.latitud ?? support?.latitud ?? DEFAULT_MAP_CENTER.lat}
                           lng={formData.longitud ?? support?.longitud ?? DEFAULT_MAP_CENTER.lng}
@@ -1078,7 +1080,7 @@ export default function SoporteDetailPage() {
                   </GoogleMapsLoader>
                 )}
               </div>
-              <p className="text-sm text-gray-500 mt-2">Arrastra la chincheta o haz clic en el mapa para fijar la ubicación. Las coordenadas se guardan en la base de datos.</p>
+              <p className="text-sm text-muted-foreground mt-2">Arrastra la chincheta o haz clic en el mapa para fijar la ubicación. Las coordenadas se guardan en la base de datos.</p>
             </div>
 
           </CardContent>

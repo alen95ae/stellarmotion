@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter, usePathname } from 'next/navigation'
 import Image from 'next/image'
+import { ThemeToggle } from '@/components/ThemeToggle'
 import {
   Home,
   TrendingUp,
@@ -58,12 +59,11 @@ const contentVariants = {
 
 interface SidebarProps {
   children: React.ReactNode
-  enableDarkMode?: boolean
+  enableDarkMode?: boolean // Deprecated, handled by next-themes
 }
 
-export default function Sidebar({ children, enableDarkMode = false }: SidebarProps) {
+export default function Sidebar({ children }: SidebarProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const [darkMode, setDarkMode] = useState(enableDarkMode)
   const [isUserToggle, setIsUserToggle] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
@@ -138,18 +138,15 @@ export default function Sidebar({ children, enableDarkMode = false }: SidebarPro
     <div className="flex min-h-screen">
       {/* Sidebar */}
       <motion.aside
-        className={`sticky top-0 self-start border-r z-50 transition-colors duration-300 ${darkMode
-            ? 'bg-slate-800 border-slate-700'
-            : 'bg-white border-gray-200'
-          }`}
+        className="sticky top-0 self-start border-r z-50 transition-colors duration-300 bg-card border-border"
         style={{ minHeight: '100vh' }}
         variants={sidebarVariants}
         animate={sidebarCollapsed ? 'collapsed' : 'expanded'}
         transition={isUserToggle ? { duration: 0.3, ease: 'easeInOut' } : { duration: 0 }}
       >
-        <div className="px-4 pb-4">
+        <div className="px-4 pb-4 flex flex-col h-full">
           {/* Logo */}
-          <div className="flex items-center justify-start -mb-8 -mt-8">
+          <div className="flex items-center justify-start -mb-8 -mt-8 shrink-0">
             <div className="w-96 h-32 flex items-center justify-start">
               {sidebarCollapsed ? (
                 <div className="w-8 h-8 flex items-center justify-center">
@@ -182,27 +179,23 @@ export default function Sidebar({ children, enableDarkMode = false }: SidebarPro
 
           {/* User Info */}
           <motion.div
-            className={`flex items-center space-x-3 py-2 border-b ${darkMode ? 'border-slate-700' : 'border-gray-200'
-              }`}
+            className="flex items-center space-x-3 py-2 border-b border-border"
           >
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${darkMode ? 'bg-slate-700' : 'bg-gray-200'
-              }`}>
-              <Users className="w-5 h-5 text-gray-600" />
+            <div className="w-10 h-10 rounded-full flex items-center justify-center bg-muted">
+              <Users className="w-5 h-5 text-muted-foreground" />
             </div>
             <motion.div
               className="flex-1 min-w-0"
               animate={{ opacity: sidebarCollapsed ? 0 : 1 }}
               transition={{ delay: sidebarCollapsed ? 0 : 0.2 }}
             >
-              <p className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'
-                }`}>Admin User</p>
-              <p className={`text-xs ${darkMode ? 'text-slate-400' : 'text-gray-500'
-                }`}>admin@stellarmotion.com</p>
+              <p className="text-sm font-medium text-foreground">Admin User</p>
+              <p className="text-xs text-muted-foreground">admin@stellarmotion.com</p>
             </motion.div>
           </motion.div>
 
           {/* Navigation */}
-          <nav className="space-y-1 pt-2">
+          <nav className="space-y-1 pt-2 flex-1">
             {erpModules.map((module, index) => (
               <motion.div
                 key={module.id}
@@ -214,9 +207,7 @@ export default function Sidebar({ children, enableDarkMode = false }: SidebarPro
                   variant={activeModule === module.id ? 'default' : 'ghost'}
                   className={`w-full justify-start h-12 ${activeModule === module.id
                       ? 'bg-[#e94446] hover:bg-[#e94446] text-white'
-                      : darkMode
-                        ? 'hover:bg-[#e94446] hover:text-white text-white'
-                        : 'hover:bg-[#e94446] hover:text-white text-gray-900'
+                      : 'hover:bg-[#e94446] hover:text-white text-foreground'
                     }`}
                   onClick={() => handleModuleClick(module)}
                 >
@@ -237,16 +228,17 @@ export default function Sidebar({ children, enableDarkMode = false }: SidebarPro
               </motion.div>
             ))}
           </nav>
+
+          <div className="pt-4 mt-auto border-t border-border flex justify-center">
+             <ThemeToggle />
+          </div>
         </div>
 
         {/* Toggle Button */}
         <Button
           variant="ghost"
           size="sm"
-          className={`absolute top-6 -right-3 ${darkMode
-              ? 'bg-slate-700 hover:bg-slate-600 text-white'
-              : 'bg-gray-200 hover:bg-gray-300 text-gray-900'
-            }`}
+          className="absolute top-6 -right-3 bg-muted hover:bg-muted/80 text-foreground border border-border"
           onClick={handleToggle}
         >
           {sidebarCollapsed ? <Menu className="w-4 h-4" /> : <X className="w-4 h-4" />}
@@ -254,7 +246,7 @@ export default function Sidebar({ children, enableDarkMode = false }: SidebarPro
       </motion.aside>
 
       {/* Main Content */}
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 bg-muted/20">
         {children}
       </div>
     </div>

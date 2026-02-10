@@ -232,13 +232,13 @@ export default function CRMPage() {
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
-      new: 'bg-blue-100 text-blue-800',
-      contacted: 'bg-yellow-100 text-yellow-800',
-      qualified: 'bg-green-100 text-green-800',
-      converted: 'bg-purple-100 text-purple-800',
-      lost: 'bg-red-100 text-red-800'
+      new: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
+      contacted: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
+      qualified: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
+      converted: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
+      lost: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
     }
-    return colors[status] || 'bg-gray-100 text-gray-800'
+    return colors[status] || 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300'
   }
 
   const getSourceIcon = (source: string) => {
@@ -256,14 +256,14 @@ export default function CRMPage() {
 
   return (
     <Sidebar>
-      <div className="min-h-screen bg-gray-50 p-6">
+      <div className="min-h-screen bg-muted/40 p-6">
         <div className="max-w-7xl mx-auto space-y-6">
           {/* Header */}
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">CRM</h1>
-              <p className="text-gray-600 mt-1">Gestión de leads, cuentas y oportunidades</p>
-              <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg text-blue-800 text-xs">
+              <h1 className="text-3xl font-bold text-foreground">CRM</h1>
+              <p className="text-muted-foreground mt-1">Gestión de leads, cuentas y oportunidades</p>
+              <div className="mt-2 p-2 bg-blue-50 border border-blue-200 dark:bg-blue-900/20 dark:border-blue-800 rounded-lg text-blue-800 dark:text-blue-300 text-xs">
                 📊 Modo demo: Mostrando datos de ejemplo (sin conexión a BD)
               </div>
             </div>
@@ -364,9 +364,9 @@ export default function CRMPage() {
             </CardHeader>
             <CardContent>
               {loading ? (
-                <div className="text-center py-8 text-gray-500">Cargando...</div>
+                  <div className="text-center py-8 text-muted-foreground">Cargando...</div>
               ) : recentLeads.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
+                  <div className="text-center py-8 text-muted-foreground">
                   No hay leads aún. <Button variant="link" onClick={() => router.push('/panel/crm/leads/nuevo')}>Crear primer lead</Button>
                 </div>
               ) : (
@@ -374,21 +374,21 @@ export default function CRMPage() {
                   {recentLeads.map((lead) => (
                     <div
                       key={lead.id}
-                      className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                        className="flex items-center justify-between p-3 border border-border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
                       onClick={() => router.push(`/panel/crm/leads/${lead.id}`)}
                     >
                       <div className="flex items-center gap-3 flex-1">
-                        <div className="p-2 bg-gray-100 rounded-lg">
+                          <div className="p-2 bg-muted rounded-lg">
                           {getSourceIcon(lead.source)}
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
-                            <p className="font-medium">{lead.nombre}</p>
+                              <p className="font-medium text-foreground">{lead.nombre}</p>
                             {lead.empresa && (
-                              <span className="text-sm text-gray-500">- {lead.empresa}</span>
+                                <span className="text-sm text-muted-foreground">- {lead.empresa}</span>
                             )}
                           </div>
-                          <p className="text-sm text-gray-500">{lead.email}</p>
+                            <p className="text-sm text-muted-foreground">{lead.email}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
@@ -396,8 +396,8 @@ export default function CRMPage() {
                           {lead.status}
                         </Badge>
                         <div className="text-right">
-                          <div className="text-sm font-medium">Score: {lead.score}</div>
-                          <div className="text-xs text-gray-500">
+                            <div className="text-sm font-medium text-foreground">Score: {lead.score}</div>
+                            <div className="text-xs text-muted-foreground">
                             {new Date(lead.created_at).toLocaleDateString('es-ES')}
                           </div>
                         </div>
@@ -430,9 +430,9 @@ export default function CRMPage() {
             </CardHeader>
             <CardContent>
               {loading ? (
-                <div className="text-center py-8 text-gray-500">Cargando...</div>
+                  <div className="text-center py-8 text-muted-foreground">Cargando...</div>
               ) : recentOpportunities.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
+                  <div className="text-center py-8 text-muted-foreground">
                   No hay oportunidades activas. <Button variant="link" onClick={() => router.push('/panel/crm/opportunities/nuevo')}>Crear oportunidad</Button>
                 </div>
               ) : (
@@ -440,17 +440,17 @@ export default function CRMPage() {
                   {recentOpportunities.map((opp) => (
                     <div
                       key={opp.id}
-                      className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                        className="flex items-center justify-between p-3 border border-border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
                       onClick={() => router.push(`/panel/crm/opportunities/${opp.id}`)}
                     >
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          <p className="font-medium">{opp.nombre}</p>
+                            <p className="font-medium text-foreground">{opp.nombre}</p>
                           {opp.account && (
-                            <span className="text-sm text-gray-500">- {opp.account.nombre}</span>
+                              <span className="text-sm text-muted-foreground">- {opp.account.nombre}</span>
                           )}
                         </div>
-                        <div className="flex items-center gap-4 text-sm text-gray-500">
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
                           <span>
                             {new Intl.NumberFormat('es-ES', {
                               style: 'currency',
@@ -469,7 +469,7 @@ export default function CRMPage() {
                           )}
                         </div>
                       </div>
-                      <ArrowRight className="w-5 h-5 text-gray-400" />
+                        <ArrowRight className="w-5 h-5 text-muted-foreground" />
                     </div>
                   ))}
                 </div>

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
+import { ThemeToggle } from '@/components/ThemeToggle'
 import { 
   Home,
   TrendingUp,
@@ -41,9 +42,7 @@ import {
   Globe2,
   HeartHandshake,
   Rabbit,
-  Rat,
-  Sun,
-  Moon
+  Rat
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -94,7 +93,6 @@ const activityData = [
 export default function DashboardPage() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [activeModule, setActiveModule] = useState('dashboard')
-  const [darkMode, setDarkMode] = useState(false)
   const router = useRouter()
 
   const erpModules = [
@@ -185,26 +183,18 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className={`flex min-h-screen transition-colors duration-300 ${
-      darkMode 
-        ? 'bg-slate-900 text-white' 
-        : 'bg-white text-gray-900'
-    }`}>
+    <div className="flex min-h-screen transition-colors duration-300 bg-muted/40">
       {/* Sidebar */}
       <motion.aside
-        className={`sticky top-0 self-start border-r z-50 transition-colors duration-300 ${
-          darkMode 
-            ? 'bg-slate-800 border-slate-700' 
-            : 'bg-white border-gray-200'
-        }`}
+        className="sticky top-0 self-start border-r z-50 transition-colors duration-300 bg-card border-border"
         style={{ minHeight: '100vh' }}
         variants={sidebarVariants}
         animate={sidebarCollapsed ? 'collapsed' : 'expanded'}
         transition={{ duration: 0.3, ease: 'easeInOut' }}
       >
-        <div className="px-4 pb-4">
+        <div className="px-4 pb-4 flex flex-col h-full">
           {/* Logo */}
-          <div className="flex items-center justify-start -mb-8 -mt-8">
+          <div className="flex items-center justify-start -mb-8 -mt-8 shrink-0">
             <div className="w-96 h-32 flex items-center justify-start">
               {sidebarCollapsed ? (
                 <div className="w-8 h-8 flex items-center justify-center">
@@ -237,31 +227,23 @@ export default function DashboardPage() {
 
           {/* User Info */}
           <motion.div 
-            className={`flex items-center space-x-3 py-2 border-b ${
-              darkMode ? 'border-slate-700' : 'border-gray-200'
-            }`}
+            className="flex items-center space-x-3 py-2 border-b border-border"
           >
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-              darkMode ? 'bg-slate-700' : 'bg-gray-200'
-            }`}>
-              <Users className="w-5 h-5 text-gray-600" />
+            <div className="w-10 h-10 rounded-full flex items-center justify-center bg-muted">
+              <Users className="w-5 h-5 text-muted-foreground" />
             </div>
             <motion.div 
               className="flex-1 min-w-0"
               animate={{ opacity: sidebarCollapsed ? 0 : 1 }}
               transition={{ delay: sidebarCollapsed ? 0 : 0.2 }}
             >
-              <p className={`text-sm font-medium ${
-                darkMode ? 'text-white' : 'text-gray-900'
-              }`}>Admin User</p>
-              <p className={`text-xs ${
-                darkMode ? 'text-slate-400' : 'text-gray-500'
-              }`}>admin@stellarmotion.com</p>
+              <p className="text-sm font-medium text-foreground">Admin User</p>
+              <p className="text-xs text-muted-foreground">admin@stellarmotion.com</p>
             </motion.div>
           </motion.div>
 
           {/* Navigation */}
-          <nav className="space-y-1 pt-2">
+          <nav className="space-y-1 pt-2 flex-1">
             {erpModules.map((module, index) => (
               <motion.div
                 key={module.id}
@@ -274,9 +256,7 @@ export default function DashboardPage() {
                   className={`w-full justify-start h-12 ${
                     activeModule === module.id 
                       ? 'bg-[#e94446] hover:bg-[#e94446] text-white' 
-                      : darkMode 
-                        ? 'hover:bg-[#e94446] hover:text-white text-white' 
-                        : 'hover:bg-[#e94446] hover:text-white text-gray-900'
+                      : 'hover:bg-[#e94446] hover:text-white text-foreground'
                   }`}
                   onClick={() => handleModuleClick(module.id)}
                 >
@@ -297,17 +277,17 @@ export default function DashboardPage() {
               </motion.div>
             ))}
           </nav>
+
+          <div className="pt-4 mt-auto border-t border-border flex justify-center">
+             <ThemeToggle />
+          </div>
         </div>
 
         {/* Toggle Button */}
         <Button
           variant="ghost"
           size="sm"
-          className={`absolute top-6 -right-3 ${
-            darkMode 
-              ? 'bg-slate-700 hover:bg-slate-600 text-white' 
-              : 'bg-gray-200 hover:bg-gray-300 text-gray-900'
-          }`}
+          className="absolute top-6 -right-3 bg-muted hover:bg-muted/80 text-foreground border border-border"
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
         >
           {sidebarCollapsed ? <Menu className="w-4 h-4" /> : <X className="w-4 h-4" />}
@@ -324,62 +304,21 @@ export default function DashboardPage() {
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h1 className={`text-3xl font-bold mb-2 ${
-                darkMode ? 'text-white' : 'text-gray-900'
-              }`}>Dashboard</h1>
-              <p className={`${
-                darkMode ? 'text-slate-400' : 'text-gray-600'
-              }`}>Bienvenido al panel de control de StellarMotion</p>
+              <h1 className="text-3xl font-bold mb-2 text-foreground">Dashboard</h1>
+              <p className="text-muted-foreground">Bienvenido al panel de control de StellarMotion</p>
             </div>
             <div className="flex items-center space-x-4">
               <div className="relative">
-                <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 ${
-                  darkMode ? 'text-slate-400' : 'text-gray-400'
-                }`} />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input 
                   placeholder="Buscar..." 
-                  className={`pl-10 ${
-                    darkMode 
-                      ? 'bg-slate-800 border-slate-700 text-white' 
-                      : 'bg-white border-gray-300 text-gray-900'
-                  }`}
+                  className="pl-10 bg-background border-input text-foreground"
                 />
               </div>
-              <Button variant="ghost" size="sm" className={darkMode ? 'text-white hover:bg-slate-700' : 'text-gray-900 hover:bg-gray-100'}>
+              <Button variant="ghost" size="sm" className="text-foreground hover:bg-muted">
                 <Bell className="w-5 h-5" />
               </Button>
-              <div
-                role="group"
-                aria-label="Tema"
-                className={`inline-flex items-center rounded-full border p-0.5 ${
-                  darkMode ? 'border-slate-600 bg-slate-800' : 'border-gray-200 bg-gray-100'
-                }`}
-              >
-                <button
-                  type="button"
-                  onClick={() => setDarkMode(false)}
-                  className={`p-1.5 rounded-full transition-colors ${
-                    !darkMode
-                      ? 'bg-gray-300 text-gray-800'
-                      : 'text-slate-400 hover:text-slate-200'
-                  }`}
-                  aria-label="Tema claro"
-                >
-                  <Sun className="w-4 h-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDarkMode(true)}
-                  className={`p-1.5 rounded-full transition-colors ${
-                    darkMode
-                      ? 'bg-slate-600 text-white'
-                      : 'text-gray-500 hover:text-gray-700'
-                  }`}
-                  aria-label="Tema oscuro"
-                >
-                  <Moon className="w-4 h-4" />
-                </button>
-              </div>
+              <ThemeToggle />
             </div>
           </div>
 
@@ -392,20 +331,12 @@ export default function DashboardPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
               >
-                <Card className={`transition-colors ${
-                  darkMode 
-                    ? 'bg-slate-800 border-slate-700 hover:bg-slate-750' 
-                    : 'bg-white border-gray-200 hover:bg-gray-50'
-                }`}>
+                <Card className="transition-colors bg-card border-border hover:bg-accent/50">
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className={`text-sm mb-1 ${
-                          darkMode ? 'text-slate-400' : 'text-gray-600'
-                        }`}>{metric.title}</p>
-                        <p className={`text-2xl font-bold ${
-                          darkMode ? 'text-white' : 'text-gray-900'
-                        }`}>{metric.value}</p>
+                        <p className="text-sm mb-1 text-muted-foreground">{metric.title}</p>
+                        <p className="text-2xl font-bold text-foreground">{metric.value}</p>
                         <div className="flex items-center mt-2">
                           {metric.trend === 'up' ? (
                             <TrendingUp className="w-4 h-4 text-green-400 mr-1" />
@@ -417,9 +348,7 @@ export default function DashboardPage() {
                           </span>
                         </div>
                       </div>
-                      <div className={`p-3 rounded-lg ${
-                        darkMode ? 'bg-slate-700' : 'bg-gray-100'
-                      } ${metric.color}`}>
+                      <div className={`p-3 rounded-lg bg-muted ${metric.color}`}>
                         <metric.icon className="w-6 h-6" />
                       </div>
                     </div>
@@ -437,25 +366,22 @@ export default function DashboardPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
             >
-              <Card className={`transition-colors ${
-                darkMode 
-                  ? 'bg-slate-800 border-slate-700' 
-                  : 'bg-white border-gray-200'
-              }`}>
+              <Card className="transition-colors bg-card border-border">
                 <CardHeader>
-                  <CardTitle className={darkMode ? 'text-white' : 'text-gray-900'}>Ingresos vs Gastos</CardTitle>
+                  <CardTitle className="text-foreground">Ingresos vs Gastos</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={300}>
                     <AreaChart data={revenueData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                      <XAxis dataKey="month" stroke="#9CA3AF" />
-                      <YAxis stroke="#9CA3AF" />
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" />
+                      <YAxis stroke="hsl(var(--muted-foreground))" />
                       <Tooltip 
                         contentStyle={{ 
-                          backgroundColor: '#1F2937', 
-                          border: '1px solid #374151',
-                          borderRadius: '8px'
+                          backgroundColor: 'hsl(var(--popover))',
+                          borderColor: 'hsl(var(--border))',
+                          borderRadius: '8px',
+                          color: 'hsl(var(--popover-foreground))'
                         }} 
                       />
                       <Area 
@@ -486,13 +412,9 @@ export default function DashboardPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
             >
-              <Card className={`transition-colors ${
-                darkMode 
-                  ? 'bg-slate-800 border-slate-700' 
-                  : 'bg-white border-gray-200'
-              }`}>
+              <Card className="transition-colors bg-card border-border">
                 <CardHeader>
-                  <CardTitle className={darkMode ? 'text-white' : 'text-gray-900'}>Distribución por Módulos</CardTitle>
+                  <CardTitle className="text-foreground">Distribución por Módulos</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={300}>
@@ -512,9 +434,10 @@ export default function DashboardPage() {
                       </Pie>
                       <Tooltip 
                         contentStyle={{ 
-                          backgroundColor: '#1F2937', 
-                          border: '1px solid #374151',
-                          borderRadius: '8px'
+                          backgroundColor: 'hsl(var(--popover))',
+                          borderColor: 'hsl(var(--border))',
+                          borderRadius: '8px',
+                          color: 'hsl(var(--popover-foreground))'
                         }} 
                       />
                     </PieChart>
@@ -533,15 +456,9 @@ export default function DashboardPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6 }}
             >
-              <Card className={`transition-colors ${
-                darkMode 
-                  ? 'bg-slate-800 border-slate-700' 
-                  : 'bg-white border-gray-200'
-              }`}>
+              <Card className="transition-colors bg-card border-border">
                 <CardHeader>
-                  <CardTitle className={`flex items-center ${
-                    darkMode ? 'text-white' : 'text-gray-900'
-                  }`}>
+                  <CardTitle className="flex items-center text-foreground">
                     <Activity className="w-5 h-5 mr-2" />
                     Actividad Reciente
                   </CardTitle>
@@ -551,23 +468,15 @@ export default function DashboardPage() {
                     {activityData.map((activity, index) => (
                       <motion.div
                         key={index}
-                        className={`flex items-center space-x-3 p-3 rounded-lg transition-colors ${
-                          darkMode 
-                            ? 'bg-slate-700 hover:bg-slate-600' 
-                            : 'bg-gray-100 hover:bg-gray-200'
-                        }`}
+                        className="flex items-center space-x-3 p-3 rounded-lg transition-colors bg-muted/40 hover:bg-muted"
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.7 + index * 0.1 }}
                       >
                         <div className="w-2 h-2 bg-[#e94446] rounded-full"></div>
                         <div className="flex-1">
-                          <p className={`text-sm ${
-                            darkMode ? 'text-white' : 'text-gray-900'
-                          }`}>{activity.activity}</p>
-                          <p className={`text-xs ${
-                            darkMode ? 'text-slate-400' : 'text-gray-600'
-                          }`}>{activity.time}</p>
+                          <p className="text-sm text-foreground">{activity.activity}</p>
+                          <p className="text-xs text-muted-foreground">{activity.time}</p>
                         </div>
                         <Badge variant="outline" className="text-xs">
                           {activity.type}
@@ -585,13 +494,9 @@ export default function DashboardPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.7 }}
             >
-              <Card className={`transition-colors ${
-                darkMode 
-                  ? 'bg-slate-800 border-slate-700' 
-                  : 'bg-white border-gray-200'
-              }`}>
+              <Card className="transition-colors bg-card border-border">
                 <CardHeader>
-                  <CardTitle className={darkMode ? 'text-white' : 'text-gray-900'}>Acciones Rápidas</CardTitle>
+                  <CardTitle className="text-foreground">Acciones Rápidas</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <Button className="w-full justify-start bg-[#e94446] hover:bg-[#D7514C] text-white">
@@ -599,29 +504,17 @@ export default function DashboardPage() {
                     Nueva Venta
                     <ArrowRight className="w-4 h-4 ml-auto" />
                   </Button>
-                  <Button variant="outline" className={`w-full justify-start ${
-                    darkMode 
-                      ? 'border-slate-600 hover:bg-slate-700 text-white' 
-                      : 'border-gray-300 hover:bg-gray-100 text-gray-900'
-                  }`}>
+                  <Button variant="outline" className="w-full justify-start border-input hover:bg-muted text-foreground">
                     <Package className="w-4 h-4 mr-2" />
                     Registrar Compra
                     <ArrowRight className="w-4 h-4 ml-auto" />
                   </Button>
-                  <Button variant="outline" className={`w-full justify-start ${
-                    darkMode 
-                      ? 'border-slate-600 hover:bg-slate-700 text-white' 
-                      : 'border-gray-300 hover:bg-gray-100 text-gray-900'
-                  }`}>
+                  <Button variant="outline" className="w-full justify-start border-input hover:bg-muted text-foreground">
                     <Users className="w-4 h-4 mr-2" />
                     Agregar Brand
                     <ArrowRight className="w-4 h-4 ml-auto" />
                   </Button>
-                  <Button variant="outline" className={`w-full justify-start ${
-                    darkMode 
-                      ? 'border-slate-600 hover:bg-slate-700 text-white' 
-                      : 'border-gray-300 hover:bg-gray-100 text-gray-900'
-                  }`}>
+                  <Button variant="outline" className="w-full justify-start border-input hover:bg-muted text-foreground">
                     <FileText className="w-4 h-4 mr-2" />
                     Emitir Factura
                     <ArrowRight className="w-4 h-4 ml-auto" />

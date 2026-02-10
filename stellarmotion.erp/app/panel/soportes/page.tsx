@@ -18,16 +18,17 @@ import { Plus, Search, Eye, Edit, Trash2, MapPin, Euro, Upload, Download, Filter
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { toast } from "sonner"
+import { ThemeToggle } from "@/components/ThemeToggle"
 import EditableField from "@/components/EditableField"
 import BulkActions from "@/components/BulkActions"
 import Sidebar from "@/components/dashboard/Sidebar"
 
 // Constantes para colores de estado
 const STATUS_META = {
-  DISPONIBLE:   { label: 'Disponible',    className: 'bg-green-100 text-green-800 border-green-200' },
-  RESERVADO:    { label: 'Reservado',     className: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
-  OCUPADO:      { label: 'Ocupado',       className: 'bg-red-100 text-red-800 border-red-200' },
-  MANTENIMIENTO:{ label: 'Mantenimiento', className: 'bg-gray-100 text-gray-800 border-gray-200' },
+  DISPONIBLE:   { label: 'Disponible',    className: 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800' },
+  RESERVADO:    { label: 'Reservado',     className: 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800' },
+  OCUPADO:      { label: 'Ocupado',       className: 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800' },
+  MANTENIMIENTO:{ label: 'Mantenimiento', className: 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700' },
 } as const
 
 // Opciones de tipo
@@ -381,9 +382,9 @@ export default function SoportesPage() {
 
   return (
     <Sidebar>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-muted/40">
         {/* Header */}
-        <header className="bg-white border-b border-gray-200 px-6 py-4">
+        <header className="bg-background border-b border-border px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
             <Link prefetch={false} href="/panel/soportes" className="text-[#e94446] hover:text-[#d63d3f] font-medium mr-8">
@@ -391,8 +392,9 @@ export default function SoportesPage() {
             </Link>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-gray-600">Buscar</span>
-            <span className="text-gray-800 font-medium">admin</span>
+            <span className="text-muted-foreground">Buscar</span>
+            <span className="text-foreground font-medium">admin</span>
+            <ThemeToggle />
           </div>
         </div>
       </header>
@@ -400,8 +402,8 @@ export default function SoportesPage() {
       {/* Main Content */}
       <main className="w-full px-6 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-800 mb-2">Gestión de Soportes</h1>
-          <p className="text-gray-600">Administra los soportes publicitarios disponibles</p>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Gestión de Soportes</h1>
+          <p className="text-muted-foreground">Administra los soportes publicitarios disponibles</p>
         </div>
 
         {/* Search and Actions */}
@@ -409,7 +411,7 @@ export default function SoportesPage() {
           <CardContent className="pt-6">
             <div className="flex gap-4 items-end">
               <div className="flex-1">
-                <label className="text-sm font-medium text-gray-700 mb-2 block">
+                <label className="text-sm font-medium text-muted-foreground mb-2 block">
                   Buscar soportes
                 </label>
                 <div className="flex gap-2">
@@ -462,7 +464,7 @@ export default function SoportesPage() {
                       <div className="grid grid-cols-3 gap-6 text-sm">
                         <div>
                           <h4 className="font-semibold mb-2">Campos Básicos:</h4>
-                          <ul className="space-y-1 text-gray-600">
+                          <ul className="space-y-1 text-muted-foreground">
                             <li>• title (título) *</li>
                             <li>• type (tipo) *</li>
                             <li>• status (estado) *</li>
@@ -472,7 +474,7 @@ export default function SoportesPage() {
                         </div>
                         <div>
                           <h4 className="font-semibold mb-2">Dimensiones y Precios:</h4>
-                          <ul className="space-y-1 text-gray-600">
+                          <ul className="space-y-1 text-muted-foreground">
                             <li>• widthM, heightM (dimensiones)</li>
                             <li>• dailyImpressions (impactos)</li>
                             <li>• lighting (true/false)</li>
@@ -481,7 +483,7 @@ export default function SoportesPage() {
                         </div>
                         <div>
                           <h4 className="font-semibold mb-2">Información Adicional:</h4>
-                          <ul className="space-y-1 text-gray-600">
+                          <ul className="space-y-1 text-muted-foreground">
                             <li>• owner (propietario)</li>
                             <li>• description (descripción)</li>
                             <li>• imageUrl (imagen)</li>
@@ -544,9 +546,9 @@ export default function SoportesPage() {
             />
 
             {loading ? (
-              <div className="text-center py-8 text-gray-500">Cargando...</div>
+              <div className="text-center py-8 text-muted-foreground">Cargando...</div>
             ) : supports.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-muted-foreground">
                 {q ? "No se encontraron soportes" : "No hay soportes registrados"}
               </div>
             ) : (
@@ -617,7 +619,7 @@ export default function SoportesPage() {
                         <div className="flex items-center gap-1 text-sm">
                           <MapPin className="w-3 h-3" />
                           <span 
-                            className="text-gray-700 truncate max-w-[18ch]"
+                            className="text-muted-foreground truncate max-w-[18ch]"
                             title={`${support.city}, ${support.country}`}
                           >
                             {support.city}, {support.country}
