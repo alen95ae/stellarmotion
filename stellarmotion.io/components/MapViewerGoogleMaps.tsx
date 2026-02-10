@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { useGoogleMaps } from "@/hooks/useGoogleMaps";
+import { getCategoryIconPath } from "@/lib/categories";
 
 export interface MapPoint {
   id: string;
@@ -166,31 +167,10 @@ export default function MapViewerGoogleMaps({
     };
   }, [googleMapsLoaded]);
 
-  // Función para obtener icono de categoría
+  // Función para obtener icono de categoría (misma fuente que la sección categorías de la home)
   const getCategoryIcon = (categoryType?: string) => {
     if (!categoryType) return null;
-    
-    const categoryMap: Record<string, string> = {
-      valla: '/icons/vallas.svg',
-      vallas: '/icons/vallas.svg',
-      pantalla: '/icons/pantallas.svg',
-      pantallas: '/icons/pantallas.svg',
-      led: '/icons/pantallas.svg',
-      mural: '/icons/murales.svg',
-      murales: '/icons/murales.svg',
-      mupi: '/icons/mupis.svg',
-      mupis: '/icons/mupis.svg',
-      parada: '/icons/parada-bus.svg',
-      paradas: '/icons/parada-bus.svg',
-      display: '/icons/displays.svg',
-      displays: '/icons/displays.svg',
-      letrero: '/icons/letreros.svg',
-      letreros: '/icons/letreros.svg',
-      cartelera: '/icons/carteleras.svg',
-      carteleras: '/icons/carteleras.svg',
-    };
-    
-    const iconPath = categoryMap[categoryType.toLowerCase()] || '/icons/vallas.svg';
+    const iconPath = getCategoryIconPath(categoryType);
     return {
       url: iconPath,
       scaledSize: new window.google.maps.Size(40, 40),
@@ -725,13 +705,14 @@ export default function MapViewerGoogleMaps({
     map.current.setMapTypeId(getGoogleMapType(newStyle));
   };
 
+  const isFullHeight = height === "100%" || height === "100vh";
   return (
-    <div className={`relative ${className}`} style={{ height, width }}>
-      {/* Contenedor del mapa */}
+    <div className={`relative w-full h-full ${className}`} style={{ height: isFullHeight ? "100%" : height, width }}>
+      {/* Contenedor del mapa: sin minHeight cuando es 100% para que no provoque scroll */}
       <div 
         ref={mapContainer}
         className="w-full h-full rounded-xl overflow-hidden" 
-        style={{ minHeight: "300px" }}
+        style={isFullHeight ? { minHeight: 0 } : { minHeight: "300px" }}
       />
 
       {/* Solo controles nativos de Google Maps */}

@@ -5,7 +5,7 @@ import { Globe, CircleDollarSign, Facebook, Instagram, Linkedin } from "lucide-r
 export default function Footer() {
   return (
     <footer className="bg-white border-t border-gray-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-12">
         {/* Main Footer Content */}
         <div className="flex flex-col lg:flex-row gap-8 mb-8">
           {/* StellarMotion Logo - Left Side */}
@@ -157,27 +157,27 @@ export default function Footer() {
               </div>
             </div>
 
-            {/* Right Side - Language, Currency and Social Media */}
+            {/* Right Side - Currency, Language and Social Media */}
             <div className="flex items-center space-x-4">
-              {/* Language Selector */}
+              {/* Moneda - a la izquierda del idioma, icono mismo tamaño que Globe */}
+              <div className="flex items-center space-x-1">
+                <CircleDollarSign className="w-4 h-4 text-gray-600 shrink-0" aria-hidden />
+                <span className="text-gray-600 text-xs">USD</span>
+              </div>
+
+              {/* Idioma */}
               <div className="flex items-center space-x-1">
                 <Globe className="w-4 h-4 text-gray-600 shrink-0" />
                 <span className="text-gray-600 text-xs">Español (ES)</span>
               </div>
 
-              {/* Moneda */}
-              <div className="flex items-center space-x-1">
-                <CircleDollarSign className="w-4 h-4 text-gray-600 shrink-0" />
-                <span className="text-gray-600 text-xs">USD</span>
-              </div>
-
-              {/* Social Media Icons - Facebook, Instagram, LinkedIn */}
+              {/* Social Media Icons - Instagram, Facebook, LinkedIn */}
               <div className="flex items-center space-x-3">
-                <Link prefetch={false} href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-gray-900 transition-colors" aria-label="Facebook">
-                  <Facebook className="w-5 h-5" />
-                </Link>
                 <Link prefetch={false} href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-gray-900 transition-colors" aria-label="Instagram">
                   <Instagram className="w-5 h-5" />
+                </Link>
+                <Link prefetch={false} href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-gray-900 transition-colors" aria-label="Facebook">
+                  <Facebook className="w-5 h-5" />
                 </Link>
                 <Link prefetch={false} href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-gray-900 transition-colors" aria-label="LinkedIn">
                   <Linkedin className="w-5 h-5" />

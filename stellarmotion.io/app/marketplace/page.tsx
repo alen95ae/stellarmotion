@@ -1,22 +1,24 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, usePathname } from 'next/navigation';
 import { RedSlider } from "@/components/ui/red-slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuerySync } from '@/hooks/useQuerySync';
 import { useCategories } from '@/hooks/useCategories';
 import { useSoportes, Soporte } from '@/hooks/useSoportes';
 import SearchBarGooglePlaces from '@/components/SearchBarGooglePlaces';
-import { Ruler, MapPin, Eye, EyeOff, Building, Lightbulb, Printer, Car, SlidersHorizontal, Heart, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Ruler, MapPin, Eye, EyeOff, Building, Lightbulb, Printer, Car, SlidersHorizontal, Heart, ChevronRight, ChevronLeft, Maximize2, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import MapViewerGoogleMaps from '@/components/MapViewerGoogleMaps';
+import { CATEGORIES } from '@/lib/categories';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 
 export default function MarketplacePage() {
   const searchParams = useSearchParams();
-  const setQuery = useQuerySync();
+  const pathname = usePathname();
+  const setQuery = useQuerySync(pathname || '/marketplace');
   const { categories, loading: categoriesLoading } = useCategories();
   
   // Get all search parameters first
@@ -28,6 +30,7 @@ export default function MarketplacePage() {
   const searchLng = searchParams.get('lng');
   const searchLocationText = searchParams.get('loc') || searchParams.get('location');
   const locationType = searchParams.get('locationType');
+  const currentPage = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1);
   
   const [priceRange, setPriceRange] = useState([0, 5000]);
   const [lighting, setLighting] = useState(false);
@@ -35,7 +38,12 @@ export default function MarketplacePage() {
   const [centerZone, setCenterZone] = useState(false);
   const [mobile, setMobile] = useState(false);
   const [searchLocation, setSearchLocation] = useState<{ lat: number; lng: number; label?: string; types?: string[] } | null>(null);
-  const [showMap, setShowMap] = useState(true);
+  // Ciclo mapa: split (50/50) → Expandir → full → Ocultar → hidden (solo productos) → Mostrar → split
+  type MapViewState = 'split' | 'full' | 'hidden';
+  const [mapViewState, setMapViewState] = useState<MapViewState>('split');
+  const showMapSplit = mapViewState === 'split';
+  const showMapFull = mapViewState === 'full';
+  const showMap = showMapSplit || showMapFull;
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [mapConfig, setMapConfig] = useState({
     lat: 40.4637,
@@ -89,12 +97,19 @@ export default function MarketplacePage() {
   }, [searchLat, searchLng, locationType]);
 
 
-  // Cargar soportes reales desde el ERP
-  const { soportes, loading: soportesLoading, error: soportesError } = useSoportes({
+  // Fichas: paginación 50 por página
+  const { soportes, loading: soportesLoading, error: soportesError, pagination } = useSoportes({
     search: search || undefined,
     categoria: category || undefined,
-    // Removido el filtro de estado para mostrar todos los soportes
+    page: currentPage,
     limit: 50
+  });
+
+  // Mapa: todos los soportes (mismos filtros, sin paginar)
+  const { soportes: soportesForMap } = useSoportes({
+    search: search || undefined,
+    categoria: category || undefined,
+    limit: 5000
   });
 
   // Effect to handle search location from URL parameters
@@ -163,16 +178,37 @@ export default function MarketplacePage() {
     };
   }, []);
 
-  // Convertir soportes reales a puntos del mapa para Google Maps
-  const mapPoints = soportes
-    .filter(soporte => soporte.latitude !== null && soporte.longitude !== null && soporte.latitude !== 0 && soporte.longitude !== 0)
+  // IconKey para el mapa: mismo que la sección categorías de la home (CATEGORIES[].iconKey)
+  const getIconKeyForSoporte = (s: { categoria?: string; category?: string; type?: string; tipo?: string }) => {
+    const slug = (s.categoria ?? s.category ?? '').toLowerCase().trim();
+    const cat = CATEGORIES.find(c => c.slug === slug);
+    if (cat) return cat.iconKey;
+    const tipo = (s.type ?? s.tipo ?? '').toLowerCase();
+    if (tipo.includes('valla')) return 'valla';
+    if (tipo.includes('pantalla') || tipo.includes('led')) return 'led';
+    if (tipo.includes('mural')) return 'mural';
+    if (tipo.includes('mupi')) return 'mupi';
+    if (tipo.includes('parada') || tipo.includes('bus')) return 'parada';
+    if (tipo.includes('display')) return 'display';
+    if (tipo.includes('letrero')) return 'letrero';
+    if (tipo.includes('cartelera')) return 'cartelera';
+    return 'valla';
+  };
+
+  // Convertir TODOS los soportes a puntos del mapa (mapa muestra todo; fichas van paginadas)
+  const mapPoints = soportesForMap
+    .filter(soporte => {
+      const lat = (soporte as any).latitude ?? (soporte as any).latitud;
+      const lng = (soporte as any).longitude ?? (soporte as any).longitud;
+      return lat != null && lng != null && lat !== 0 && lng !== 0;
+    })
     .map(soporte => ({
       id: soporte.id,
       lat: soporte.latitude,
       lng: soporte.longitude,
       title: soporte.title,
       description: `${soporte.type} - ${soporte.dimensions} - $${soporte.pricePerMonth.toLocaleString()}/mes`,
-      type: soporte.type.toLowerCase().includes('valla') ? 'billboard' : 'building'
+      type: getIconKeyForSoporte(soporte)
     }));
 
   const handlePriceChange = (values: number[]) => {
@@ -184,11 +220,11 @@ export default function MarketplacePage() {
   };
 
   const handleCategoryClick = (slug: string) => {
-    setQuery({ category: slug === category ? null : slug });
+    setQuery({ category: slug === category ? null : slug, page: 1 });
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="bg-white">
       {/* Search Bar Header - Fixed at top */}
       <div className="sticky top-16 z-40 bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -311,7 +347,7 @@ export default function MarketplacePage() {
                   {/* Clear Filters */}
                   <button
                     onClick={() => {
-                      setQuery({ category: null, q: null, priceMin: null, priceMax: null, city: null });
+                      setQuery({ category: null, q: null, priceMin: null, priceMax: null, city: null, page: 1 });
                       setLighting(false);
                       setPrinting(false);
                       setCenterZone(false);
@@ -325,41 +361,56 @@ export default function MarketplacePage() {
                 </div>
               </SheetContent>
             </Sheet>
+
+            {/* Map toggle: a la derecha de Filtros */}
+            <button
+              onClick={() => {
+                if (mapViewState === 'split') setMapViewState('full');
+                else if (mapViewState === 'full') setMapViewState('hidden');
+                else setMapViewState('split');
+              }}
+              className="flex items-center gap-2 px-4 py-2.5 border border-gray-300 rounded-full hover:bg-gray-50 transition-colors text-sm whitespace-nowrap"
+              aria-label={mapViewState === 'split' ? 'Expandir mapa' : mapViewState === 'full' ? 'Ocultar mapa' : 'Mostrar mapa'}
+            >
+              {mapViewState === 'split' && (
+                <>
+                  <Maximize2 className="w-4 h-4 flex-shrink-0" />
+                  <span className="hidden sm:inline">Expandir mapa</span>
+                </>
+              )}
+              {mapViewState === 'full' && (
+                <>
+                  <EyeOff className="w-4 h-4 flex-shrink-0" />
+                  <span className="hidden sm:inline">Ocultar mapa</span>
+                </>
+              )}
+              {mapViewState === 'hidden' && (
+                <>
+                  <Eye className="w-4 h-4 flex-shrink-0" />
+                  <span className="hidden sm:inline">Mostrar mapa</span>
+                </>
+              )}
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Main Content - Split Layout */}
-      <div className="flex h-[calc(100vh-8rem)] max-w-[1920px] mx-auto">
-        {/* Left Side - Soportes Grid */}
-        <div className={`${showMap ? 'w-1/2' : 'w-full'} overflow-y-auto ${showMap ? 'lg:pr-0' : ''}`}>
+      {/* Main Content - Split / Full map / Hidden map. Altura = viewport menos nav (top-16) y barra búsqueda para que el mapa quepa entero con logo Google */}
+      <div className="flex h-[calc(100vh-12rem)] min-h-0 max-w-[1920px] mx-auto relative">
+        {/* Left Side - Soportes Grid (oculto en modo mapa expandido) */}
+        <div className={`${showMapFull ? 'hidden' : showMapSplit ? 'w-1/2' : 'w-full'} overflow-y-auto ${showMapSplit ? 'lg:pr-0' : ''}`}>
           <div className="px-4 sm:px-6 lg:px-8 py-6">
             {/* Results Header */}
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h2 className="text-xl font-semibold text-gray-900">
-                  {soportesLoading ? 'Cargando...' : soportesError ? 'Error al cargar soportes' : `${soportes.length} soportes encontrados`}
+                  {soportesLoading ? 'Cargando...' : soportesError ? 'Error al cargar soportes' : pagination?.total != null
+                    ? `${(pagination.page - 1) * pagination.limit + 1}-${Math.min(pagination.page * pagination.limit, pagination.total)} de ${pagination.total} soportes`
+                    : `${soportes.length} soportes encontrados`}
                 </h2>
               </div>
               
               <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setShowMap(!showMap)}
-                  className="flex items-center gap-2 px-3 py-1.5 border border-gray-300 rounded-full hover:bg-gray-50 transition-colors text-sm whitespace-nowrap"
-                >
-                  {showMap ? (
-                    <>
-                      <EyeOff className="w-4 h-4 flex-shrink-0" />
-                      <span className="hidden sm:inline">Ocultar mapa</span>
-                    </>
-                  ) : (
-                    <>
-                      <Eye className="w-4 h-4 flex-shrink-0" />
-                      <span className="hidden sm:inline">Mostrar mapa</span>
-                    </>
-                  )}
-                </button>
-                
                 <div className="flex items-center space-x-2">
                   <span className="text-sm text-gray-600 hidden sm:inline">Ordenar:</span>
                   <Select defaultValue="featured">
@@ -379,7 +430,7 @@ export default function MarketplacePage() {
             </div>
 
             {/* Soportes Grid */}
-            <div className={`grid gap-6 ${showMap ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'}`}>
+            <div className={`grid gap-6 ${showMapSplit ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'}`}>
             {soportesLoading ? (
               // Loading skeleton
               Array.from({ length: 6 }).map((_, i) => (
@@ -442,38 +493,77 @@ export default function MarketplacePage() {
               })
             )}
             </div>
+
+            {/* Paginación: 50 por página */}
+            {!soportesLoading && !soportesError && pagination && pagination.totalPages > 1 && (
+              <div className="mt-8 flex items-center justify-center gap-2 flex-wrap">
+                <button
+                  onClick={() => setQuery({ page: 1 })}
+                  disabled={pagination.page <= 1}
+                  className="p-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  aria-label="Primera página"
+                >
+                  <ChevronsLeft className="w-5 h-5 text-gray-600" />
+                </button>
+                <button
+                  onClick={() => setQuery({ page: pagination.page - 1 })}
+                  disabled={pagination.page <= 1}
+                  className="p-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  aria-label="Página anterior"
+                >
+                  <ChevronLeft className="w-5 h-5 text-gray-600" />
+                </button>
+                <span className="px-4 py-2 text-sm text-gray-700">
+                  Página {pagination.page} de {pagination.totalPages}
+                </span>
+                <button
+                  onClick={() => setQuery({ page: pagination.page + 1 })}
+                  disabled={pagination.page >= pagination.totalPages}
+                  className="p-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  aria-label="Página siguiente"
+                >
+                  <ChevronRight className="w-5 h-5 text-gray-600" />
+                </button>
+                <button
+                  onClick={() => setQuery({ page: pagination.totalPages })}
+                  disabled={pagination.page >= pagination.totalPages}
+                  className="p-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  aria-label="Última página"
+                >
+                  <ChevronsRight className="w-5 h-5 text-gray-600" />
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Right Side - Map Sidebar */}
+        {/* Right Side - Map (mitad cuando split, toda la página cuando full) - min-h-0 para que el mapa ocupe todo el hueco sin scroll */}
         {showMap ? (
-          <div className="hidden lg:flex w-1/2 border-l border-gray-200 bg-white flex flex-col">
-            <div className="flex-1 relative rounded-xl overflow-hidden m-4 mt-0 mb-0">
+          <div className={`hidden lg:flex border-l border-gray-200 bg-white flex-col min-h-0 ${showMapFull ? 'w-full flex-1 min-w-0' : 'w-1/2 min-w-0'}`}>
+            <div className={`flex-1 min-h-0 relative overflow-hidden ${showMapFull ? 'rounded-none' : 'rounded-xl m-4 mt-0 mb-0'}`}>
               <MapViewerGoogleMaps 
                 points={mapPoints}
                 height="100%"
-                lat={mapConfig.lat}
-                lng={mapConfig.lng}
-                zoom={mapConfig.zoom}
+                lat={showMapFull ? 40.4637 : mapConfig.lat}
+                lng={showMapFull ? -3.7492 : mapConfig.lng}
+                zoom={showMapFull ? 5 : mapConfig.zoom}
                 style="streets"
                 showControls={true}
+                enableClustering={true}
                 searchLocation={searchLocation}
                 onMarkerClick={(point) => {
-                  // Scroll to soporte in list
-                  const element = document.querySelector(`[data-soporte-id="${point.id}"]`);
-                  if (element) {
-                    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  if (!showMapFull) {
+                    const element = document.querySelector(`[data-soporte-id="${point.id}"]`);
+                    if (element) element.scrollIntoView({ behavior: 'smooth', block: 'center' });
                   }
                 }}
-                onMapClick={(lat, lng) => {
-                  // Mapa clickeado
-                }}
+                onMapClick={() => {}}
               />
             </div>
           </div>
         ) : (
           <button
-            onClick={() => setShowMap(true)}
+            onClick={() => setMapViewState('split')}
             className="hidden lg:flex fixed right-0 top-1/2 -translate-y-1/2 z-30 p-3 bg-white border-l border-t border-b border-gray-200 rounded-l-lg shadow-lg hover:bg-gray-50 transition-colors"
             aria-label="Mostrar mapa"
           >
