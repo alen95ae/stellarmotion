@@ -16,6 +16,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Plus, Search, Filter, Download, Building2, User, Edit, Trash2, Home, Upload, Users, Merge, AlertTriangle } from "lucide-react"
 import { toast } from "sonner"
+import { ThemeToggle } from "@/components/ThemeToggle"
 
 interface Contact {
   id: string
@@ -487,32 +488,33 @@ export default function ClientesPage() {
     switch (relation) {
       case "CUSTOMER": 
       case "Cliente": 
-        return "bg-blue-100 text-blue-800 border-blue-200"
+        return "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800"
       case "SUPPLIER": 
       case "Proveedor": 
-        return "bg-purple-100 text-purple-800 border-purple-200"
+        return "bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800"
       case "BOTH": 
       case "Ambos": 
-        return "bg-green-100 text-green-800 border-green-200"
+        return "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800"
       default: 
-        return "bg-gray-100 text-gray-800 border-gray-200"
+        return "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700"
     }
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-muted/40">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-6 py-4">
+      <header className="bg-background border-b border-border px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
-            <Link prefetch={false} href="/dashboard" className="text-gray-600 hover:text-gray-800 mr-4">
+            <Link prefetch={false} href="/dashboard" className="text-muted-foreground hover:text-foreground mr-4">
               ← Dashboard
             </Link>
-            <div className="text-xl font-bold text-slate-800">Brands</div>
+            <div className="text-xl font-bold text-foreground">Brands</div>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-gray-600">Buscar</span>
-            <span className="text-gray-800 font-medium">admin</span>
+            <span className="text-muted-foreground">Buscar</span>
+            <span className="text-foreground font-medium">admin</span>
+            <ThemeToggle />
           </div>
         </div>
       </header>
@@ -520,12 +522,12 @@ export default function ClientesPage() {
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-800 mb-2">Gestión de Brands</h1>
-          <p className="text-gray-600">Administra tu base de datos de brands comerciales</p>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Gestión de Brands</h1>
+          <p className="text-muted-foreground">Administra tu base de datos de brands comerciales</p>
         </div>
 
         {/* Barra superior sticky */}
-        <div className="sticky top-0 z-10 bg-white border border-gray-200 rounded-lg p-4 mb-6 shadow-sm">
+        <div className="sticky top-0 z-10 bg-card border border-border rounded-lg p-4 mb-6 shadow-sm">
           <div className="flex flex-wrap gap-3 items-center">
             {/* Búsqueda - Izquierda */}
             <div className="flex-1 min-w-[200px] max-w-md">
@@ -611,10 +613,10 @@ export default function ClientesPage() {
 
           {/* Acciones masivas */}
           {selectedContacts.size > 0 && (
-            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 dark:bg-blue-900/20 dark:border-blue-800 rounded-lg">
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
-                  <span className="text-sm font-medium text-blue-800">
+                  <span className="text-sm font-medium text-blue-800 dark:text-blue-300">
                     {selectAllMode === 'all' 
                       ? `${allContactIds.length} brand(s) seleccionado(s) (todos)` 
                       : `${selectedContacts.size} brand(s) seleccionado(s)`
@@ -693,15 +695,15 @@ export default function ClientesPage() {
            contacts.every(c => selectedContacts.has(c.id)) && 
            selectAllMode !== 'all' &&
            allContactIds.length > contacts.length && (
-            <div className="mt-2 p-3 bg-cyan-50 border border-cyan-200 rounded-lg">
+            <div className="mt-2 p-3 bg-cyan-50 border border-cyan-200 dark:bg-cyan-900/20 dark:border-cyan-800 rounded-lg">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-cyan-900">
+                <span className="text-sm text-cyan-900 dark:text-cyan-300">
                   Los {contacts.length} brands de esta página están seleccionados.
                 </span>
                 <Button
                   variant="link"
                   size="sm"
-                  className="text-cyan-700 hover:text-cyan-900 underline font-semibold"
+                  className="text-cyan-700 hover:text-cyan-900 dark:text-cyan-400 dark:hover:text-cyan-200 underline font-semibold"
                   onClick={() => {
                     setSelectedContacts(new Set(allContactIds))
                     setSelectAllMode('all')
@@ -715,15 +717,15 @@ export default function ClientesPage() {
           )}
 
           {selectAllMode === 'all' && (
-            <div className="mt-2 p-3 bg-cyan-50 border border-cyan-200 rounded-lg">
+            <div className="mt-2 p-3 bg-cyan-50 border border-cyan-200 dark:bg-cyan-900/20 dark:border-cyan-800 rounded-lg">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-cyan-900">
+                <span className="text-sm font-medium text-cyan-900 dark:text-cyan-300">
                   Los {allContactIds.length} clientes están seleccionados.
                 </span>
                 <Button
                   variant="link"
                   size="sm"
-                  className="text-cyan-700 hover:text-cyan-900 underline"
+                  className="text-cyan-700 hover:text-cyan-900 dark:text-cyan-400 dark:hover:text-cyan-200 underline"
                   onClick={() => {
                     setSelectedContacts(new Set())
                     setSelectAllMode('none')
@@ -737,16 +739,16 @@ export default function ClientesPage() {
         </div>
 
         {/* Tabla de brands */}
-        <div className="mb-3 text-sm text-slate-700">
+        <div className="mb-3 text-sm text-muted-foreground">
           Brands ({pagination.total || contacts.length})
         </div>
         <Card>
           <CardContent className="p-0">
             {loading ? (
-              <div className="text-center py-8 text-gray-500">Cargando...</div>
+              <div className="text-center py-8 text-muted-foreground">Cargando...</div>
             ) : contacts.length === 0 ? (
               <div className="text-center py-12">
-                <div className="text-gray-400 mb-4">
+                <div className="text-muted-foreground mb-4">
                   {filters.q || filters.relation !== "ALL" || filters.kind !== "ALL" ? (
                     "No se encontraron brands con los filtros aplicados"
                   ) : (
@@ -794,7 +796,7 @@ export default function ClientesPage() {
                 </TableHeader>
                 <TableBody>
                   {filteredContacts.map((contact) => (
-                      <TableRow key={contact.id} className="hover:bg-gray-50">
+                      <TableRow key={contact.id} className="hover:bg-muted/50">
                         <TableCell>
                           <Checkbox
                             checked={selectedContacts.has(contact.id)}
@@ -823,35 +825,35 @@ export default function ClientesPage() {
                           ) : (
                             <div className="flex items-center gap-2">
                               {contact.kind === "COMPANY" ? (
-                                <Building2 className="w-4 h-4 text-gray-500" />
+                                <Building2 className="w-4 h-4 text-muted-foreground" />
                               ) : (
-                                <User className="w-4 h-4 text-gray-500" />
+                                <User className="w-4 h-4 text-muted-foreground" />
                               )}
                               <div>
                                 {contact.displayName && contact.displayName.length > 25 ? (
                                   <TooltipProvider>
                                     <Tooltip>
-                                      <TooltipTrigger className="text-left font-medium">
+                                      <TooltipTrigger className="text-left font-medium text-foreground">
                                         {contact.displayName.slice(0, 25) + '…'}
                                       </TooltipTrigger>
                                       <TooltipContent className="max-w-sm">{contact.displayName}</TooltipContent>
                                     </Tooltip>
                                   </TooltipProvider>
                                 ) : (
-                                  <div className="font-medium">{contact.displayName || "-"}</div>
+                                  <div className="font-medium text-foreground">{contact.displayName || "-"}</div>
                                 )}
                                 {contact.kind === "INDIVIDUAL" && contact.legalName && (
                                   contact.legalName.length > 25 ? (
                                     <TooltipProvider>
                                       <Tooltip>
-                                        <TooltipTrigger className="text-left text-sm text-gray-500">
+                                        <TooltipTrigger className="text-left text-sm text-muted-foreground">
                                           {contact.legalName.slice(0, 25) + '…'}
                                         </TooltipTrigger>
                                         <TooltipContent className="max-w-sm">{contact.legalName}</TooltipContent>
                                       </Tooltip>
                                     </TooltipProvider>
                                   ) : (
-                                    <div className="text-sm text-gray-500">{contact.legalName}</div>
+                                    <div className="text-sm text-muted-foreground">{contact.legalName}</div>
                                   )
                                 )}
                               </div>
@@ -1017,17 +1019,17 @@ export default function ClientesPage() {
 
             <div className="space-y-4">
               {duplicates.length === 0 && (
-                <div className="text-sm text-gray-500">No se detectaron duplicados.</div>
+                <div className="text-sm text-muted-foreground">No se detectaron duplicados.</div>
               )}
 
               {duplicates.map((group: any, index: number) => {
                 const allContacts = [group.primary, ...(group.duplicates || [])]
                 const value = selectedPrimary[index] || group.primary?.id
                 return (
-                  <Card key={index} className="border-yellow-200 bg-yellow-50">
+                  <Card key={index} className="border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-900/20">
                     <CardContent className="p-4">
                       <div className="space-y-3">
-                        <div className="font-medium text-sm text-yellow-800">
+                        <div className="font-medium text-sm text-yellow-800 dark:text-yellow-300">
                           Grupo {index + 1} - Brands similares (elige el principal)
                         </div>
 
@@ -1037,19 +1039,19 @@ export default function ClientesPage() {
                           className="gap-2"
                         >
                           {allContacts.map((c: any, idx: number) => (
-                            <div key={c.id} className="bg-white p-3 rounded border flex items-center justify-between">
+                            <div key={c.id} className="bg-card p-3 rounded border border-border flex items-center justify-between">
                               <div className="flex items-center gap-3">
                                 <RadioGroupItem value={c.id} id={`g${index}-c${idx}`} />
                                 <label htmlFor={`g${index}-c${idx}`} className="cursor-pointer">
-                                  <div className="font-medium">{c.displayName || '-'}</div>
-                                  <div className="text-sm text-gray-600">
+                                  <div className="font-medium text-foreground">{c.displayName || '-'}</div>
+                                  <div className="text-sm text-muted-foreground">
                                     {c.email && `Email: ${c.email}`}
                                     {c.phone && ` | Tel: ${c.phone}`}
                                     {c.taxId && ` | NIT: ${c.taxId}`}
                                   </div>
                                 </label>
                               </div>
-                              <Badge className={value === c.id ? "bg-blue-50 text-blue-700 border-blue-200" : "bg-red-50 text-red-700 border-red-200"}>
+                              <Badge className={value === c.id ? "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800" : "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800"}>
                                 {value === c.id ? 'Principal' : 'Duplicado'}
                               </Badge>
                             </div>

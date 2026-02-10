@@ -59,10 +59,12 @@
   }
 }
 
-/* Refuerzo seguro para fondos blancos en Selects */
+/* Refuerzo seguro para fondos en Selects y Popovers */
 .radix-select-trigger, .radix-select-content,
 [data-radix-popper-content-wrapper] { 
-  background: #fff !important; 
+  background-color: hsl(var(--popover)) !important;
+  color: hsl(var(--popover-foreground)) !important;
+  border-color: hsl(var(--border));
 }
 
 /* Quitar flechas en inputs numéricos */

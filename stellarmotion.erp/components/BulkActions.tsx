@@ -6,30 +6,28 @@ import { Trash2, Filter } from "lucide-react"
 
 // Constantes para colores de estado
 const STATUS_META = {
-  DISPONIBLE:   { label: 'Disponible',    className: 'bg-emerald-600 text-white' },
-  RESERVADO:    { label: 'Reservado',     className: 'bg-amber-500 text-black' },
-  OCUPADO:      { label: 'Ocupado',       className: 'bg-red-600 text-white' },
-  NO_DISPONIBLE:{ label: 'No disponible', className: 'bg-neutral-900 text-white' },
+  DISPONIBLE:   { label: 'Disponible',    className: 'bg-emerald-600 text-white dark:bg-emerald-700' },
+  RESERVADO:    { label: 'Reservado',     className: 'bg-amber-500 text-black dark:bg-amber-600' },
+  OCUPADO:      { label: 'Ocupado',       className: 'bg-red-600 text-white dark:bg-red-700' },
+  NO_DISPONIBLE:{ label: 'No disponible', className: 'bg-neutral-900 text-white dark:bg-neutral-700' },
 } as const
 
 interface BulkActionsProps {
   selectedCount: number
   onBulkDelete: () => void
   onBulkStatusChange: (status: string) => void
-  darkMode?: boolean
 }
 
 export default function BulkActions({ 
   selectedCount, 
   onBulkDelete, 
-  onBulkStatusChange,
-  darkMode = false
+  onBulkStatusChange
 }: BulkActionsProps) {
   if (selectedCount === 0) return null
 
   return (
-    <div className={`flex items-center gap-2 p-4 border-t ${darkMode ? "bg-slate-800/50 border-slate-800" : "bg-gray-50 border-gray-200"}`}>
-      <span className={`text-sm ${darkMode ? "text-slate-300" : "text-gray-600"}`}>
+    <div className="flex items-center gap-2 p-4 border-t bg-muted/20 border-border">
+      <span className="text-sm text-muted-foreground">
         {selectedCount} elemento{selectedCount !== 1 ? 's' : ''} seleccionado{selectedCount !== 1 ? 's' : ''}
       </span>
       

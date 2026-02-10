@@ -125,21 +125,21 @@ const INITIAL_COLUMNS: ColumnData[] = [
 // --- Helpers ---
 const getPriorityStyles = (priority: Priority) => {
     switch (priority) {
-        case "Critical": return "bg-red-50 text-red-700 border-red-200 border";
-        case "High": return "bg-orange-50 text-orange-700 border-orange-200 border";
-        case "Medium": return "bg-blue-50 text-blue-700 border-blue-200 border";
-        case "Low": return "bg-slate-50 text-slate-700 border-slate-200 border";
-        default: return "bg-slate-50 text-slate-700 border-slate-200 border";
+        case "Critical": return "bg-red-50 text-red-700 border-red-200 border dark:bg-red-900/30 dark:text-red-400 dark:border-red-800";
+        case "High": return "bg-orange-50 text-orange-700 border-orange-200 border dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800";
+        case "Medium": return "bg-blue-50 text-blue-700 border-blue-200 border dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800";
+        case "Low": return "bg-slate-50 text-slate-700 border-slate-200 border dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700";
+        default: return "bg-slate-50 text-slate-700 border-slate-200 border dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700";
     }
 };
 
 const getTypeStyles = (type: TaskType) => {
     switch (type) {
-        case "Feature": return "text-emerald-700 bg-emerald-50 border-emerald-200";
-        case "Bug": return "text-rose-700 bg-rose-50 border-rose-200";
-        case "Refactor": return "text-indigo-700 bg-indigo-50 border-indigo-200";
-        case "Design": return "text-violet-700 bg-violet-50 border-violet-200";
-        default: return "text-slate-700 bg-slate-50 border-slate-200";
+        case "Feature": return "text-emerald-700 bg-emerald-50 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800";
+        case "Bug": return "text-rose-700 bg-rose-50 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800";
+        case "Refactor": return "text-indigo-700 bg-indigo-50 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400 dark:border-indigo-800";
+        case "Design": return "text-violet-700 bg-violet-50 border-violet-200 dark:bg-violet-900/30 dark:text-violet-400 dark:border-violet-800";
+        default: return "text-slate-700 bg-slate-50 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700";
     }
 };
 
@@ -195,32 +195,32 @@ const ScrumBoard = () => {
         if (!backlogOpen) setBacklogOpen(true);
     };
 
-    if (!isClient) return <div className="p-8 text-sm text-gray-500 flex items-center gap-2"><div className="w-4 h-4 bg-gray-200 animate-pulse rounded-full"></div> Cargando tablero...</div>;
+    if (!isClient) return <div className="p-8 text-sm text-muted-foreground flex items-center gap-2"><div className="w-4 h-4 bg-muted animate-pulse rounded-full"></div> Cargando tablero...</div>;
 
     return (
-        <div className="flex flex-col h-[calc(100vh-2rem)] bg-white/50 backdrop-blur-sm shadow-sm rounded-xl overflow-hidden border border-gray-100">
+        <div className="flex flex-col h-[calc(100vh-2rem)] bg-card/50 backdrop-blur-sm shadow-sm rounded-xl overflow-hidden border border-border">
 
             {/* Header */}
-            <div className="flex flex-col md:flex-row items-center justify-between p-4 border-b border-dashed border-gray-200/80 bg-white/80">
+            <div className="flex flex-col md:flex-row items-center justify-between p-4 border-b border-dashed border-border/80 bg-card/80">
                 <div>
-                    <h1 className="text-xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
+                    <h1 className="text-xl font-bold text-foreground tracking-tight flex items-center gap-2">
                         Proyecto Alpha
-                        <Badge className="bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200 font-normal">Sprint 24</Badge>
+                        <Badge className="bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200 font-normal dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800">Sprint 24</Badge>
                     </h1>
-                    <p className="text-gray-500 text-xs mt-0.5">Gestión de flujo de trabajo y tareas activas</p>
+                    <p className="text-muted-foreground text-xs mt-0.5">Gestión de flujo de trabajo y tareas activas</p>
                 </div>
 
                 <div className="flex items-center gap-2 w-full md:w-auto mt-3 md:mt-0">
                     <div className="relative">
-                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                         <Input
                             placeholder="Buscar tarea..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="pl-8 h-8 text-xs w-full md:w-56 bg-gray-50/50 focus-visible:ring-1 focus-visible:ring-blue-500 border-gray-200"
+                            className="pl-8 h-8 text-xs w-full md:w-56 bg-muted/50 focus-visible:ring-1 focus-visible:ring-blue-500 border-border"
                         />
                     </div>
-                    <Button variant="outline" size="sm" className="h-8 w-8 p-0 text-gray-500">
+                    <Button variant="outline" size="sm" className="h-8 w-8 p-0 text-muted-foreground">
                         <Filter className="w-3.5 h-3.5" />
                     </Button>
                     <Button onClick={handleNewTask} size="sm" className="h-8 bg-[#e94446] hover:bg-[#d63a3a] text-white text-xs font-medium px-3 shadow-sm shadow-red-200">
@@ -235,18 +235,18 @@ const ScrumBoard = () => {
                 <div className="flex flex-1 overflow-hidden">
 
                     {/* Backlog Sidebar - Separated visually */}
-                    <div className={`transition-all duration-300 ease-in-out flex flex-col ${backlogOpen ? 'w-[260px] min-w-[260px]' : 'w-[40px] min-w-[40px]'} border-r border-gray-200 bg-slate-50/50 backdrop-blur-md z-10 relative`}>
-                        <div className="flex items-center justify-between p-3 border-b border-gray-100 min-h-[49px]">
+                    <div className={`transition-all duration-300 ease-in-out flex flex-col ${backlogOpen ? 'w-[260px] min-w-[260px]' : 'w-[40px] min-w-[40px]'} border-r border-border bg-muted/30 backdrop-blur-md z-10 relative`}>
+                        <div className="flex items-center justify-between p-3 border-b border-border min-h-[49px]">
                             {backlogOpen && (
-                                <div className="flex items-center gap-2 font-medium text-xs text-slate-700 uppercase tracking-wide">
-                                    <Inbox className="w-3.5 h-3.5 text-slate-500" />
+                                <div className="flex items-center gap-2 font-medium text-xs text-muted-foreground uppercase tracking-wide">
+                                    <Inbox className="w-3.5 h-3.5 text-muted-foreground" />
                                     Backlog
-                                    <Badge variant="secondary" className="ml-auto h-4 px-1 min-w-[1.25rem] text-[10px] bg-slate-200 text-slate-600">
+                                    <Badge variant="secondary" className="ml-auto h-4 px-1 min-w-[1.25rem] text-[10px] bg-muted-foreground/20 text-muted-foreground">
                                         {columns.find(c => c.id === 'backlog')?.tasks.length}
                                     </Badge>
                                 </div>
                             )}
-                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-slate-200 text-slate-400 ml-auto" onClick={() => setBacklogOpen(!backlogOpen)}>
+                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-muted text-muted-foreground ml-auto" onClick={() => setBacklogOpen(!backlogOpen)}>
                                 {backlogOpen ? <ChevronLeft className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
                             </Button>
                         </div>
@@ -257,7 +257,7 @@ const ScrumBoard = () => {
                                     <div
                                         {...provided.droppableProps}
                                         ref={provided.innerRef}
-                                        className={`flex-1 overflow-y-auto p-2 space-y-2 scrollbar-thin scrollbar-thumb-slate-200 ${snapshot.isDraggingOver ? 'bg-slate-100/80 ring-inset ring-2 ring-blue-500/10' : ''}`}
+                                        className={`flex-1 overflow-y-auto p-2 space-y-2 scrollbar-thin scrollbar-thumb-border ${snapshot.isDraggingOver ? 'bg-muted/80 ring-inset ring-2 ring-blue-500/10' : ''}`}
                                     >
                                         {columns.find(c => c.id === 'backlog')?.tasks
                                             .filter(t => t.title.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -268,7 +268,7 @@ const ScrumBoard = () => {
                                                             ref={provided.innerRef}
                                                             {...provided.draggableProps}
                                                             {...provided.dragHandleProps}
-                                                            className={`bg-white p-3 rounded border border-gray-200 shadow-[0_1px_2px_rgba(0,0,0,0.02)] hover:border-gray-300 hover:shadow transition-all group select-none ${snapshot.isDragging ? "shadow-xl rotate-2 z-50 ring-1 ring-slate-200 opaciy-90" : ""
+                                                            className={`bg-card p-3 rounded border border-border shadow-[0_1px_2px_rgba(0,0,0,0.02)] hover:border-muted-foreground/30 hover:shadow transition-all group select-none ${snapshot.isDragging ? "shadow-xl rotate-2 z-50 ring-1 ring-ring opaciy-90" : ""
                                                                 }`}
                                                         >
                                                             <div className="flex justify-between items-start mb-1.5">
@@ -276,13 +276,13 @@ const ScrumBoard = () => {
                                                                     {task.type}
                                                                 </Badge>
                                                             </div>
-                                                            <h4 className="text-xs font-medium text-slate-700 leading-snug mb-2 group-hover:text-slate-900">{task.title}</h4>
+                                                            <h4 className="text-xs font-medium text-foreground leading-snug mb-2 group-hover:text-foreground">{task.title}</h4>
                                                             <div className="flex items-center justify-between">
                                                                 <div className={`text-[9px] px-1 py-[1px] rounded uppercase font-semibold tracking-wider ${getPriorityStyles(task.priority)} bg-opacity-50`}>
                                                                     {task.priority}
                                                                 </div>
                                                                 {task.points && (
-                                                                    <span className="text-[10px] text-gray-400 font-mono bg-gray-50 px-1 rounded">
+                                                                    <span className="text-[10px] text-muted-foreground font-mono bg-muted px-1 rounded">
                                                                         {task.points}
                                                                     </span>
                                                                 )}
@@ -296,8 +296,8 @@ const ScrumBoard = () => {
                                 )}
                             </Droppable>
                         ) : (
-                            <div className="h-full flex flex-col items-center pt-8 cursor-pointer hover:bg-slate-100/50 transition-colors" onClick={() => setBacklogOpen(true)}>
-                                <div className="transform -rotate-90 whitespace-nowrap text-[10px] font-bold text-slate-400 tracking-widest flex items-center gap-2">
+                            <div className="h-full flex flex-col items-center pt-8 cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => setBacklogOpen(true)}>
+                                <div className="transform -rotate-90 whitespace-nowrap text-[10px] font-bold text-muted-foreground tracking-widest flex items-center gap-2">
                                     BACKLOG
                                 </div>
                             </div>
@@ -305,20 +305,20 @@ const ScrumBoard = () => {
                     </div>
 
                     {/* Main Board Columns */}
-                    <div className="flex-1 overflow-x-auto bg-gray-50/30">
+                    <div className="flex-1 overflow-x-auto bg-muted/20">
                         <div className="flex gap-4 h-full min-w-max p-4 items-start">
                             {columns.filter(c => !c.isBacklog).map((column) => (
-                                <div key={column.id} className="w-[280px] flex flex-col h-full max-h-full rounded-lg bg-gray-100/30 border border-transparent">
+                                <div key={column.id} className="w-[280px] flex flex-col h-full max-h-full rounded-lg bg-muted/30 border border-transparent">
                                     {/* Header */}
                                     <div className={`p-2 px-3 flex items-center justify-between mb-2`}>
-                                        <div className="flex items-center gap-2 font-medium text-xs text-gray-500 uppercase tracking-wide">
+                                        <div className="flex items-center gap-2 font-medium text-xs text-muted-foreground uppercase tracking-wide">
                                             <div className={`w-2 h-2 rounded-full ${column.color.replace('bg-', 'bg-')}`}></div>
                                             {column.title}
-                                            <span className="ml-1 text-[10px] bg-gray-200/50 px-1.5 rounded-full text-gray-400">
+                                            <span className="ml-1 text-[10px] bg-muted-foreground/10 px-1.5 rounded-full text-muted-foreground">
                                                 {column.tasks.length}
                                             </span>
                                         </div>
-                                        <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-gray-200/50 rounded text-gray-400">
+                                        <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-muted/50 rounded text-muted-foreground">
                                             <MoreHorizontal className="w-3.5 h-3.5" />
                                         </Button>
                                     </div>
@@ -329,7 +329,7 @@ const ScrumBoard = () => {
                                             <div
                                                 {...provided.droppableProps}
                                                 ref={provided.innerRef}
-                                                className={`flex-1 px-2 pb-2 space-y-2.5 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200 hover:scrollbar-thumb-gray-300 transition-colors rounded-lg ${snapshot.isDraggingOver ? "bg-slate-100/50 ring-1 ring-inset ring-slate-200" : ""
+                                                className={`flex-1 px-2 pb-2 space-y-2.5 overflow-y-auto scrollbar-thin scrollbar-thumb-border hover:scrollbar-thumb-muted-foreground/30 transition-colors rounded-lg ${snapshot.isDraggingOver ? "bg-muted/50 ring-1 ring-inset ring-border" : ""
                                                     }`}
                                             >
                                                 {column.tasks
@@ -341,7 +341,7 @@ const ScrumBoard = () => {
                                                                     ref={provided.innerRef}
                                                                     {...provided.draggableProps}
                                                                     {...provided.dragHandleProps}
-                                                                    className={`group bg-white p-3 rounded-lg border border-gray-200/60 shadow-[0_2px_4px_rgba(0,0,0,0.01)] hover:shadow-md hover:border-gray-300/80 transition-all cursor-grab active:cursor-grabbing ${snapshot.isDragging ? "shadow-xl ring-2 ring-[#e94446]/10 rotate-1 scale-105 z-50 opacity-100 bg-white" : ""
+                                                                    className={`group bg-card p-3 rounded-lg border border-border/60 shadow-[0_2px_4px_rgba(0,0,0,0.01)] hover:shadow-md hover:border-border transition-all cursor-grab active:cursor-grabbing ${snapshot.isDragging ? "shadow-xl ring-2 ring-[#e94446]/10 rotate-1 scale-105 z-50 opacity-100 bg-card" : ""
                                                                         }`}
                                                                 >
                                                                     <div className="flex justify-between items-start mb-2">
@@ -349,19 +349,19 @@ const ScrumBoard = () => {
                                                                             {task.type}
                                                                         </span>
                                                                         {task.assignee && (
-                                                                            <Avatar className="h-5 w-5 -mt-1 -mr-1 border border-white">
-                                                                                <AvatarFallback className="text-[9px] bg-slate-100 text-slate-500 font-medium">
+                                                                            <Avatar className="h-5 w-5 -mt-1 -mr-1 border border-background">
+                                                                                <AvatarFallback className="text-[9px] bg-muted text-muted-foreground font-medium">
                                                                                     {task.assignee.avatar}
                                                                                 </AvatarFallback>
                                                                             </Avatar>
                                                                         )}
                                                                     </div>
 
-                                                                    <h3 className="text-xs font-medium text-gray-700 mb-3 leading-snug line-clamp-3">
+                                                                    <h3 className="text-xs font-medium text-foreground mb-3 leading-snug line-clamp-3">
                                                                         {task.title}
                                                                     </h3>
 
-                                                                    <div className="flex items-center justify-between mt-auto pt-2 border-t border-dashed border-gray-100">
+                                                                    <div className="flex items-center justify-between mt-auto pt-2 border-t border-dashed border-border">
                                                                         <div className="flex items-center gap-2">
                                                                             <div className={`flex items-center text-[9px] px-1.5 py-[2px] rounded border font-medium uppercase tracking-wider ${getPriorityStyles(task.priority)}`}>
                                                                                 {task.priority}
@@ -369,8 +369,8 @@ const ScrumBoard = () => {
                                                                         </div>
 
                                                                         {task.points && (
-                                                                            <div className="flex items-center gap-1 text-[10px] text-gray-400 font-mono" title="Story Points">
-                                                                                <div className="w-4 h-4 rounded bg-gray-50 border border-gray-100 flex items-center justify-center">
+                                                                            <div className="flex items-center gap-1 text-[10px] text-muted-foreground font-mono" title="Story Points">
+                                                                                <div className="w-4 h-4 rounded bg-muted border border-border flex items-center justify-center">
                                                                                     {task.points}
                                                                                 </div>
                                                                             </div>
