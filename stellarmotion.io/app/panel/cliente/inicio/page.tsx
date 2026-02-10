@@ -16,7 +16,7 @@ export default function ClienteInicioPage() {
 
       <div className="grid gap-1.5 md:grid-cols-2 lg:grid-cols-4">
         <Card className="p-2">
-          <Link href="/panel/cliente/solicitudes">
+          <Link prefetch={false} href="/panel/cliente/solicitudes">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 px-2 py-1.5">
               <CardTitle className="text-sm font-medium">
                 Solicitudes
@@ -33,7 +33,7 @@ export default function ClienteInicioPage() {
         </Card>
 
         <Card className="p-2">
-          <Link href="/panel/cliente/anuncios">
+          <Link prefetch={false} href="/panel/cliente/anuncios">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 px-2 py-1.5">
               <CardTitle className="text-sm font-medium">
                 Mis Anuncios
@@ -50,7 +50,7 @@ export default function ClienteInicioPage() {
         </Card>
 
         <Card className="p-2">
-          <Link href="/panel/cliente/anuncios/metricas">
+          <Link prefetch={false} href="/panel/cliente/anuncios/metricas">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 px-2 py-1.5">
               <CardTitle className="text-sm font-medium">
                 Métricas
@@ -67,7 +67,7 @@ export default function ClienteInicioPage() {
         </Card>
 
         <Card className="p-2">
-          <Link href="/panel/cliente/facturacion">
+          <Link prefetch={false} href="/panel/cliente/facturacion">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 px-2 py-1.5">
               <CardTitle className="text-sm font-medium">
                 Facturación

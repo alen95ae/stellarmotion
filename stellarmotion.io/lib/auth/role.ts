@@ -24,20 +24,20 @@ const ROLE_MAP: Record<string, AppRole> = {
  * Si falta en uno → bug inevitable.
  */
 export function getRoleFromPayload(role: string | null | undefined): AppRole | undefined {
-  // #region agent log
-  fetch('http://127.0.0.1:7243/ingest/35ed66c4-103a-4e9a-bb0c-ff60128329e9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'lib/auth/role.ts:25',message:'getRoleFromPayload entry',data:{role,roleType:typeof role,isNull:role===null,isUndefined:role===undefined},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-  // #endregion
+  if (process.env.NODE_ENV === 'development') {
+    fetch('http://127.0.0.1:7243/ingest/35ed66c4-103a-4e9a-bb0c-ff60128329e9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'lib/auth/role.ts:25',message:'getRoleFromPayload entry',data:{role,roleType:typeof role,isNull:role===null,isUndefined:role===undefined},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+  }
   if (!role) {
-    // #region agent log
-    fetch('http://127.0.0.1:7243/ingest/35ed66c4-103a-4e9a-bb0c-ff60128329e9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'lib/auth/role.ts:27',message:'getRoleFromPayload early return undefined',data:{role},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-    // #endregion
+    if (process.env.NODE_ENV === 'development') {
+      fetch('http://127.0.0.1:7243/ingest/35ed66c4-103a-4e9a-bb0c-ff60128329e9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'lib/auth/role.ts:27',message:'getRoleFromPayload early return undefined',data:{role},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    }
     return undefined;
   }
-  
+
   const normalized = role.toLowerCase().trim();
-  // #region agent log
-  fetch('http://127.0.0.1:7243/ingest/35ed66c4-103a-4e9a-bb0c-ff60128329e9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'lib/auth/role.ts:31',message:'getRoleFromPayload normalized',data:{normalized,inMap:normalized in ROLE_MAP,mappedValue:ROLE_MAP[normalized]},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-  // #endregion
+  if (process.env.NODE_ENV === 'development') {
+    fetch('http://127.0.0.1:7243/ingest/35ed66c4-103a-4e9a-bb0c-ff60128329e9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'lib/auth/role.ts:31',message:'getRoleFromPayload normalized',data:{normalized,inMap:normalized in ROLE_MAP,mappedValue:ROLE_MAP[normalized]},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+  }
   return ROLE_MAP[normalized];
 }
 

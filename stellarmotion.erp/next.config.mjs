@@ -6,9 +6,10 @@ const __dirname = path.dirname(__filename);
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Asegurar que Next.js cargue .env.local desde el directorio del ERP
-  // outputFileTracingRoot apunta al directorio padre para incluir dependencias compartidas
-  outputFileTracingRoot: path.join(__dirname, '../'),
+  // outputFileTracingRoot solo en producción (en dev hace la resolución de módulos muy pesada)
+  ...(process.env.NODE_ENV === 'production' && {
+    outputFileTracingRoot: path.join(__dirname, '../'),
+  }),
   eslint: {
     ignoreDuringBuilds: true,
   },

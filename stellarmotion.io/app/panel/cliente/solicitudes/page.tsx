@@ -292,7 +292,7 @@ export default function SolicitudesPage() {
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap text-center">
                         <div className="flex items-center justify-center gap-2">
-                          <Link href={`/panel/cliente/solicitudes/${s.id}`}>
+                          <Link prefetch={false} href={`/panel/cliente/solicitudes/${s.id}`}>
                             <Button
                               variant="ghost"
                               size="sm"

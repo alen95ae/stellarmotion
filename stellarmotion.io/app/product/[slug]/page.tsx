@@ -12,43 +12,37 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     };
   }
   
+  const fallbackMetadata = {
+    title: 'Producto | StellarMotion',
+    description: 'Soporte publicitario en StellarMotion',
+  };
+
   try {
-    // Construir la URL del ERP correctamente
     const erpUrl = process.env.NEXT_PUBLIC_ERP_API_URL || 'http://127.0.0.1:3000';
     const response = await fetch(`${erpUrl}/api/soportes/${slug}`, {
-      cache: 'no-store',
+      next: { revalidate: 3600 },
       headers: {
         'Content-Type': 'application/json',
       }
     });
-    
-    if (!response.ok) return {
-      title: 'Producto no encontrado | StellarMotion',
-      description: 'El producto solicitado no existe'
-    };
-    
+
+    if (!response.ok) return fallbackMetadata;
+
     const soporte = await response.json();
-    if (!soporte) return {
-      title: 'Producto no encontrado | StellarMotion',
-      description: 'El producto solicitado no existe'
-    };
-    
+    if (!soporte) return fallbackMetadata;
+
     return {
       title: `${soporte.nombre} | StellarMotion`,
       description: soporte.descripcion ?? soporte.nombre,
-      openGraph: { 
-        title: `${soporte.nombre} | StellarMotion`, 
-        description: soporte.descripcion ?? soporte.nombre, 
+      openGraph: {
+        title: `${soporte.nombre} | StellarMotion`,
+        description: soporte.descripcion ?? soporte.nombre,
         images: Array.isArray(soporte.imagenes) && soporte.imagenes.length > 0 ? [soporte.imagenes[0]] : []
       },
       alternates: { canonical: `https://stellarmotion.com/product/${soporte.id}` },
     };
-  } catch (error) {
-    console.error('Error generating metadata:', error);
-    return {
-      title: 'Producto no encontrado | StellarMotion',
-      description: 'El producto solicitado no existe'
-    };
+  } catch {
+    return fallbackMetadata;
   }
 }
 

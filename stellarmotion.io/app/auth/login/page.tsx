@@ -153,7 +153,7 @@ export default function LoginPage() {
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label htmlFor="password" className="text-sm font-medium text-gray-700">Contraseña *</Label>
-              <Link 
+              <Link prefetch={false} 
                 href="/auth/forgot-password" 
                 className="text-sm text-[#e94446] hover:underline"
               >
@@ -227,7 +227,7 @@ export default function LoginPage() {
         </form>
 
         <div className="text-center text-sm text-gray-600 pt-8">
-          <p>¿No tienes una cuenta? <Link href="/auth/register" className="text-[#e94446] hover:underline font-medium">Regístrate</Link></p>
+          <p>¿No tienes una cuenta? <Link prefetch={false} href="/auth/register" className="text-[#e94446] hover:underline font-medium">Regístrate</Link></p>
         </div>
       </div>
     </div>

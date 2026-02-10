@@ -604,7 +604,7 @@ export default function SoporteDetailPage() {
         <header className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
-            <Link href="/panel/soportes" className="text-[#e94446] hover:text-[#d63d3f] font-medium mr-8">
+            <Link prefetch={false} href="/panel/soportes" className="text-[#e94446] hover:text-[#d63d3f] font-medium mr-8">
               Soportes
             </Link>
           </div>

@@ -126,6 +126,7 @@ export default function ClienteSidebar(props: ClienteSidebarProps = {}) {
                 onMouseLeave={isCollapsed ? scheduleClosePopover : undefined}
               >
                 <Link
+                  prefetch={false}
                   href={item.href}
                   className={`${linkBase} ${isCollapsed ? 'justify-center' : ''}`}
                   {...(!isCollapsed ? {} : { 'aria-label': item.name })}

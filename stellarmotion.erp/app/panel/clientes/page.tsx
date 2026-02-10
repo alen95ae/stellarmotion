@@ -505,7 +505,7 @@ export default function ClientesPage() {
       <header className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
-            <Link href="/dashboard" className="text-gray-600 hover:text-gray-800 mr-4">
+            <Link prefetch={false} href="/dashboard" className="text-gray-600 hover:text-gray-800 mr-4">
               ← Dashboard
             </Link>
             <div className="text-xl font-bold text-slate-800">Brands</div>
@@ -600,7 +600,7 @@ export default function ClientesPage() {
                 <Download className="w-4 h-4 mr-2" />
                 Exportar
               </Button>
-              <Link href="/panel/contactos/nuevo">
+              <Link prefetch={false} href="/panel/contactos/nuevo">
                 <Button className="bg-[#e94446] hover:bg-[#D7514C]">
                   <Plus className="w-4 h-4 mr-2" />
                   Nuevo
@@ -753,7 +753,7 @@ export default function ClientesPage() {
                     "No hay brands registrados"
                   )}
                 </div>
-                <Link href="/panel/contactos/nuevo">
+                <Link prefetch={false} href="/panel/contactos/nuevo">
                   <Button className="bg-[#e94446] hover:bg-[#D7514C]">
                     <Plus className="w-4 h-4 mr-2" />
                     Crear primer brand

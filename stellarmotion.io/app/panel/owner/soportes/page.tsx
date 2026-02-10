@@ -635,7 +635,7 @@ export default function SoportesPage() {
             <FileSpreadsheet className="h-4 w-4" />
             Importar
           </Button>
-          <Link href="/publicar-espacio">
+          <Link prefetch={false} href="/publicar-espacio">
             <Button size="sm" className="flex items-center gap-2 bg-[#e94446] hover:bg-[#d63a3a] h-9 px-3">
               <Plus className="h-4 w-4" />
               Nuevo Soporte
@@ -703,7 +703,7 @@ export default function SoportesPage() {
                 : 'Comienza creando tu primer soporte publicitario.'
               }
             </p>
-            <Link href="/publicar-espacio">
+            <Link prefetch={false} href="/publicar-espacio">
               <Button size="sm" className="h-8">
                 <Plus className="h-3.5 w-3.5 mr-1.5" />
                 Crear Primer Soporte

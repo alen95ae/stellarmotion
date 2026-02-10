@@ -124,8 +124,11 @@ function diagnoseNetworkError(error: Error, endpoint: string): string {
     return `Error de conexión de red. Verifica que el servidor esté disponible en: ${endpoint}`
   }
   
-  // Timeout
+  // Timeout (si es ruta proxy /api/*, el proxy llama al ERP en localhost:3000)
   if (error.name === 'AbortError' || message.includes('timeout') || message.includes('aborted')) {
+    if (endpoint.startsWith('/api/')) {
+      return `Timeout: no hubo respuesta a tiempo. Asegúrate de tener el ERP en marcha (localhost:3000) y la web (localhost:3001).`
+    }
     return `Timeout: El servidor no respondió en ${FETCH_CONFIG.timeout}ms. Verifica que el ERP esté activo y respondiendo.`
   }
   

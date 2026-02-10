@@ -219,7 +219,7 @@ export default function InstalacionSoportesClient() {
                 >
                   Quiero mi propuesta
                 </Button>
-                <Link href="#simulador">
+                <Link prefetch={false} href="#simulador">
                   <Button
                     variant="outline"
                     size="lg"

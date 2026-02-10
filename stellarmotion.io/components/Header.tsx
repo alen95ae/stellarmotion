@@ -262,7 +262,7 @@ export default function Header() {
         <div className="flex items-center justify-between h-16 w-full m-0">
           {/* Logo + Productos, Soluciones, Precios a la izquierda */}
           <div className="flex items-center gap-6 lg:gap-8 shrink-0">
-            <Link href="/" aria-label="Inicio" className="flex items-center shrink-0">
+            <Link prefetch={false} href="/" aria-label="Inicio" className="flex items-center shrink-0">
             <svg className="w-40 h-8" viewBox="0 0 934.1 167.24">
               <text className="text-[#282828] text-[109.26px] font-semibold" transform="translate(126.63 102.45) scale(1.02 1)">StellarMotion</text>
               <path className="fill-[#e94446]" d="M54.91,103.2H61.5c.22,3.23.42,6.23.58,8.51L76.24,96.26H9.76V90.6c7.87-2.82,16-4.58,23-8.46C45.8,74.82,52.36,62.56,54.7,48c.79-5,.77-5,6.74-4V82.86C58.81,81.51,56,81,55.2,79.44c-1-1.93-.45-4.71-.5-5.69l-14.13,15H107v6.13c-6.74,2-13.59,3.21-19.62,6.1-14.87,7.11-22.54,19.8-25.22,35.74-.41,2.46,0,5.19-3.94,5-4.16-.16-3.29-3.08-3.3-5.43C54.88,125.41,54.91,114.53,54.91,103.2Z" transform="translate(-9.76 -26.65)"/>
@@ -380,19 +380,19 @@ export default function Header() {
                 <nav className="flex flex-col gap-1 pt-4">
                   <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider px-3 py-2">Productos</div>
                   {PRODUCTOS_ITEMS.map((item) => (
-                    <Link key={item.title} href={item.href} className="px-3 py-2.5 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800" onClick={() => setMobileNavOpen(false)}>
+                    <Link prefetch={false} key={item.title} href={item.href} className="px-3 py-2.5 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800" onClick={() => setMobileNavOpen(false)}>
                       <span className="font-medium">{item.title}</span>
                       <span className="block text-xs text-gray-500 mt-0.5">{item.description}</span>
                     </Link>
                   ))}
                   <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider px-3 py-2 mt-2">Soluciones</div>
                   {SOLUCIONES_ITEMS.map((item) => (
-                    <Link key={item.title} href={item.href} className="px-3 py-2.5 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800" onClick={() => setMobileNavOpen(false)}>
+                    <Link prefetch={false} key={item.title} href={item.href} className="px-3 py-2.5 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800" onClick={() => setMobileNavOpen(false)}>
                       <span className="font-medium">{item.title}</span>
                       <span className="block text-xs text-gray-500 mt-0.5">{item.description}</span>
                     </Link>
                   ))}
-                  <Link href="/precios" className="px-3 py-2.5 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800" onClick={() => setMobileNavOpen(false)}>Precios</Link>
+                  <Link prefetch={false} href="/precios" className="px-3 py-2.5 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800" onClick={() => setMobileNavOpen(false)}>Precios</Link>
                 </nav>
               </SheetContent>
             </Sheet>

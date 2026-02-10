@@ -25,10 +25,10 @@ export default function AuthErrorPage() {
           </p>
           <div className="flex flex-col gap-2">
             <Button asChild className="w-full">
-              <Link href="/auth/login">Volver al inicio de sesión</Link>
+              <Link prefetch={false} href="/auth/login">Volver al inicio de sesión</Link>
             </Button>
             <Button asChild variant="outline" className="w-full">
-              <Link href="/">Ir al inicio</Link>
+              <Link prefetch={false} href="/">Ir al inicio</Link>
             </Button>
           </div>
         </CardContent>

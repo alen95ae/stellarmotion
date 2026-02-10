@@ -87,7 +87,7 @@ export default function OwnerSolicitudDetallePage() {
   if (error || !solicitud) {
     return (
       <div className="space-y-4">
-        <Link href="/panel/owner/solicitudes">
+        <Link prefetch={false} href="/panel/owner/solicitudes">
           <Button variant="ghost" size="sm" className="gap-1">
             <ArrowLeft className="w-4 h-4" />
             Volver a Solicitudes
@@ -106,7 +106,7 @@ export default function OwnerSolicitudDetallePage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <Link href="/panel/owner/solicitudes">
+        <Link prefetch={false} href="/panel/owner/solicitudes">
           <Button variant="ghost" size="sm" className="gap-1">
             <ArrowLeft className="w-4 h-4" />
             Volver a Solicitudes

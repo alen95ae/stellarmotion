@@ -386,7 +386,7 @@ export default function SoportesPage() {
         <header className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
-            <Link href="/panel/soportes" className="text-[#e94446] hover:text-[#d63d3f] font-medium mr-8">
+            <Link prefetch={false} href="/panel/soportes" className="text-[#e94446] hover:text-[#d63d3f] font-medium mr-8">
               Soportes
             </Link>
           </div>
@@ -516,7 +516,7 @@ export default function SoportesPage() {
                   Catálogo PDF
                 </Button>
                 
-                <Link href="/panel/soportes/nuevo">
+                <Link prefetch={false} href="/panel/soportes/nuevo">
                   <Button className="bg-[#e94446] hover:bg-[#d63e3f] text-white">
                     <Plus className="w-4 h-4 mr-2" />
                     Nuevo Soporte

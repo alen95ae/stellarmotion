@@ -156,6 +156,7 @@ export default function OwnerSidebar(props: OwnerSidebarProps = {}) {
                 onMouseLeave={isCollapsed ? scheduleClosePopover : undefined}
               >
                 <Link
+                  prefetch={false}
                   href={item.href}
                   className={`${linkBase} ${isCollapsed ? 'justify-center' : ''} relative`}
                   {...(!isCollapsed ? {} : { 'aria-label': item.name })}

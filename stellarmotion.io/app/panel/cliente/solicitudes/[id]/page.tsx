@@ -67,7 +67,7 @@ export default function SolicitudDetallePage() {
   if (error || !solicitud) {
     return (
       <div className="space-y-4">
-        <Link href="/panel/cliente/solicitudes">
+        <Link prefetch={false} href="/panel/cliente/solicitudes">
           <Button variant="ghost" size="sm" className="gap-1">
             <ArrowLeft className="w-4 h-4" />
             Volver a Solicitudes
@@ -86,7 +86,7 @@ export default function SolicitudDetallePage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <Link href="/panel/cliente/solicitudes">
+        <Link prefetch={false} href="/panel/cliente/solicitudes">
           <Button variant="ghost" size="sm" className="gap-1">
             <ArrowLeft className="w-4 h-4" />
             Volver a Solicitudes

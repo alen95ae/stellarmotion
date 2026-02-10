@@ -172,7 +172,7 @@ export function BubbleMenu({ data }: BubbleMenuProps) {
                 onHoverStart={() => setHoveredBubble(item.id)}
                 onHoverEnd={() => setHoveredBubble(null)}
               >
-                <Link href={item.route}>
+                <Link prefetch={false} href={item.route}>
                   <motion.div
                     className="relative rounded-full cursor-pointer shadow-lg hover:shadow-xl transition-shadow duration-300 flex flex-col items-center justify-center text-white font-semibold select-none"
                     style={{ 
@@ -258,7 +258,7 @@ export function BubbleMenu({ data }: BubbleMenuProps) {
                   }
                 }}
               >
-                <Link href={item.route}>
+                <Link prefetch={false} href={item.route}>
                   <motion.div
                     className="relative rounded-2xl cursor-pointer shadow-lg hover:shadow-xl transition-all duration-300 p-6 text-white"
                     style={{ backgroundColor: '#E94446' }}

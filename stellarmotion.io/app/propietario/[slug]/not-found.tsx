@@ -19,14 +19,14 @@ export default function NotFound() {
         
         <div className="space-y-4">
           <Button className="w-full">
-            <Link href="/">
+            <Link prefetch={false} href="/">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Volver al inicio
             </Link>
           </Button>
           
           <Button variant="outline" className="w-full">
-            <Link href="/buscar-un-espacio">
+            <Link prefetch={false} href="/buscar-un-espacio">
               Buscar espacios
             </Link>
           </Button>

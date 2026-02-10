@@ -147,7 +147,7 @@ export default function OwnerProfileClient({ owner }: OwnerProfileClientProps) {
                   </div>
                   
                   <CardContent className="p-4">
-                    <Link href={`/product/${product.slug}`}>
+                    <Link prefetch={false} href={`/product/${product.slug}`}>
                       <h3 className="font-semibold text-gray-900 mb-2 hover:text-blue-600 transition-colors">
                         {product.title}
                       </h3>

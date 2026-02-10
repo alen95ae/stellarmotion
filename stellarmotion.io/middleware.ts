@@ -148,8 +148,7 @@ export async function middleware(req: NextRequest) {
       const normalizedRole = getRoleFromPayload(payload.role);
       const userRole = normalizedRole || 'client';
 
-      // Debug logs para rutas de cliente
-      if (isClientRoute) {
+      if (process.env.NODE_ENV !== 'development' && isClientRoute) {
         console.log('🔍 Middleware - Verificando acceso:', {
           pathname,
           userRole,
@@ -175,8 +174,7 @@ export async function middleware(req: NextRequest) {
       // ✅ DEV: todos los usuarios autenticados pueden ver Owner y Cliente.
       // El middleware solo exige sesión para estas rutas.
 
-      // Si llegamos aquí, el acceso está permitido
-      if (isClientRoute) {
+      if (process.env.NODE_ENV !== 'development' && isClientRoute) {
         console.log('✅ Middleware - Acceso permitido para:', userRole, 'a', pathname);
       }
     } catch (error) {

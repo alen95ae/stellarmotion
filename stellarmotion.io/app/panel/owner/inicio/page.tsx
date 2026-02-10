@@ -242,7 +242,7 @@ function ModuleCard({
   return (
     <Link
       href={href}
-      prefetch={true}
+      prefetch={false}
       className="group flex items-start gap-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 p-4 shadow-sm transition-all duration-200 hover:shadow-md hover:border-red-200 dark:hover:border-red-900/50 hover:scale-[1.01] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-950"
       aria-label={`Ir a ${name}: ${description}`}
     >

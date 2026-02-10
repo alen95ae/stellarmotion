@@ -236,7 +236,7 @@ export default function SearchPage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {products.map((product) => (
-              <Link key={product.id} href={`/product/${product.slug}`}>
+              <Link prefetch={false} key={product.id} href={`/product/${product.slug}`}>
                 <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer">
                   <div className="h-48 bg-gray-200 rounded-t-lg flex items-center justify-center">
                     <Search className="h-12 w-12 text-gray-400" />

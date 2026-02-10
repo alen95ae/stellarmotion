@@ -198,7 +198,7 @@ export default function PreciosClient() {
                 </div>
               </CardContent>
               <CardFooter>
-                <Link href="/publicar-espacio" className="w-full">
+                <Link prefetch={false} href="/publicar-espacio" className="w-full">
                   <Button variant="outline" className="w-full rounded-full border-gray-300 dark:border-gray-700">
                     Empezar gratis
                   </Button>
@@ -239,7 +239,7 @@ export default function PreciosClient() {
                 </ul>
               </CardContent>
               <CardFooter>
-                <Link href="/auth/register" className="w-full">
+                <Link prefetch={false} href="/auth/register" className="w-full">
                   <Button variant="brand" className="w-full rounded-full">
                     Pasar a Owner Pro
                   </Button>
@@ -275,7 +275,7 @@ export default function PreciosClient() {
                 </ul>
               </CardContent>
               <CardFooter>
-                <Link href="/contact" className="w-full">
+                <Link prefetch={false} href="/contact" className="w-full">
                   <Button variant="outline" className="w-full rounded-full border-gray-300 dark:border-gray-700">
                     Contactar con ventas
                   </Button>
@@ -340,7 +340,7 @@ export default function PreciosClient() {
                 </div>
               </CardContent>
               <CardFooter>
-                <Link href="/marketplace" className="w-full">
+                <Link prefetch={false} href="/marketplace" className="w-full">
                   <Button variant="outline" className="w-full rounded-full border-gray-300 dark:border-gray-700">
                     Explorar marketplace
                   </Button>
@@ -381,7 +381,7 @@ export default function PreciosClient() {
                 </ul>
               </CardContent>
               <CardFooter>
-                <Link href="/auth/register" className="w-full">
+                <Link prefetch={false} href="/auth/register" className="w-full">
                   <Button variant="brand" className="w-full rounded-full">
                     Empezar con Pro
                   </Button>
@@ -417,7 +417,7 @@ export default function PreciosClient() {
                 </ul>
               </CardContent>
               <CardFooter>
-                <Link href="/contact" className="w-full">
+                <Link prefetch={false} href="/contact" className="w-full">
                   <Button variant="outline" className="w-full rounded-full border-gray-300 dark:border-gray-700">
                     Contactar con ventas
                   </Button>
@@ -504,17 +504,17 @@ export default function PreciosClient() {
             Elige tu punto de entrada y crece con el marketplace.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Link href="/publicar-espacio">
+            <Link prefetch={false} href="/publicar-espacio">
               <Button variant="brand" size="lg" className="rounded-full w-full sm:w-auto">
                 Publicar soportes
               </Button>
             </Link>
-            <Link href="/marketplace">
+            <Link prefetch={false} href="/marketplace">
               <Button variant="outline" size="lg" className="rounded-full border-gray-300 dark:border-gray-700 w-full sm:w-auto">
                 Explorar marketplace
               </Button>
             </Link>
-            <Link href="/contact">
+            <Link prefetch={false} href="/contact">
               <Button variant="ghost" size="lg" className="rounded-full text-gray-700 dark:text-gray-300 w-full sm:w-auto">
                 Contactar con ventas
               </Button>
