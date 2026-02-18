@@ -14,8 +14,8 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ArrowLeft, Save, MapPin, Upload, Globe } from "lucide-react"
 import { toast } from "sonner"
-import { ThemeToggle } from "@/components/ThemeToggle"
 import Sidebar from "@/components/dashboard/Sidebar"
+import HeaderUser from "@/components/dashboard/HeaderUser"
 import { PhotonAutocomplete } from "@/components/PhotonAutocomplete"
 import dynamic from "next/dynamic"
 import { buildGoogleMapsLinkFromCoords, extractCoordinatesFromGoogleMapsLink } from "@/lib/extract-google-maps-coords"
@@ -259,20 +259,16 @@ export default function NuevoSoportePage() {
 
   return (
     <Sidebar>
-      <div className="min-h-screen bg-muted/40">
+      <div className="min-h-screen bg-background">
         {/* Header */}
-        <header className="bg-background border-b border-border px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <Link prefetch={false} href="/panel/soportes" className="text-[#e94446] hover:text-[#d63d3f] font-medium mr-8">
+        <header className="bg-background border-b border-border dark:bg-[#141414] dark:border-[#1E1E1E] px-6 py-4 sticky top-0 z-40">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-6">
+              <Link prefetch={false} href="/panel/soportes" className="text-[#e94446] font-medium no-underline hover:no-underline">
                 Soportes
               </Link>
             </div>
-            <div className="flex items-center gap-4">
-              <span className="text-muted-foreground">Buscar</span>
-              <span className="text-foreground font-medium">admin</span>
-              <ThemeToggle />
-            </div>
+            <HeaderUser />
           </div>
         </header>
 
@@ -291,13 +287,14 @@ export default function NuevoSoportePage() {
               <Button
                 variant="outline"
                 onClick={() => router.push('/panel/soportes')}
+                className="border-border text-foreground hover:bg-muted hover:text-foreground dark:border-[#404040] dark:text-[#D1D1D1] dark:hover:bg-[#1E1E1E] dark:hover:text-[#FFFFFF]"
               >
                 Cancelar
               </Button>
               <Button
                 onClick={handleSave}
                 disabled={saving}
-                className="bg-[#e94446] hover:bg-[#d63d3f] text-white"
+                className="bg-[#e94446] hover:bg-[#D7514C] text-white shadow-[0_0_12px_rgba(233,68,70,0.45)] hover:shadow-[0_0_20px_rgba(233,68,70,0.6)] dark:text-white"
               >
                 <Save className="w-4 h-4 mr-2" />
                 {saving ? "Guardando..." : "Guardar"}
@@ -306,7 +303,7 @@ export default function NuevoSoportePage() {
           </div>
 
           {/* Soporte Details */}
-          <Card>
+          <Card className="dark:bg-[#141414] dark:border-[#1E1E1E]">
             <CardHeader>
               <CardTitle>
                 Información del Soporte
@@ -324,6 +321,7 @@ export default function NuevoSoportePage() {
                       id="internalCode"
                       value={formData.internalCode}
                       onChange={(e) => setFormData({...formData, internalCode: e.target.value})}
+                      className="focus-visible:border-[#e94446] focus-visible:ring-[#e94446]/50"
                     />
                   </div>
 
@@ -333,6 +331,7 @@ export default function NuevoSoportePage() {
                       id="userCode"
                       value={formData.userCode}
                       onChange={(e) => setFormData({...formData, userCode: e.target.value})}
+                      className="focus-visible:border-[#e94446] focus-visible:ring-[#e94446]/50"
                     />
                   </div>
 
@@ -342,18 +341,19 @@ export default function NuevoSoportePage() {
                       id="title"
                       value={formData.title}
                       onChange={(e) => setFormData({...formData, title: e.target.value})}
+                      className="focus-visible:border-[#e94446] focus-visible:ring-[#e94446]/50"
                     />
                   </div>
 
                   <div>
                     <Label htmlFor="type">Tipo</Label>
                     <Select value={formData.type} onValueChange={(value) => setFormData({...formData, type: value})}>
-                      <SelectTrigger>
+                      <SelectTrigger className="overflow-hidden dark:bg-[#1E1E1E] dark:hover:bg-[#2a2a2a] dark:border-[#1E1E1E] dark:text-foreground">
                         <SelectValue placeholder="Seleccionar tipo" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="dark:bg-[#141414] dark:border-[#1E1E1E]">
                         {TYPE_OPTIONS.map((type) => (
-                          <SelectItem key={type} value={type}>
+                          <SelectItem key={type} value={type} className="dark:focus:bg-[#1e1e1e] dark:hover:bg-[#1e1e1e] dark:focus:text-foreground dark:hover:text-foreground">
                             {type}
                           </SelectItem>
                         ))}
@@ -365,13 +365,16 @@ export default function NuevoSoportePage() {
                     <div>
                       <Label htmlFor="status">Estado</Label>
                       <Select value={formData.status} onValueChange={(value) => setFormData({...formData, status: value as keyof typeof STATUS_META})}>
-                        <SelectTrigger>
+                        <SelectTrigger className="overflow-hidden dark:bg-[#1E1E1E] dark:hover:bg-[#2a2a2a] dark:border-[#1E1E1E] dark:text-foreground">
                           <SelectValue placeholder="Seleccionar estado" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="dark:bg-[#141414] dark:border-[#1E1E1E]">
                           {Object.entries(STATUS_META).map(([key, value]) => (
-                            <SelectItem key={key} value={key}>
-                              {value.label}
+                            <SelectItem key={key} value={key} className="dark:focus:bg-[#1e1e1e] dark:hover:bg-[#1e1e1e] dark:focus:text-foreground dark:hover:text-foreground">
+                              <div className="flex items-center gap-2">
+                                <span className={`inline-block w-3 h-3 rounded-full ${value.className}`} />
+                                {value.label}
+                              </div>
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -385,6 +388,7 @@ export default function NuevoSoportePage() {
                         value={formData.owner}
                         onChange={(e) => setFormData({...formData, owner: e.target.value})}
                         placeholder="Nombre del owner"
+                        className="focus-visible:border-[#e94446] focus-visible:ring-[#e94446]/50"
                       />
                     </div>
                   </div>
@@ -398,6 +402,7 @@ export default function NuevoSoportePage() {
                       type="number"
                       value={formData.widthM}
                       onChange={(e) => setFormData({...formData, widthM: e.target.value})}
+                      className="focus-visible:border-[#e94446] focus-visible:ring-[#e94446]/50"
                     />
                   </div>
 
@@ -408,6 +413,7 @@ export default function NuevoSoportePage() {
                       type="number"
                       value={formData.heightM}
                       onChange={(e) => setFormData({...formData, heightM: e.target.value})}
+                      className="focus-visible:border-[#e94446] focus-visible:ring-[#e94446]/50"
                     />
                   </div>
 
@@ -418,6 +424,7 @@ export default function NuevoSoportePage() {
                       type="number"
                       value={formData.dailyImpressions}
                       onChange={(e) => setFormData({...formData, dailyImpressions: e.target.value})}
+                      className="focus-visible:border-[#e94446] focus-visible:ring-[#e94446]/50"
                     />
                   </div>
 
@@ -448,6 +455,7 @@ export default function NuevoSoportePage() {
                       type="number"
                       value={formData.priceMonth}
                       onChange={(e) => setFormData({...formData, priceMonth: e.target.value})}
+                      className="focus-visible:border-[#e94446] focus-visible:ring-[#e94446]/50"
                     />
                   </div>
                 </div>
@@ -462,6 +470,7 @@ export default function NuevoSoportePage() {
                   value={formData.description}
                   onChange={(e) => setFormData({...formData, description: e.target.value})}
                   rows={4}
+                  className="focus-visible:border-[#e94446] focus-visible:ring-[#e94446]/50"
                 />
               </div>
 
@@ -525,6 +534,7 @@ export default function NuevoSoportePage() {
                   id="googleMapsLink"
                   value={formData.googleMapsLink}
                   onChange={(e) => setFormData({...formData, googleMapsLink: e.target.value})}
+                  className="focus-visible:border-[#e94446] focus-visible:ring-[#e94446]/50"
                   onBlur={async (e) => {
                     const newLink = e.target.value.trim()
                     if (newLink) {
@@ -554,7 +564,7 @@ export default function NuevoSoportePage() {
 
               <div className="mt-4">
                 <Label className="text-sm font-medium text-muted-foreground mb-2 block">Ubicación del soporte</Label>
-                <div className="w-full rounded-xl border border-border bg-muted/40 overflow-hidden" style={{ height: MAP_HEIGHT }}>
+                <div className="w-full rounded-xl border border-border bg-background overflow-hidden" style={{ height: MAP_HEIGHT }}>
                   {mapCoordsLoading ? (
                     <div className="h-full w-full flex items-center justify-center text-muted-foreground bg-muted">Cargando mapa...</div>
                   ) : (

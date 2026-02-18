@@ -256,7 +256,7 @@ export default function CRMPage() {
 
   return (
     <Sidebar>
-      <div className="min-h-screen bg-muted/40 p-6">
+      <div className="min-h-screen bg-background p-6">
         <div className="max-w-7xl mx-auto space-y-6">
           {/* Header */}
           <div className="flex items-center justify-between">

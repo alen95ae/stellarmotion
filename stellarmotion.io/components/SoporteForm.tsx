@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ImageUp, MapPin, DollarSign, Ruler, Lightbulb, Pencil, Eye, Link as LinkIcon, Hash } from 'lucide-react';
+import { ImageUp, MapPin, DollarSign, Ruler, Lightbulb, Pencil, Eye, Link as LinkIcon, Hash, Crown } from 'lucide-react';
 import { CATEGORIES, getCategoryIconPath } from '@/lib/categories';
 import Image from 'next/image';
 import { PhotonAutocomplete } from '@/components/PhotonAutocomplete';
@@ -25,10 +25,19 @@ export interface SoporteFormData {
   lighting: boolean;
   type: string;
   code: string;
-  dailyImpressions: string;
+  dailyImpressions?: string;
   description: string;
   googleMapsLink: string;
   status?: string;
+  /** Ubicación aproximada: mostrar círculo en mapa */
+  showApproximateLocation?: boolean;
+  approximateRadius?: number;
+  /** Rango de precios: dos campos en lugar de uno */
+  priceRangeEnabled?: boolean;
+  priceMin?: string;
+  priceMax?: string;
+  /** Periodo de alquiler: dias | semanas | meses */
+  rentalPeriod?: string;
 }
 
 interface SoporteFormProps {
@@ -350,6 +359,30 @@ export function SoporteForm({
             <p className="text-sm text-gray-500 mt-2">
               Arrastra la chincheta o haz clic en el mapa para fijar la ubicación. Gira el Street View para guardar la vista que verán los clientes.
             </p>
+
+            {/* Mostrar ubicación aproximada */}
+            <div className="mt-6 flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center rounded-full bg-purple-100 dark:bg-purple-900/40 px-1.5 py-0.5 text-purple-700 dark:text-purple-300" title="Pro">
+                  <Crown className="h-3 w-3 fill-current" aria-hidden="true" />
+                </span>
+                <span className="text-sm font-medium text-gray-700">Mostrar ubicación aproximada</span>
+                <button
+                  type="button"
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#e94446] ${formData.showApproximateLocation ? 'bg-[#e94446]' : 'bg-gray-300'}`}
+                  onClick={() => onInputChange('showApproximateLocation', !formData.showApproximateLocation)}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${formData.showApproximateLocation ? 'translate-x-6' : 'translate-x-1'}`}
+                  />
+                </button>
+              </div>
+              {formData.showApproximateLocation && (
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  En la ficha del producto se mostrará la ubicación en un área aproximada.
+                </p>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -361,29 +394,119 @@ export function SoporteForm({
             <DollarSign className="h-5 w-5" />
             Precios
           </CardTitle>
-          <CardDescription>
-            Información sobre el precio del soporte
+          <CardDescription className="flex flex-wrap items-center justify-between gap-2">
+            <span>Información sobre el precio del soporte</span>
+            <span className="inline-flex items-center gap-1.5 ml-auto">
+              <span className="inline-flex items-center rounded-full bg-purple-100 dark:bg-purple-900/40 px-1.5 py-0.5 text-purple-700 dark:text-purple-300" title="Pro">
+                <Crown className="h-3 w-3 fill-current" aria-hidden="true" />
+              </span>
+              <span className="text-sm font-medium text-gray-600">Rango de precios</span>
+              <button
+                type="button"
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#e94446] ${formData.priceRangeEnabled ? 'bg-[#e94446]' : 'bg-gray-300'}`}
+                onClick={() => onInputChange('priceRangeEnabled', !formData.priceRangeEnabled)}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${formData.priceRangeEnabled ? 'translate-x-6' : 'translate-x-1'}`}
+                />
+              </button>
+            </span>
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div>
-            <Label htmlFor="pricePerMonth" className="text-sm font-medium text-gray-700 mb-2 block">
-              Precio por Mes (USD) *
-            </Label>
-            <div className="relative">
-              <DollarSign className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5 z-10 pointer-events-none" />
-              <Input
-                id="pricePerMonth"
-                type="number"
-                step="any"
-                min="0"
-                value={formData.pricePerMonth}
-                onChange={(e) => onPriceInputChange(e.target.value)}
-                placeholder="Ej: 350.50"
-                className="pl-14 pr-4 py-3 rounded-2xl border-gray-300 focus:border-[#e94446] focus:ring-2 focus:ring-[#e94446]/20"
-                required
-              />
+          {formData.priceRangeEnabled ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="priceMin" className="text-sm font-medium text-gray-700 mb-2 block">
+                  Precio mínimo (USD) *
+                </Label>
+                <div className="relative">
+                  <DollarSign className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5 z-10 pointer-events-none" />
+                  <Input
+                    id="priceMin"
+                    type="text"
+                    inputMode="decimal"
+                    value={formData.priceMin ?? ''}
+                    onChange={(e) => {
+                      const v = e.target.value.replace(/[^\d.]/g, '').slice(0, 30);
+                      onInputChange('priceMin', v);
+                      const maxVal = formData.priceMax ?? '';
+                      if (maxVal && parseFloat(v) > parseFloat(maxVal)) onInputChange('priceMax', v);
+                    }}
+                    placeholder="Ej: 200"
+                    maxLength={30}
+                    className="pl-14 pr-4 py-3 rounded-2xl border-gray-300 focus:border-[#e94446] focus:ring-2 focus:ring-[#e94446]/20"
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">Máx. 30 caracteres</p>
+              </div>
+              <div>
+                <Label htmlFor="priceMax" className="text-sm font-medium text-gray-700 mb-2 block">
+                  Precio máximo (USD) *
+                </Label>
+                <div className="relative">
+                  <DollarSign className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5 z-10 pointer-events-none" />
+                  <Input
+                    id="priceMax"
+                    type="text"
+                    inputMode="decimal"
+                    value={formData.priceMax ?? ''}
+                    onChange={(e) => {
+                      const v = e.target.value.replace(/[^\d.]/g, '').slice(0, 30);
+                      const minVal = formData.priceMin ?? '';
+                      if (minVal && parseFloat(v) < parseFloat(minVal)) return;
+                      onInputChange('priceMax', v);
+                    }}
+                    placeholder="Ej: 500"
+                    maxLength={30}
+                    className="pl-14 pr-4 py-3 rounded-2xl border-gray-300 focus:border-[#e94446] focus:ring-2 focus:ring-[#e94446]/20"
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">Máx. 30 caracteres. Debe ser mayor que el mínimo.</p>
+                {formData.priceMin != null && formData.priceMax != null && formData.priceMin !== '' && formData.priceMax !== '' && parseFloat(formData.priceMax) <= parseFloat(formData.priceMin) && (
+                  <p className="text-xs text-red-600 mt-1">El precio máximo debe ser mayor que el mínimo.</p>
+                )}
+              </div>
             </div>
+          ) : (
+            <div>
+              <Label htmlFor="pricePerMonth" className="text-sm font-medium text-gray-700 mb-2 block">
+                Precio por Mes (USD) *
+              </Label>
+              <div className="relative">
+                <DollarSign className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5 z-10 pointer-events-none" />
+                <Input
+                  id="pricePerMonth"
+                  type="number"
+                  step="any"
+                  min="0"
+                  value={formData.pricePerMonth}
+                  onChange={(e) => onPriceInputChange(e.target.value)}
+                  placeholder="Ej: 350.50"
+                  className="pl-14 pr-4 py-3 rounded-2xl border-gray-300 focus:border-[#e94446] focus:ring-2 focus:ring-[#e94446]/20"
+                  required={!formData.priceRangeEnabled}
+                />
+              </div>
+            </div>
+          )}
+
+          <div>
+            <Label htmlFor="rentalPeriod" className="text-sm font-medium text-gray-700 mb-2 block">
+              Periodo de alquiler
+            </Label>
+            <Select
+              value={formData.rentalPeriod ?? 'meses'}
+              onValueChange={(value) => onInputChange('rentalPeriod', value)}
+            >
+              <SelectTrigger className="rounded-2xl border-gray-300 focus:border-[#e94446] focus:ring-2 focus:ring-[#e94446]/20 bg-white py-3">
+                <SelectValue placeholder="Selecciona el periodo" />
+              </SelectTrigger>
+              <SelectContent className="bg-white">
+                <SelectItem value="dias">Días</SelectItem>
+                <SelectItem value="semanas">Semanas</SelectItem>
+                <SelectItem value="meses">Meses</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>
@@ -436,21 +559,18 @@ export function SoporteForm({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <Label htmlFor="dailyImpressions" className="text-sm font-medium text-gray-700 mb-2 block">
-                Impactos Diarios
-              </Label>
-              <div className="relative">
-                <Eye className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5 z-10 pointer-events-none" />
-                <Input
-                  id="dailyImpressions"
-                  type="number"
-                  value={formData.dailyImpressions}
-                  onChange={(e) => onInputChange('dailyImpressions', e.target.value)}
-                  placeholder="65000"
-                  className="pl-14 pr-4 py-3 rounded-2xl border-gray-300 focus:border-[#e94446] focus:ring-2 focus:ring-[#e94446]/20"
+            <div className="flex items-center gap-3 p-4 rounded-2xl">
+              <Lightbulb className="h-5 w-5 text-gray-600" />
+              <span className="text-sm font-medium text-gray-700 flex-1">Iluminación</span>
+              <button
+                type="button"
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#e94446] ${formData.lighting ? 'bg-[#e94446]' : 'bg-gray-300'}`}
+                onClick={() => onInputChange('lighting', !formData.lighting)}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${formData.lighting ? 'translate-x-6' : 'translate-x-1'}`}
                 />
-              </div>
+              </button>
             </div>
 
             <div>
@@ -512,20 +632,6 @@ export function SoporteForm({
               </SelectContent>
             </Select>
             </div>
-          </div>
-
-          <div className="flex items-center gap-3 p-4 rounded-2xl bg-gray-50">
-            <Lightbulb className="h-5 w-5 text-gray-600" />
-            <span className="text-sm font-medium text-gray-700 flex-1">Iluminación</span>
-            <button
-              type="button"
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#e94446] ${formData.lighting ? 'bg-[#e94446]' : 'bg-gray-300'}`}
-              onClick={() => onInputChange('lighting', !formData.lighting)}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${formData.lighting ? 'translate-x-6' : 'translate-x-1'}`}
-              />
-            </button>
           </div>
         </CardContent>
       </Card>

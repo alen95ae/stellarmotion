@@ -56,9 +56,16 @@ export interface Soporte {
   pais?: string;
   ciudad?: string;
   googleMapsLink?: string;
-  impactosDiarios?: number;
-  impactosDiariosPorM2?: number;
   resumenAutomatico?: string;
+  /** Ubicación aproximada: mostrar círculo en mapa */
+  showApproximateLocation?: boolean;
+  approximateRadius?: number;
+  /** Rango de precios */
+  priceRangeEnabled?: boolean;
+  priceMin?: number | null;
+  priceMax?: number | null;
+  /** Periodo de alquiler: dias | semanas | meses */
+  rentalPeriod?: string;
   usuarioId?: string;
   usuario?: {
     id: string;
@@ -259,9 +266,13 @@ function mapSoporteFromSupabase(record: any): Soporte {
     pais: record.pais || '',
     ciudad: record.ciudad || '',
     googleMapsLink: record.google_maps_url || '',
-    impactosDiarios: record.impactos_diarios || 0,
-    impactosDiariosPorM2: record.impactos_diarios_m2 || 0,
     resumenAutomatico: record.resumen || '',
+    showApproximateLocation: record.ubicacion_aproximada ?? false,
+    approximateRadius: record.radio_aproximado ?? 500,
+    priceRangeEnabled: record.rango_precios ?? false,
+    priceMin: record.precio_min != null ? Number(record.precio_min) : null,
+    priceMax: record.precio_max != null ? Number(record.precio_max) : null,
+    rentalPeriod: record.periodo_alquiler ?? 'meses',
     usuarioId: record.owner_id ?? record.owner?.id ?? null,
     owner: record.owner
       ? {
@@ -576,9 +587,13 @@ export class SupabaseService {
         street_view_pitch: data.streetViewPitch != null ? data.streetViewPitch : null,
         street_view_zoom: data.streetViewZoom != null ? data.streetViewZoom : null,
         google_maps_url: data['Enlace de Google Maps'] || data.googleMapsLink || null,
-        impactos_diarios: data['Impactos diarios'] || data.impactosDiarios || null,
-        impactos_diarios_m2: data['Impactos diarios por m²'] || data.impactosDiariosPorM2 || null,
         categoria_ubicacion: data.categoria || null,
+        ubicacion_aproximada: data.showApproximateLocation ?? false,
+        radio_aproximado: data.approximateRadius ?? 500,
+        rango_precios: data.priceRangeEnabled ?? false,
+        precio_min: data.priceMin != null ? data.priceMin : null,
+        precio_max: data.priceMax != null ? data.priceMax : null,
+        periodo_alquiler: data.rentalPeriod ?? 'meses',
         // propietario: NO existe en tabla soportes
         iluminacion: data['Iluminación'] !== undefined ? data['Iluminación'] : (data.iluminacion !== undefined ? data.iluminacion : false),
         destacado: data['Destacado'] !== undefined ? data['Destacado'] : (data.destacado !== undefined ? data.destacado : false),
@@ -691,11 +706,23 @@ export class SupabaseService {
       if (data['Código cliente'] !== undefined || data.codigoCliente !== undefined) {
         updateData.codigo_cliente = data['Código cliente'] || data.codigoCliente;
       }
-      if (data['Impactos diarios'] !== undefined || data.impactosDiarios !== undefined) {
-        updateData.impactos_diarios = data['Impactos diarios'] || data.impactosDiarios;
+      if (data.showApproximateLocation !== undefined) {
+        updateData.ubicacion_aproximada = data.showApproximateLocation;
       }
-      if (data['Impactos diarios por m²'] !== undefined || data.impactosDiariosPorM2 !== undefined) {
-        updateData.impactos_diarios_m2 = data['Impactos diarios por m²'] || data.impactosDiariosPorM2;
+      if (data.approximateRadius !== undefined) {
+        updateData.radio_aproximado = data.approximateRadius;
+      }
+      if (data.priceRangeEnabled !== undefined) {
+        updateData.rango_precios = data.priceRangeEnabled;
+      }
+      if (data.priceMin !== undefined) {
+        updateData.precio_min = data.priceMin;
+      }
+      if (data.priceMax !== undefined) {
+        updateData.precio_max = data.priceMax;
+      }
+      if (data.rentalPeriod !== undefined) {
+        updateData.periodo_alquiler = data.rentalPeriod;
       }
       if (data['Enlace de Google Maps'] !== undefined || data.googleMapsLink !== undefined) {
         updateData.google_maps_url = data['Enlace de Google Maps'] || data.googleMapsLink;

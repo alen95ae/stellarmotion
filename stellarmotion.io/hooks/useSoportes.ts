@@ -37,6 +37,11 @@ export interface Soporte {
   };
   iluminacion?: boolean;
   destacado?: boolean;
+  showApproximateLocation?: boolean;
+  approximateRadius?: number;
+  streetViewHeading?: number;
+  streetViewPitch?: number;
+  streetViewZoom?: number;
   createdAt: Date;
   updatedAt: Date;
 }

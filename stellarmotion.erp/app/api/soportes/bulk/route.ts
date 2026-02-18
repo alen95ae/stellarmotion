@@ -91,8 +91,6 @@ export async function POST(req: Request) {
             patch.ancho = data[k]
           } else if (k === 'heightM') {
             patch.alto = data[k]
-          } else if (k === 'dailyImpressions') {
-            patch.impactos_diarios = data[k]
           } else if (k === 'featured') {
             patch.destacado = data[k]
           } else {

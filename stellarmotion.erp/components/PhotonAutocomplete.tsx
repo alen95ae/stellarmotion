@@ -320,7 +320,7 @@ export function PhotonAutocomplete({
             variant="outline"
             role="combobox"
             aria-expanded={open}
-            className="w-full justify-between h-10 px-3"
+            className="w-full justify-between h-10 px-3 dark:bg-[#1E1E1E] dark:hover:bg-[#2a2a2a] dark:border-[#1E1E1E] dark:text-foreground"
           >
             <div className="flex items-center">
               <Search className="mr-2 h-4 w-4 text-muted-foreground" />
@@ -331,23 +331,23 @@ export function PhotonAutocomplete({
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-full p-0" align="start">
-          <Command>
-            <div className="flex items-center border-b px-3">
+        <PopoverContent className="w-full p-0 dark:bg-[#141414] dark:border-[#1E1E1E]" align="start">
+          <Command className="dark:bg-[#141414] dark:border-[#1E1E1E]">
+            <div className="flex items-center border-b border-border dark:border-[#1E1E1E] px-3">
               <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
               <input
-                className="flex h-11 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex h-11 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50 dark:text-foreground"
                 placeholder={placeholder}
                 value={inputValue}
                 onChange={handleInputChange}
                 autoFocus
               />
             </div>
-            <CommandList>
+            <CommandList className="dark:bg-[#141414]">
               {loading && (
-                <div className="py-6 text-center text-sm">
+                <div className="py-6 text-center text-sm text-foreground">
                   <div className="flex items-center justify-center">
-                    <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600"></div>
+                    <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600 dark:border-gray-600 dark:border-t-gray-400"></div>
                     Buscando...
                   </div>
                 </div>
@@ -363,13 +363,13 @@ export function PhotonAutocomplete({
                 </div>
               )}
               {suggestions.length > 0 && (
-                <CommandGroup>
+                <CommandGroup className="dark:bg-[#141414]">
                   {suggestions.map((suggestion, index) => (
                     <CommandItem
                       key={index}
                       value={suggestion.name}
                       onSelect={() => handleSelect(suggestion.name)}
-                      className="cursor-pointer px-3 py-2"
+                      className="cursor-pointer px-3 py-2 dark:focus:bg-[#1e1e1e] dark:hover:bg-[#1e1e1e] dark:text-foreground"
                     >
                       <Check
                         className={cn(

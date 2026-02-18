@@ -8,38 +8,12 @@ import { ThemeToggle } from '@/components/ThemeToggle'
 import {
   Home,
   TrendingUp,
-  MapPin,
-  Truck,
-  Users,
-  UserCheck,
-  FolderKanban,
-  Handshake,
-  Scale,
-  Beaker,
-  Receipt,
-  MessageCircle,
-  Globe,
-  Settings,
-  BarChart3,
-  TrendingDown,
-  DollarSign,
-  Activity,
-  ArrowRight,
-  Menu,
-  X,
-  Bell,
-  Search,
-  ShoppingCart,
   Monitor,
-  Package,
-  FileText,
-  CreditCard,
-  Heart,
-  Shield,
+  Settings,
+  ChevronRight,
   Terminal,
   Filter,
   FlaskConical,
-  Globe2,
   HeartHandshake,
   Rabbit,
   Rat
@@ -92,16 +66,11 @@ export default function Sidebar({ children }: SidebarProps) {
     { id: 'ventas', name: 'Ventas', icon: HeartHandshake, path: '/panel/ventas' },
     { id: 'metricas', name: 'Métricas', icon: TrendingUp, path: '/panel/metricas' },
     { id: 'soportes', name: 'Soportes', icon: Monitor, path: '/panel/soportes' },
-    { id: 'logistica', name: 'Logística', icon: Globe2, path: '/panel/logistica' },
     { id: 'owners', name: 'Owners', icon: Rabbit, path: '/panel/owners' },
     { id: 'clientes', name: 'Brands', icon: Rat, path: '/panel/clientes' },
     { id: 'proyectos', name: 'Proyectos', icon: Terminal, path: '/panel/proyectos' },
     { id: 'crm', name: 'CRM', icon: Filter, path: '/panel/crm' },
-    { id: 'legal', name: 'Legal', icon: Scale, path: '/panel/legal' },
     { id: 'iyd', name: 'I+D', icon: FlaskConical, path: '/panel/iyd' },
-    { id: 'facturacion', name: 'Facturación', icon: Receipt, path: '/panel/facturacion' },
-    { id: 'atencion', name: 'Atención a brands', icon: MessageCircle, path: '/panel/atencion' },
-    { id: 'sitio', name: 'Sitio web', icon: Globe, path: '/panel/sitio' },
     { id: 'ajustes', name: 'Ajustes', icon: Settings, path: '/panel/ajustes' }
   ]
 
@@ -117,17 +86,11 @@ export default function Sidebar({ children }: SidebarProps) {
     if (pathname.startsWith('/panel/crm')) return 'crm'
     if (pathname.startsWith('/panel/soportes')) return 'soportes'
     if (pathname.startsWith('/panel/clientes')) return 'clientes'
+    if (pathname.startsWith('/panel/owners')) return 'owners'
     if (pathname.startsWith('/panel/ventas')) return 'ventas'
     if (pathname.startsWith('/panel/metricas')) return 'metricas'
-    if (pathname.startsWith('/panel/logistica')) return 'logistica'
-    if (pathname.startsWith('/panel/owners')) return 'owners'
     if (pathname.startsWith('/panel/proyectos')) return 'proyectos'
-    if (pathname.startsWith('/panel/crm')) return 'crm'
-    if (pathname.startsWith('/panel/legal')) return 'legal'
     if (pathname.startsWith('/panel/iyd')) return 'iyd'
-    if (pathname.startsWith('/panel/facturacion')) return 'facturacion'
-    if (pathname.startsWith('/panel/atencion')) return 'atencion'
-    if (pathname.startsWith('/panel/sitio')) return 'sitio'
     if (pathname.startsWith('/panel/ajustes')) return 'ajustes'
     return 'dashboard'
   }
@@ -138,7 +101,7 @@ export default function Sidebar({ children }: SidebarProps) {
     <div className="flex min-h-screen">
       {/* Sidebar */}
       <motion.aside
-        className="sticky top-0 self-start border-r z-50 transition-colors duration-300 bg-card border-border"
+        className="sticky top-0 self-start border-r z-50 transition-colors duration-300 bg-card border-border dark:bg-[#141414]"
         style={{ minHeight: '100vh' }}
         variants={sidebarVariants}
         animate={sidebarCollapsed ? 'collapsed' : 'expanded'}
@@ -177,23 +140,6 @@ export default function Sidebar({ children }: SidebarProps) {
             </div>
           </div>
 
-          {/* User Info */}
-          <motion.div
-            className="flex items-center space-x-3 py-2 border-b border-border"
-          >
-            <div className="w-10 h-10 rounded-full flex items-center justify-center bg-muted">
-              <Users className="w-5 h-5 text-muted-foreground" />
-            </div>
-            <motion.div
-              className="flex-1 min-w-0"
-              animate={{ opacity: sidebarCollapsed ? 0 : 1 }}
-              transition={{ delay: sidebarCollapsed ? 0 : 0.2 }}
-            >
-              <p className="text-sm font-medium text-foreground">Admin User</p>
-              <p className="text-xs text-muted-foreground">admin@stellarmotion.com</p>
-            </motion.div>
-          </motion.div>
-
           {/* Navigation */}
           <nav className="space-y-1 pt-2 flex-1">
             {erpModules.map((module, index) => (
@@ -205,9 +151,9 @@ export default function Sidebar({ children }: SidebarProps) {
               >
                 <Button
                   variant={activeModule === module.id ? 'default' : 'ghost'}
-                  className={`w-full justify-start h-12 ${activeModule === module.id
+                  className={`w-full justify-start h-12 transition-colors ${activeModule === module.id
                       ? 'bg-[#e94446] hover:bg-[#e94446] text-white'
-                      : 'hover:bg-[#e94446] hover:text-white text-foreground'
+                      : 'text-foreground hover:bg-muted hover:text-foreground dark:hover:!bg-[#1e1e1e] dark:hover:!text-white'
                     }`}
                   onClick={() => handleModuleClick(module)}
                 >
@@ -230,23 +176,26 @@ export default function Sidebar({ children }: SidebarProps) {
           </nav>
 
           <div className="pt-4 mt-auto border-t border-border flex justify-center">
-             <ThemeToggle />
+             <ThemeToggle className="dark:!bg-[#141414]" />
           </div>
         </div>
 
-        {/* Toggle Button */}
-        <Button
-          variant="ghost"
-          size="sm"
-          className="absolute top-6 -right-3 bg-muted hover:bg-muted/80 text-foreground border border-border"
+        {/* Toggle: solo flecha roja con rotación */}
+        <button
+          type="button"
           onClick={handleToggle}
+          className="absolute top-6 right-2 p-0 min-w-0 h-auto bg-transparent border-0 shadow-none rounded-none text-[#e94446] hover:text-[#d63d3f] cursor-pointer focus:outline-none focus-visible:ring-0"
+          aria-label={sidebarCollapsed ? 'Abrir barra lateral' : 'Cerrar barra lateral'}
         >
-          {sidebarCollapsed ? <Menu className="w-4 h-4" /> : <X className="w-4 h-4" />}
-        </Button>
+          <ChevronRight
+            className={`w-4 h-4 shrink-0 transition-transform duration-200 ${!sidebarCollapsed ? 'rotate-180' : ''}`}
+            aria-hidden
+          />
+        </button>
       </motion.aside>
 
       {/* Main Content */}
-      <div className="flex-1 min-w-0 bg-muted/20">
+      <div className="flex-1 min-w-0 bg-background">
         {children}
       </div>
     </div>

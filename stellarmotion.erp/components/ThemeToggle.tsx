@@ -4,7 +4,7 @@ import * as React from "react"
 import { Moon, Sun } from "lucide-react"
 import { useTheme } from "next-themes"
 
-export function ThemeToggle() {
+export function ThemeToggle({ className }: { className?: string }) {
   const { setTheme, theme, resolvedTheme } = useTheme()
   const [mounted, setMounted] = React.useState(false)
 
@@ -26,7 +26,7 @@ export function ThemeToggle() {
     <div
       role="group"
       aria-label="Tema"
-      className="inline-flex items-center rounded-full border border-border bg-muted/50 p-0.5"
+      className={`inline-flex items-center rounded-full border border-border bg-muted/50 p-0.5 ${className ?? ""}`}
     >
       <button
         type="button"

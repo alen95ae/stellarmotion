@@ -16,7 +16,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Plus, Search, Filter, Download, Building2, User, Edit, Trash2, Home, Upload, Users, Merge, AlertTriangle } from "lucide-react"
 import { toast } from "sonner"
-import { ThemeToggle } from "@/components/ThemeToggle"
+import HeaderUser from "@/components/dashboard/HeaderUser"
 
 interface Contact {
   id: string
@@ -501,7 +501,7 @@ export default function ClientesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-muted/40">
+    <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="bg-background border-b border-border px-6 py-4">
         <div className="flex items-center justify-between">
@@ -511,11 +511,7 @@ export default function ClientesPage() {
             </Link>
             <div className="text-xl font-bold text-foreground">Brands</div>
           </div>
-          <div className="flex items-center gap-4">
-            <span className="text-muted-foreground">Buscar</span>
-            <span className="text-foreground font-medium">admin</span>
-            <ThemeToggle />
-          </div>
+          <HeaderUser />
         </div>
       </header>
 
@@ -602,7 +598,7 @@ export default function ClientesPage() {
                 <Download className="w-4 h-4 mr-2" />
                 Exportar
               </Button>
-              <Link prefetch={false} href="/panel/contactos/nuevo">
+              <Link prefetch={false} href="/panel/owners/nuevo">
                 <Button className="bg-[#e94446] hover:bg-[#D7514C]">
                   <Plus className="w-4 h-4 mr-2" />
                   Nuevo
@@ -755,7 +751,7 @@ export default function ClientesPage() {
                     "No hay brands registrados"
                   )}
                 </div>
-                <Link prefetch={false} href="/panel/contactos/nuevo">
+                <Link prefetch={false} href="/panel/owners/nuevo">
                   <Button className="bg-[#e94446] hover:bg-[#D7514C]">
                     <Plus className="w-4 h-4 mr-2" />
                     Crear primer brand
@@ -931,7 +927,7 @@ export default function ClientesPage() {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => router.push(`/panel/contactos/${contact.id}`)}
+                              onClick={() => router.push(`/panel/owners/${contact.id}`)}
                               title="Editar cliente"
                             >
                               <Edit className="w-4 h-4" />

@@ -1,7 +1,23 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
+// Rutas que NUNCA deben pasar por la protección DEV_PASS (NextAuth, estáticos, etc.)
+function isExcludedFromDevProtection(pathname: string): boolean {
+  if (pathname.startsWith('/api/auth')) return true   // CRÍTICO: NextAuth debe funcionar sin Basic Auth
+  if (pathname.startsWith('/_next')) return true     // Internos Next.js
+  if (pathname.startsWith('/static') || pathname.startsWith('/public')) return true
+  if (pathname === '/favicon.ico' || pathname.startsWith('/favicon')) return true
+  return false
+}
+
 export function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl
+
+  // Paso libre: no aplicar DEV_PASS a auth ni estáticos (rompe el bucle de /api/auth/me)
+  if (isExcludedFromDevProtection(pathname)) {
+    return NextResponse.next()
+  }
+
   if (!process.env.DEV_USER || !process.env.DEV_PASS) {
     return NextResponse.next()
   }

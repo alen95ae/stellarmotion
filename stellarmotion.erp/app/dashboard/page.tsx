@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { ThemeToggle } from '@/components/ThemeToggle'
+import HeaderUser from '@/components/dashboard/HeaderUser'
 import { 
   Home,
   TrendingUp,
@@ -183,7 +184,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="flex min-h-screen transition-colors duration-300 bg-muted/40">
+    <div className="flex min-h-screen transition-colors duration-300 bg-background">
       {/* Sidebar */}
       <motion.aside
         className="sticky top-0 self-start border-r z-50 transition-colors duration-300 bg-card border-border"
@@ -318,7 +319,7 @@ export default function DashboardPage() {
               <Button variant="ghost" size="sm" className="text-foreground hover:bg-muted">
                 <Bell className="w-5 h-5" />
               </Button>
-              <ThemeToggle />
+              <HeaderUser />
             </div>
           </div>
 
