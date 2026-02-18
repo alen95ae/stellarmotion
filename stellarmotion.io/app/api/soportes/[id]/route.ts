@@ -133,6 +133,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       streetViewHeading: support.streetViewHeading ?? 0,
       streetViewPitch: support.streetViewPitch ?? 0,
       streetViewZoom: support.streetViewZoom ?? 1,
+      showApproximateLocation: support.showApproximateLocation ?? false,
+      approximateRadius: support.approximateRadius ?? 500,
+      priceRangeEnabled: support.priceRangeEnabled ?? false,
+      priceMin: support.priceMin,
+      priceMax: support.priceMax,
+      rentalPeriod: support.rentalPeriod ?? 'meses',
     };
     
     return NextResponse.json(transformedSupport);
@@ -168,7 +174,6 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const heightMForm = formData.get('heightM') as string | null;
     const lighting = formData.get('lighting') === 'true';
     const type = formData.get('type') as string;
-    const dailyImpressions = parseInt(formData.get('dailyImpressions') as string) || 0;
     const shortDescription = formData.get('shortDescription') as string;
     const description = formData.get('description') as string;
     let lat = parseFloat(formData.get('lat') as string) || 0;
@@ -178,19 +183,53 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const streetViewHeading = parseFloat(formData.get('streetViewHeading') as string);
     const streetViewPitch = parseFloat(formData.get('streetViewPitch') as string);
     const streetViewZoom = parseFloat(formData.get('streetViewZoom') as string);
+    const priceRangeEnabled = formData.get('priceRangeEnabled') === 'true';
+    const priceMin = formData.get('priceMin') as string | null;
+    const priceMax = formData.get('priceMax') as string | null;
+    const showApproximateLocation = formData.get('showApproximateLocation') === 'true';
+    const approximateRadius = parseInt(formData.get('approximateRadius') as string, 10) || 500;
+    const rentalPeriod = (formData.get('rentalPeriod') as string) || 'meses';
+    
+    const effectivePrice = priceRangeEnabled && priceMin != null && priceMin.trim() !== ''
+      ? parseFloat(priceMin) || 0
+      : pricePerMonth;
     
     console.log('Datos extraídos del FormData:', {
-      title, pricePerMonth, city, country, dimensions, lighting, type, 
-      dailyImpressions, shortDescription, description, lat, lng, code, status
+      title, pricePerMonth, city, country, dimensions, lighting, type,
+      priceRangeEnabled, priceMin, priceMax, showApproximateLocation, approximateRadius, rentalPeriod,
+      shortDescription, description, lat, lng, code, status
     });
 
     // Validar datos requeridos
-    if (!title || !pricePerMonth || !city || !country || 
-        !dimensions || !type) {
+    if (!title || !city || !country || !dimensions || !type) {
       return NextResponse.json(
         { error: 'Faltan campos requeridos' },
         { status: 400 }
       );
+    }
+    if (!priceRangeEnabled && (!pricePerMonth || isNaN(parseFloat(String(pricePerMonth))) || parseFloat(String(pricePerMonth)) < 0)) {
+      return NextResponse.json(
+        { error: 'El precio es requerido y debe ser un número válido' },
+        { status: 400 }
+      );
+    }
+    if (priceRangeEnabled) {
+      const minVal = (priceMin ?? '').trim();
+      const maxVal = (priceMax ?? '').trim();
+      const minNum = parseFloat(minVal);
+      const maxNum = parseFloat(maxVal);
+      if (!minVal || isNaN(minNum) || minNum < 0 || !maxVal || isNaN(maxNum) || maxNum < 0) {
+        return NextResponse.json(
+          { error: 'En modo rango de precios son requeridos precio mínimo y máximo' },
+          { status: 400 }
+        );
+      }
+      if (maxNum <= minNum) {
+        return NextResponse.json(
+          { error: 'El precio máximo debe ser mayor que el mínimo' },
+          { status: 400 }
+        );
+      }
     }
 
     // Extraer coordenadas del enlace de Google Maps si se proporciona
@@ -371,8 +410,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       latitude: lat,
       longitude: lng,
       googleMapsLink: googleMapsLink || null,
-      priceMonth: pricePerMonth,
-      dailyImpressions,
+      priceMonth: effectivePrice,
       lighting,
       dimensions: widthM != null && heightM != null ? { ancho: widthM, alto: heightM, area: widthM * heightM } : undefined,
       widthM,
@@ -380,7 +418,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       shortDescription: shortDescription || '',
       description: description || '',
       imageUrl: imageUrls[0] || '/placeholder.svg?height=400&width=600',
-      images: imageUrls, // array para que el ERP/Supabase lo procese correctamente
+      images: imageUrls,
       tags: '',
       featured: false,
       available: status === 'DISPONIBLE',
@@ -390,6 +428,12 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       streetViewHeading: !isNaN(streetViewHeading) ? streetViewHeading : undefined,
       streetViewPitch: !isNaN(streetViewPitch) ? streetViewPitch : undefined,
       streetViewZoom: !isNaN(streetViewZoom) ? streetViewZoom : undefined,
+      showApproximateLocation: showApproximateLocation || false,
+      approximateRadius: approximateRadius || 500,
+      priceRangeEnabled: priceRangeEnabled || false,
+      priceMin: priceRangeEnabled && priceMin != null ? parseFloat(priceMin) || null : null,
+      priceMax: priceRangeEnabled && priceMax != null ? parseFloat(priceMax) || null : null,
+      rentalPeriod: rentalPeriod || 'meses',
     };
 
     // Actualizar el soporte en el backend

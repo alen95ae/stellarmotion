@@ -117,10 +117,10 @@ export default function Sidebar({ children }: SidebarProps) {
     if (pathname.startsWith('/panel/crm')) return 'crm'
     if (pathname.startsWith('/panel/soportes')) return 'soportes'
     if (pathname.startsWith('/panel/clientes')) return 'clientes'
+    if (pathname.startsWith('/panel/owners')) return 'owners'
     if (pathname.startsWith('/panel/ventas')) return 'ventas'
     if (pathname.startsWith('/panel/metricas')) return 'metricas'
     if (pathname.startsWith('/panel/logistica')) return 'logistica'
-    if (pathname.startsWith('/panel/owners')) return 'owners'
     if (pathname.startsWith('/panel/proyectos')) return 'proyectos'
     if (pathname.startsWith('/panel/crm')) return 'crm'
     if (pathname.startsWith('/panel/legal')) return 'legal'
@@ -246,7 +246,7 @@ export default function Sidebar({ children }: SidebarProps) {
       </motion.aside>
 
       {/* Main Content */}
-      <div className="flex-1 min-w-0 bg-muted/20">
+      <div className="flex-1 min-w-0 bg-background">
         {children}
       </div>
     </div>

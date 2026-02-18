@@ -183,7 +183,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="flex min-h-screen transition-colors duration-300 bg-muted/40">
+    <div className="flex min-h-screen transition-colors duration-300 bg-background">
       {/* Sidebar */}
       <motion.aside
         className="sticky top-0 self-start border-r z-50 transition-colors duration-300 bg-card border-border"

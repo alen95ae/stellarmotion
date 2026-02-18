@@ -20,6 +20,8 @@ import {
   ChartArea,
   Settings,
   Plus,
+  CircleDollarSign,
+  BarChart2,
 } from 'lucide-react';
 
 // --- Types ---

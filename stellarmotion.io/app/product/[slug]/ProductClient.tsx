@@ -621,8 +621,18 @@ export default function ProductClient({ productId }: ProductClientProps) {
             {/* Map */}
             <div className="bg-white rounded-2xl p-6 border border-gray-200">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Ubicación</h3>
+              {soporte?.showApproximateLocation && (
+                <p className="text-sm text-gray-600 mb-3">
+                  Se muestra la ubicación en un área aproximada.
+                </p>
+              )}
               <MapViewerGoogleMaps
-                points={soporteCoords ? [{
+                circle={soporte?.showApproximateLocation && soporteCoords ? {
+                  lat: soporteCoords.lat,
+                  lng: soporteCoords.lng,
+                  radius: soporte?.approximateRadius ?? 500
+                } : undefined}
+                points={!soporte?.showApproximateLocation && soporteCoords ? [{
                   id: soporte?.id || '',
                   lat: soporteCoords.lat,
                   lng: soporteCoords.lng,
@@ -632,7 +642,7 @@ export default function ProductClient({ productId }: ProductClientProps) {
                 }] : []}
                 lat={soporteCoords?.lat || 40.4637}
                 lng={soporteCoords?.lng || -3.7492}
-                zoom={16}
+                zoom={soporte?.showApproximateLocation ? 14 : 16}
                 height={400}
                 style="streets"
                 showControls={true}

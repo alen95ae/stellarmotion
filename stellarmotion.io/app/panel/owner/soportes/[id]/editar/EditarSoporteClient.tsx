@@ -86,10 +86,15 @@ export default function EditarSoporteClient({ supportId }: EditarSoporteClientPr
     lighting: false,
     type: '',
     code: '',
-    dailyImpressions: '',
     description: '',
     googleMapsLink: '',
-    status: 'all'
+    status: 'all',
+    showApproximateLocation: false,
+    approximateRadius: 500,
+    priceRangeEnabled: false,
+    priceMin: '',
+    priceMax: '',
+    rentalPeriod: 'meses'
   });
   const [streetViewPov, setStreetViewPov] = useState({ heading: 0, pitch: 0, zoom: 1 });
 
@@ -127,10 +132,15 @@ export default function EditarSoporteClient({ supportId }: EditarSoporteClientPr
           lighting: supportData.lighting || false,
           type: supportData.type || '',
           code: supportData.code || '',
-          dailyImpressions: supportData.dailyImpressions?.toString() || '',
           description: supportData.description || '',
           googleMapsLink: supportData.googleMapsLink || '',
-          status
+          status,
+          showApproximateLocation: supportData.showApproximateLocation ?? false,
+          approximateRadius: supportData.approximateRadius ?? 500,
+          priceRangeEnabled: supportData.priceRangeEnabled ?? false,
+          priceMin: supportData.priceMin != null ? String(supportData.priceMin) : '',
+          priceMax: supportData.priceMax != null ? String(supportData.priceMax) : '',
+          rentalPeriod: supportData.rentalPeriod ?? 'meses'
         });
         setStreetViewPov({
           heading: supportData.streetViewHeading ?? 0,
@@ -289,8 +299,20 @@ export default function EditarSoporteClient({ supportId }: EditarSoporteClientPr
     
     if (!formData.title.trim()) errors.push('El título es requerido');
     if (formData.title.length > 200) errors.push('El título no puede superar 200 caracteres');
-    const priceNum = parseFloat(formData.pricePerMonth || '');
-    if (!formData.pricePerMonth?.trim() || isNaN(priceNum) || priceNum < 0) errors.push('El precio es requerido y debe ser un número válido');
+    if (formData.priceRangeEnabled) {
+      const minVal = (formData.priceMin ?? '').trim();
+      const maxVal = (formData.priceMax ?? '').trim();
+      const minNum = parseFloat(minVal);
+      const maxNum = parseFloat(maxVal);
+      if (!minVal || isNaN(minNum) || minNum < 0) errors.push('El precio mínimo es requerido y debe ser un número válido');
+      if (!maxVal || isNaN(maxNum) || maxNum < 0) errors.push('El precio máximo es requerido y debe ser un número válido');
+      if (minVal && maxVal && maxNum <= minNum) errors.push('El precio máximo debe ser mayor que el mínimo');
+      if ((formData.priceMin?.length ?? 0) > 30) errors.push('El precio mínimo no puede superar 30 caracteres');
+      if ((formData.priceMax?.length ?? 0) > 30) errors.push('El precio máximo no puede superar 30 caracteres');
+    } else {
+      const priceNum = parseFloat(formData.pricePerMonth || '');
+      if (!formData.pricePerMonth?.trim() || isNaN(priceNum) || priceNum < 0) errors.push('El precio es requerido y debe ser un número válido');
+    }
     if (!formData.city.trim()) errors.push('La ciudad es requerida');
     if (formData.city.length > 100) errors.push('La ciudad no puede superar 100 caracteres');
     if (!formData.country) errors.push('El país es requerido');
@@ -300,8 +322,6 @@ export default function EditarSoporteClient({ supportId }: EditarSoporteClientPr
     if (!formData.type) errors.push('El tipo es requerido');
     if ((formData.code?.length ?? 0) > 50) errors.push('El código no puede superar 50 caracteres');
     if ((formData.googleMapsLink?.length ?? 0) > 2000) errors.push('El enlace de Google Maps no puede superar 2000 caracteres');
-    if (formData.dailyImpressions && parseInt(formData.dailyImpressions) <= 0) errors.push('Los impactos diarios deben ser mayor a 0');
-    if ((formData.dailyImpressions?.length ?? 0) > 10) errors.push('Los impactos diarios no pueden superar 10 dígitos');
     // Validar que el enlace de Google Maps sea válido (opcional)
     if (formData.googleMapsLink.trim()) {
       try {
@@ -364,7 +384,14 @@ export default function EditarSoporteClient({ supportId }: EditarSoporteClientPr
       
       // Agregar campos básicos
       formDataToSend.append('title', formData.title);
-      formDataToSend.append('pricePerMonth', formData.pricePerMonth.trim() ? parseFloat(formData.pricePerMonth).toString() : '0');
+      if (formData.priceRangeEnabled) {
+        formDataToSend.append('priceRangeEnabled', 'true');
+        formDataToSend.append('priceMin', (formData.priceMin ?? '').trim() || '0');
+        formDataToSend.append('priceMax', (formData.priceMax ?? '').trim() || '0');
+        formDataToSend.append('pricePerMonth', (formData.priceMin ?? '0')); // fallback para API que espere un solo precio
+      } else {
+        formDataToSend.append('pricePerMonth', formData.pricePerMonth.trim() ? parseFloat(formData.pricePerMonth).toString() : '0');
+      }
       formDataToSend.append('city', formData.city);
       formDataToSend.append('country', formData.country);
       formDataToSend.append('dimensions', `${formData.width}×${formData.height} m`);
@@ -373,10 +400,12 @@ export default function EditarSoporteClient({ supportId }: EditarSoporteClientPr
       formDataToSend.append('lighting', formData.lighting.toString());
       formDataToSend.append('type', formData.type);
       formDataToSend.append('code', formData.code);
-      formDataToSend.append('dailyImpressions', formData.dailyImpressions || '0');
       formDataToSend.append('description', formData.description);
       formDataToSend.append('googleMapsLink', formData.googleMapsLink);
       formDataToSend.append('status', formData.status === 'all' ? 'DISPONIBLE' : (formData.status || 'DISPONIBLE'));
+      formDataToSend.append('showApproximateLocation', (formData.showApproximateLocation ?? false).toString());
+      formDataToSend.append('approximateRadius', String(formData.approximateRadius ?? 500));
+      formDataToSend.append('rentalPeriod', formData.rentalPeriod ?? 'meses');
       
       // Agregar usuarioId por defecto (ID del usuario creado en el seed)
       formDataToSend.append('usuarioId', 'cmfskhuda0004sj2w46q3g7rc');

@@ -580,7 +580,7 @@ export default function SoporteDetailPage() {
   if (loading) {
     return (
       <Sidebar>
-        <div className="min-h-screen bg-muted/40 flex items-center justify-center">
+        <div className="min-h-screen bg-background flex items-center justify-center">
           <div className="text-center text-muted-foreground">Cargando...</div>
         </div>
       </Sidebar>
@@ -590,7 +590,7 @@ export default function SoporteDetailPage() {
   if (!support) {
     return (
       <Sidebar>
-        <div className="min-h-screen bg-muted/40 flex items-center justify-center">
+        <div className="min-h-screen bg-background flex items-center justify-center">
           <div className="text-center text-muted-foreground">Soporte no encontrado</div>
         </div>
       </Sidebar>
@@ -599,7 +599,7 @@ export default function SoporteDetailPage() {
 
   return (
     <Sidebar>
-      <div className="min-h-screen bg-muted/40">
+      <div className="min-h-screen bg-background">
         {/* Header */}
         <header className="bg-background border-b border-border px-6 py-4">
         <div className="flex items-center justify-between">
@@ -1041,7 +1041,7 @@ export default function SoporteDetailPage() {
 
             <div className="mt-4">
               <Label className="text-sm font-medium text-muted-foreground mb-2 block">Ubicación del soporte</Label>
-              <div className="w-full rounded-xl border border-border bg-muted/40 overflow-hidden" style={{ height: MAP_HEIGHT }}>
+              <div className="w-full rounded-xl border border-border bg-background overflow-hidden" style={{ height: MAP_HEIGHT }}>
                 {mapCoordsLoading ? (
                   <div className="h-full w-full flex items-center justify-center text-muted-foreground bg-muted">Cargando mapa...</div>
                 ) : (

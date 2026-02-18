@@ -382,7 +382,7 @@ export default function SoportesPage() {
 
   return (
     <Sidebar>
-      <div className="min-h-screen bg-muted/40">
+      <div className="min-h-screen bg-background">
         {/* Header */}
         <header className="bg-background border-b border-border px-6 py-4">
         <div className="flex items-center justify-between">
