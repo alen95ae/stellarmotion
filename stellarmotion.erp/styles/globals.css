@@ -42,7 +42,8 @@
 .dark {
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
-  --card: oklch(0.145 0 0);
+  /* Ventanas/paneles con tono más claro que el fondo para destacar */
+  --card: oklch(0.205 0 0);
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.145 0 0);
   --popover-foreground: oklch(0.985 0 0);
@@ -113,6 +114,14 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+}
+
+/* Ventana acciones múltiples (owners): mismo estilo que contactos en nexxtlevel, difuminado en rojo */
+.dark .bulk-actions-owners-bar {
+  margin: 0 0.5rem;
+  background: linear-gradient(135deg, #1e262a 0%, #171d20 45%, #0f1416 100%);
+  border: 1px solid rgba(58, 42, 42, 0.9);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(233, 68, 70, 0.15);
 }
 
 @layer base {

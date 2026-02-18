@@ -18,10 +18,10 @@ import { Plus, Search, Eye, Edit, Trash2, MapPin, Euro, Upload, Download, Filter
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { toast } from "sonner"
-import { ThemeToggle } from "@/components/ThemeToggle"
 import EditableField from "@/components/EditableField"
 import BulkActions from "@/components/BulkActions"
 import Sidebar from "@/components/dashboard/Sidebar"
+import HeaderUser from "@/components/dashboard/HeaderUser"
 
 // Constantes para colores de estado
 const STATUS_META = {
@@ -391,11 +391,7 @@ export default function SoportesPage() {
               Soportes
             </Link>
           </div>
-          <div className="flex items-center gap-4">
-            <span className="text-muted-foreground">Buscar</span>
-            <span className="text-foreground font-medium">admin</span>
-            <ThemeToggle />
-          </div>
+          <HeaderUser />
         </div>
       </header>
 

@@ -15,8 +15,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { ArrowLeft, Save, MapPin, Trash2, Edit, Eye, Calculator, Hash, Link as LinkIcon, Upload, Globe } from "lucide-react"
 import { toast } from "sonner"
-import { ThemeToggle } from "@/components/ThemeToggle"
 import Sidebar from "@/components/dashboard/Sidebar"
+import HeaderUser from "@/components/dashboard/HeaderUser"
 import { PhotonAutocomplete } from "@/components/PhotonAutocomplete"
 import dynamic from "next/dynamic"
 import { buildGoogleMapsLinkFromCoords, extractCoordinatesFromGoogleMapsLink } from "@/lib/extract-google-maps-coords"
@@ -608,11 +608,7 @@ export default function SoporteDetailPage() {
               Soportes
             </Link>
           </div>
-          <div className="flex items-center gap-4">
-            <span className="text-muted-foreground">Buscar</span>
-            <span className="text-foreground font-medium">admin</span>
-            <ThemeToggle />
-          </div>
+          <HeaderUser />
         </div>
       </header>
 

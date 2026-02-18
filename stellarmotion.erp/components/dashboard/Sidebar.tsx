@@ -10,7 +10,6 @@ import {
   TrendingUp,
   MapPin,
   Truck,
-  Users,
   UserCheck,
   FolderKanban,
   Handshake,
@@ -25,8 +24,7 @@ import {
   DollarSign,
   Activity,
   ArrowRight,
-  Menu,
-  X,
+  ChevronRight,
   Bell,
   Search,
   ShoppingCart,
@@ -138,7 +136,7 @@ export default function Sidebar({ children }: SidebarProps) {
     <div className="flex min-h-screen">
       {/* Sidebar */}
       <motion.aside
-        className="sticky top-0 self-start border-r z-50 transition-colors duration-300 bg-card border-border"
+        className="sticky top-0 self-start border-r z-50 transition-colors duration-300 bg-[#141414] border-border"
         style={{ minHeight: '100vh' }}
         variants={sidebarVariants}
         animate={sidebarCollapsed ? 'collapsed' : 'expanded'}
@@ -177,23 +175,6 @@ export default function Sidebar({ children }: SidebarProps) {
             </div>
           </div>
 
-          {/* User Info */}
-          <motion.div
-            className="flex items-center space-x-3 py-2 border-b border-border"
-          >
-            <div className="w-10 h-10 rounded-full flex items-center justify-center bg-muted">
-              <Users className="w-5 h-5 text-muted-foreground" />
-            </div>
-            <motion.div
-              className="flex-1 min-w-0"
-              animate={{ opacity: sidebarCollapsed ? 0 : 1 }}
-              transition={{ delay: sidebarCollapsed ? 0 : 0.2 }}
-            >
-              <p className="text-sm font-medium text-foreground">Admin User</p>
-              <p className="text-xs text-muted-foreground">admin@stellarmotion.com</p>
-            </motion.div>
-          </motion.div>
-
           {/* Navigation */}
           <nav className="space-y-1 pt-2 flex-1">
             {erpModules.map((module, index) => (
@@ -205,9 +186,9 @@ export default function Sidebar({ children }: SidebarProps) {
               >
                 <Button
                   variant={activeModule === module.id ? 'default' : 'ghost'}
-                  className={`w-full justify-start h-12 ${activeModule === module.id
+                  className={`w-full justify-start h-12 transition-colors ${activeModule === module.id
                       ? 'bg-[#e94446] hover:bg-[#e94446] text-white'
-                      : 'hover:bg-[#e94446] hover:text-white text-foreground'
+                      : 'text-foreground hover:!bg-[#1e1e1e] hover:!text-white dark:hover:!bg-[#1e1e1e] dark:hover:!text-white'
                     }`}
                   onClick={() => handleModuleClick(module)}
                 >
@@ -230,19 +211,22 @@ export default function Sidebar({ children }: SidebarProps) {
           </nav>
 
           <div className="pt-4 mt-auto border-t border-border flex justify-center">
-             <ThemeToggle />
+             <ThemeToggle className="!bg-[#141414]" />
           </div>
         </div>
 
-        {/* Toggle Button */}
-        <Button
-          variant="ghost"
-          size="sm"
-          className="absolute top-6 -right-3 bg-muted hover:bg-muted/80 text-foreground border border-border"
+        {/* Toggle: solo flecha roja con rotación */}
+        <button
+          type="button"
           onClick={handleToggle}
+          className="absolute top-6 right-2 p-0 min-w-0 h-auto bg-transparent border-0 shadow-none rounded-none text-[#e94446] hover:text-[#d63d3f] cursor-pointer focus:outline-none focus-visible:ring-0"
+          aria-label={sidebarCollapsed ? 'Abrir barra lateral' : 'Cerrar barra lateral'}
         >
-          {sidebarCollapsed ? <Menu className="w-4 h-4" /> : <X className="w-4 h-4" />}
-        </Button>
+          <ChevronRight
+            className={`w-4 h-4 shrink-0 transition-transform duration-200 ${!sidebarCollapsed ? 'rotate-180' : ''}`}
+            aria-hidden
+          />
+        </button>
       </motion.aside>
 
       {/* Main Content */}

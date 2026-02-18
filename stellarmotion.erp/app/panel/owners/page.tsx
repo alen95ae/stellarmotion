@@ -8,21 +8,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
-import { Building2, User, Plus, Edit, Trash2, FileSpreadsheet, Trash, Send, ArrowUpDown, X, Eraser } from "lucide-react";
+import { Building2, User, Plus, Edit, Trash2, FileSpreadsheet, Trash, Send, ArrowUpDown, X } from "lucide-react";
 import { toast } from "sonner";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import Sidebar from "@/components/dashboard/Sidebar";
+import HeaderUser from "@/components/dashboard/HeaderUser";
 import { TableCellTruncate } from "@/components/TableCellTruncate";
 import BulkActionsOwners from "@/components/owners/BulkActionsOwners";
 
-const FILTER_TAG_COLORS: Record<string, string> = {
-  q: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300",
-  sector: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300",
-  interes: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300",
-  origen: "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300",
-  sort: "bg-slate-100 text-slate-800 dark:bg-slate-700/50 dark:text-slate-300",
-};
 const STORAGE_KEY = "owners_filtros";
 
 interface Contact {
@@ -35,6 +27,7 @@ interface Contact {
   address?: string;
   city?: string;
   relation: string;
+  sector?: string;
   status: string;
   kind?: string;
   origen?: string;
@@ -404,14 +397,12 @@ export default function OwnersPage() {
   return (
     <Sidebar>
       <div className="min-h-screen bg-background">
-        <header className="bg-background border-b border-border px-6 py-4">
-          <div className="flex items-center justify-between">
+        <header className="bg-[#141414] border-b border-[#1E1E1E] px-6 py-4 sticky top-0 z-40">
+          <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-6">
               <span className="text-[#e94446] font-medium">Owners</span>
             </div>
-            <div className="flex items-center gap-4">
-              <ThemeToggle />
-            </div>
+            <HeaderUser />
           </div>
         </header>
 
@@ -423,53 +414,57 @@ export default function OwnersPage() {
           </p>
         </div>
 
-        <div className="sticky top-14 z-10 bg-card border border-border rounded-lg p-4 mb-6 shadow-sm">
+        <div className="sticky top-14 z-10 bg-card dark:bg-[#141414] border border-border rounded-lg p-4 mb-6 shadow-sm">
           {(filters.q || filters.sector !== "ALL" || filters.interes !== "ALL" || filters.origen !== "ALL" || sortColumn) && (
-            <div className="flex flex-wrap gap-2 items-center mb-3">
+            <div className="flex flex-wrap gap-2 items-center mb-4 pb-4 border-b border-[#1E1E1E]">
               {filters.q && (
-                <Badge className={FILTER_TAG_COLORS.q} variant="secondary">
-                  Búsqueda: {filters.q}
-                  <button type="button" onClick={() => eliminarFiltro("q")} className="ml-1 hover:opacity-80" aria-label="Quitar filtro">
-                    <X className="w-3 h-3" />
+                <div className="flex items-center gap-1 bg-blue-900/50 hover:bg-blue-800/50 border border-blue-700/40 rounded-full px-3 py-1.5 text-sm text-blue-200">
+                  <span className="font-medium">Búsqueda:</span>
+                  <span className="text-blue-100">{filters.q}</span>
+                  <button type="button" onClick={() => eliminarFiltro("q")} className="ml-0.5 text-blue-300 hover:text-[#3EE6C1] transition-colors" aria-label="Quitar filtro">
+                    <X className="w-3.5 h-3.5" />
                   </button>
-                </Badge>
+                </div>
               )}
               {filters.sector !== "ALL" && (
-                <Badge className={FILTER_TAG_COLORS.sector} variant="secondary">
-                  Sector: {filters.sector}
-                  <button type="button" onClick={() => eliminarFiltro("sector")} className="ml-1 hover:opacity-80" aria-label="Quitar sector">
-                    <X className="w-3 h-3" />
+                <div className="flex items-center gap-1 bg-emerald-900/40 hover:bg-emerald-800/40 border border-emerald-600/40 rounded-full px-3 py-1.5 text-sm text-emerald-200">
+                  <span className="font-medium">Sector:</span>
+                  <span className="text-emerald-100">{filters.sector}</span>
+                  <button type="button" onClick={() => eliminarFiltro("sector")} className="ml-0.5 text-emerald-300 hover:text-[#3EE6C1] transition-colors" aria-label="Quitar sector">
+                    <X className="w-3.5 h-3.5" />
                   </button>
-                </Badge>
+                </div>
               )}
               {filters.interes !== "ALL" && (
-                <Badge className={FILTER_TAG_COLORS.interes} variant="secondary">
-                  Interés: {filters.interes}
-                  <button type="button" onClick={() => eliminarFiltro("interes")} className="ml-1 hover:opacity-80" aria-label="Quitar interés">
-                    <X className="w-3 h-3" />
+                <div className="flex items-center gap-1 bg-purple-900/40 hover:bg-purple-800/40 border border-purple-600/40 rounded-full px-3 py-1.5 text-sm text-purple-200">
+                  <span className="font-medium">Interés:</span>
+                  <span className="text-purple-100">{filters.interes}</span>
+                  <button type="button" onClick={() => eliminarFiltro("interes")} className="ml-0.5 text-purple-300 hover:text-[#3EE6C1] transition-colors" aria-label="Quitar interés">
+                    <X className="w-3.5 h-3.5" />
                   </button>
-                </Badge>
+                </div>
               )}
               {filters.origen !== "ALL" && (
-                <Badge className={FILTER_TAG_COLORS.origen} variant="secondary">
-                  Origen: {filters.origen}
-                  <button type="button" onClick={() => eliminarFiltro("origen")} className="ml-1 hover:opacity-80" aria-label="Quitar origen">
-                    <X className="w-3 h-3" />
+                <div className="flex items-center gap-1 bg-amber-900/40 hover:bg-amber-800/40 border border-amber-600/40 rounded-full px-3 py-1.5 text-sm text-amber-200">
+                  <span className="font-medium">Origen:</span>
+                  <span className="text-amber-100">{filters.origen}</span>
+                  <button type="button" onClick={() => eliminarFiltro("origen")} className="ml-0.5 text-amber-300 hover:text-[#3EE6C1] transition-colors" aria-label="Quitar origen">
+                    <X className="w-3.5 h-3.5" />
                   </button>
-                </Badge>
+                </div>
               )}
               {sortColumn && (
-                <Badge className={FILTER_TAG_COLORS.sort} variant="secondary">
-                  Orden: Nombre ({sortDirection === "asc" ? "A-Z" : "Z-A"})
-                  <button type="button" onClick={() => eliminarFiltro("sort")} className="ml-1 hover:opacity-80" aria-label="Quitar orden">
-                    <X className="w-3 h-3" />
+                <div className="flex items-center gap-1 bg-cyan-900/40 hover:bg-cyan-800/40 border border-cyan-600/40 rounded-full px-3 py-1.5 text-sm text-cyan-200">
+                  <span className="font-medium">Orden:</span>
+                  <span className="text-cyan-100">Nombre ({sortDirection === "asc" ? "A-Z" : "Z-A"})</span>
+                  <button type="button" onClick={() => eliminarFiltro("sort")} className="ml-0.5 text-cyan-300 hover:text-[#3EE6C1] transition-colors" aria-label="Quitar orden">
+                    <X className="w-3.5 h-3.5" />
                   </button>
-                </Badge>
+                </div>
               )}
-              <Button variant="ghost" size="sm" onClick={limpiarTodosFiltros} className="text-muted-foreground">
-                <Eraser className="w-4 h-4 mr-1" />
+              <button type="button" onClick={limpiarTodosFiltros} className="text-sm text-muted-foreground hover:text-[#e94446] underline ml-2 transition-colors">
                 Limpiar todo
-              </Button>
+              </button>
             </div>
           )}
           <div className="flex flex-wrap gap-3 items-center">
@@ -478,39 +473,39 @@ export default function OwnersPage() {
                 placeholder="Buscar owners..."
                 value={filters.q}
                 onChange={(e) => setFilters((prev) => ({ ...prev, q: e.target.value }))}
-                className="w-full"
+                className="w-full focus-visible:border-[#e94446] focus-visible:ring-[#e94446]/50"
               />
             </div>
             <Select value={filters.sector} onValueChange={(v) => setFilters((prev) => ({ ...prev, sector: v }))}>
-              <SelectTrigger className="w-36 overflow-hidden">
+              <SelectTrigger className="w-36 overflow-hidden dark:bg-[#1E1E1E] dark:hover:bg-[#2a2a2a] dark:border-[#1E1E1E] dark:text-foreground">
                 <SelectValue placeholder="Sector" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">Sector</SelectItem>
+              <SelectContent className="dark:bg-[#141414] dark:border-[#1E1E1E]">
+                <SelectItem value="ALL" className="dark:focus:bg-[#1e1e1e] dark:hover:bg-[#1e1e1e] dark:focus:text-foreground dark:hover:text-foreground">Sector</SelectItem>
                 {uniqueSectores.map((s) => (
-                  <SelectItem key={s} value={s}>{s}</SelectItem>
+                  <SelectItem key={s} value={s} className="dark:focus:bg-[#1e1e1e] dark:hover:bg-[#1e1e1e] dark:focus:text-foreground dark:hover:text-foreground">{s}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
             <Select value={filters.interes} onValueChange={(v) => setFilters((prev) => ({ ...prev, interes: v }))}>
-              <SelectTrigger className="w-36 overflow-hidden">
+              <SelectTrigger className="w-36 overflow-hidden dark:bg-[#1E1E1E] dark:hover:bg-[#2a2a2a] dark:border-[#1E1E1E] dark:text-foreground">
                 <SelectValue placeholder="Interés" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">Interés</SelectItem>
+              <SelectContent className="dark:bg-[#141414] dark:border-[#1E1E1E]">
+                <SelectItem value="ALL" className="dark:focus:bg-[#1e1e1e] dark:hover:bg-[#1e1e1e] dark:focus:text-foreground dark:hover:text-foreground">Interés</SelectItem>
                 {uniqueIntereses.map((i) => (
-                  <SelectItem key={i} value={i}>{i}</SelectItem>
+                  <SelectItem key={i} value={i} className="dark:focus:bg-[#1e1e1e] dark:hover:bg-[#1e1e1e] dark:focus:text-foreground dark:hover:text-foreground">{i}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
             <Select value={filters.origen} onValueChange={(v) => setFilters((prev) => ({ ...prev, origen: v }))}>
-              <SelectTrigger className="w-36 overflow-hidden">
+              <SelectTrigger className="w-36 overflow-hidden dark:bg-[#1E1E1E] dark:hover:bg-[#2a2a2a] dark:border-[#1E1E1E] dark:text-foreground">
                 <SelectValue placeholder="Origen" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">Origen</SelectItem>
+              <SelectContent className="dark:bg-[#141414] dark:border-[#1E1E1E]">
+                <SelectItem value="ALL" className="dark:focus:bg-[#1e1e1e] dark:hover:bg-[#1e1e1e] dark:focus:text-foreground dark:hover:text-foreground">Origen</SelectItem>
                 {uniqueOrigenes.map((o) => (
-                  <SelectItem key={o} value={o}>{o}</SelectItem>
+                  <SelectItem key={o} value={o} className="dark:focus:bg-[#1e1e1e] dark:hover:bg-[#1e1e1e] dark:focus:text-foreground dark:hover:text-foreground">{o}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -526,7 +521,7 @@ export default function OwnersPage() {
               Exportar CSV
             </Button>
             <Link prefetch={false} href="/panel/owners/nuevo">
-              <Button className="bg-[#e94446] hover:bg-[#D7514C]">
+              <Button className="bg-[#e94446] hover:bg-[#D7514C] text-white">
                 <Plus className="w-4 h-4 mr-2" />
                 Nuevo
               </Button>
@@ -534,7 +529,7 @@ export default function OwnersPage() {
           </div>
         </div>
 
-        <Card>
+        <Card className="dark:bg-[#141414]">
           <CardHeader>
             <CardTitle>Owners ({computedPagination.total})</CardTitle>
             <CardDescription>Lista unificada de owners y leads.</CardDescription>
@@ -580,7 +575,7 @@ export default function OwnersPage() {
                     <TableHead>Email</TableHead>
                     <TableHead>Teléfono</TableHead>
                     <TableHead>Ciudad</TableHead>
-                    <TableHead>Relación</TableHead>
+                    <TableHead>Sector</TableHead>
                     <TableHead className="text-center w-[1%] whitespace-nowrap">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -594,6 +589,7 @@ export default function OwnersPage() {
                             setSelected((prev) => ({ ...prev, [c.id]: Boolean(v) }))
                           }
                           aria-label={`Seleccionar ${c.displayName}`}
+                          className="data-[state=checked]:!bg-[#e94446] data-[state=checked]:!border-[#e94446] data-[state=checked]:!text-white"
                         />
                       </TableCell>
                       <TableCell className="max-w-[24ch]">
@@ -631,12 +627,17 @@ export default function OwnersPage() {
                         <TableCellTruncate value={c.city} />
                       </TableCell>
                       <TableCell className="max-w-[12ch]">
-                        <TableCellTruncate value={RELATION_LABELS[c.relation] ?? c.relation} />
+                        <TableCellTruncate value={c.sector ?? "—"} />
                       </TableCell>
-                      <TableCell className="text-center">
-                        <div className="flex gap-2 justify-center">
+                      <TableCell>
+                        <div className="flex gap-2">
                           <Link prefetch={false} href={`/panel/owners/${c.id}`}>
-                            <Button variant="outline" size="sm" title="Editar">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              title="Editar"
+                              className="border-[#404040] text-[#D1D1D1] hover:bg-[#1E1E1E] hover:text-[#FFFFFF]"
+                            >
                               <Edit className="w-4 h-4" />
                             </Button>
                           </Link>
@@ -645,6 +646,7 @@ export default function OwnersPage() {
                             size="sm"
                             onClick={() => window.open("/panel/crm", "_blank")}
                             title="Enviar a pipeline"
+                            className="border-[#404040] text-[#D1D1D1] hover:bg-[#1E1E1E] hover:text-[#FFFFFF]"
                           >
                             <Send className="w-4 h-4" />
                           </Button>
@@ -653,15 +655,16 @@ export default function OwnersPage() {
                             size="sm"
                             onClick={() => handlePapelera(c.id)}
                             title="Papelera"
+                            className="border-[#404040] text-[#D1D1D1] hover:bg-[#1E1E1E] hover:text-[#FFFFFF]"
                           >
                             <Trash className="w-4 h-4" />
                           </Button>
                           <Button
                             variant="outline"
                             size="sm"
-                            className="text-destructive hover:text-destructive"
                             onClick={() => handleDelete(c.id)}
                             title="Eliminar"
+                            className="border-red-600 text-red-600 hover:bg-red-600/10 hover:border-red-600 hover:text-red-600"
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>

@@ -12,8 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Save, MapPin, Building2, User, X } from "lucide-react";
 import { toast } from "sonner";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import Sidebar from "@/components/dashboard/Sidebar";
+import HeaderUser from "@/components/dashboard/HeaderUser";
 import dynamic from "next/dynamic";
 import { buildGoogleMapsLinkFromCoords } from "@/lib/extract-google-maps-coords";
 import GoogleMapsLoader from "@/components/GoogleMapsLoader";
@@ -337,10 +337,10 @@ export default function EditOwnerPage() {
   return (
     <Sidebar>
       <div className="min-h-screen bg-background">
-        <header className="bg-background border-b border-border px-6 py-4">
-          <div className="flex items-center justify-between">
+        <header className="bg-[#141414] border-b border-[#1E1E1E] px-6 py-4 sticky top-0 z-40">
+          <div className="flex items-center justify-between gap-4">
             <span className="text-[#e94446] font-medium">Owners</span>
-            <ThemeToggle />
+            <HeaderUser />
           </div>
         </header>
 

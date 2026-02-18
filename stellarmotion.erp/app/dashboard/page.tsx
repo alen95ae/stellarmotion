@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { ThemeToggle } from '@/components/ThemeToggle'
+import HeaderUser from '@/components/dashboard/HeaderUser'
 import { 
   Home,
   TrendingUp,
@@ -318,7 +319,7 @@ export default function DashboardPage() {
               <Button variant="ghost" size="sm" className="text-foreground hover:bg-muted">
                 <Bell className="w-5 h-5" />
               </Button>
-              <ThemeToggle />
+              <HeaderUser />
             </div>
           </div>
 

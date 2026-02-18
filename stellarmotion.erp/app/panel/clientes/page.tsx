@@ -16,7 +16,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Plus, Search, Filter, Download, Building2, User, Edit, Trash2, Home, Upload, Users, Merge, AlertTriangle } from "lucide-react"
 import { toast } from "sonner"
-import { ThemeToggle } from "@/components/ThemeToggle"
+import HeaderUser from "@/components/dashboard/HeaderUser"
 
 interface Contact {
   id: string
@@ -511,11 +511,7 @@ export default function ClientesPage() {
             </Link>
             <div className="text-xl font-bold text-foreground">Brands</div>
           </div>
-          <div className="flex items-center gap-4">
-            <span className="text-muted-foreground">Buscar</span>
-            <span className="text-foreground font-medium">admin</span>
-            <ThemeToggle />
-          </div>
+          <HeaderUser />
         </div>
       </header>
 

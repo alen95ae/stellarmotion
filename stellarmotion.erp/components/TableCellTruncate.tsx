@@ -26,7 +26,7 @@ export function TableCellTruncate({
               {display}
             </span>
           </TooltipTrigger>
-          <TooltipContent side="top" className="max-w-xs break-words">
+          <TooltipContent side="top" hideArrow className="max-w-xs break-words bg-[#e94446] text-white border-0">
             {display}
           </TooltipContent>
         </Tooltip>

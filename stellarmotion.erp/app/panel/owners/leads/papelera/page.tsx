@@ -9,8 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Checkbox } from "@/components/ui/checkbox";
 import { RotateCcw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import Sidebar from "@/components/dashboard/Sidebar";
+import HeaderUser from "@/components/dashboard/HeaderUser";
 import { TableCellTruncate } from "@/components/TableCellTruncate";
 import BulkActionsPapelera from "@/components/owners/BulkActionsPapelera";
 
@@ -134,16 +134,14 @@ export default function OwnersLeadsPapeleraPage() {
   return (
     <Sidebar>
       <div className="min-h-screen bg-background">
-        <header className="bg-background border-b border-border px-6 py-4">
-          <div className="flex items-center justify-between">
+        <header className="bg-[#141414] border-b border-[#1E1E1E] px-6 py-4 sticky top-0 z-40">
+          <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-6">
               <Link prefetch={false} href="/panel/owners" className="text-[#e94446] font-medium hover:text-[#d63d3f]">
                 Owners
               </Link>
             </div>
-            <div className="flex items-center gap-4">
-              <ThemeToggle />
-            </div>
+            <HeaderUser />
           </div>
         </header>
 
