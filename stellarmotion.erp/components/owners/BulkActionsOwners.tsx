@@ -38,19 +38,11 @@ export default function BulkActionsOwners({
 
   return (
     <div className="pt-4 mx-4">
-      {/* Ventana igual que en contactos (nexxtlevel): fondo con gradiente y difuminado, aquí en rojo */}
-      <div
-        className="p-4 rounded-xl"
-        style={{
-          background: "linear-gradient(135deg, #2a1e1e 0%, #201718 45%, #160f0f 100%)",
-          border: "1px solid rgba(233, 68, 70, 0.3)",
-          boxShadow:
-            "0 4px 24px rgba(0,0,0,0.25), 0 0 0 1px rgba(233, 68, 70, 0.25), 0 0 24px rgba(233, 68, 70, 0.12)",
-        }}
-      >
+      {/* Ventana ediciones masivas: mismo rojo que estado Ocupado en soportes */}
+      <div className="p-4 rounded-xl bg-red-100 border border-red-200 dark:bg-red-900/30 dark:border-red-800">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm text-muted-foreground dark:text-[#FFFFFF] dark:font-medium">
-            <span className="font-semibold text-foreground dark:text-[#e94446]">
+          <span className="text-sm text-red-800 dark:text-red-400 font-medium">
+            <span className="font-semibold">
               {selectedCount}
             </span>
             {" "}elemento{selectedCount !== 1 ? "s" : ""} seleccionado{selectedCount !== 1 ? "s" : ""}

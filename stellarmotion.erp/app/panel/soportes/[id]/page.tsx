@@ -126,8 +126,16 @@ export default function SoporteDetailPage() {
   const id = params?.id as string
   
   // Obtener el modo desde la URL (ver o editar)
-  const mode = searchParams?.get('mode') || 'view'
+  const mode = searchParams?.get('mode') || 'edit'
   const isEditMode = mode === 'edit'
+  // Si alguien entra con mode=view, abrir soporte en la web y pasar a edición
+  useEffect(() => {
+    if (mode === 'view' && id) {
+      const siteUrl = typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_SITE_URL ? process.env.NEXT_PUBLIC_SITE_URL : 'http://localhost:3001'
+      window.open(`${siteUrl}/product/${id}`, '_blank')
+      router.replace(`/panel/soportes/${id}?mode=edit`)
+    }
+  }, [mode, id, router])
   
   const [support, setSupport] = useState<Support | null>(null)
   const [loading, setLoading] = useState(true)
@@ -597,14 +605,24 @@ export default function SoporteDetailPage() {
     )
   }
 
+  if (mode === 'view') {
+    return (
+      <Sidebar>
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <div className="text-center text-muted-foreground">Redirigiendo a la web...</div>
+        </div>
+      </Sidebar>
+    )
+  }
+
   return (
     <Sidebar>
       <div className="min-h-screen bg-background">
         {/* Header */}
-        <header className="bg-background border-b border-border px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center">
-            <Link prefetch={false} href="/panel/soportes" className="text-[#e94446] hover:text-[#d63d3f] font-medium mr-8">
+        <header className="bg-background border-b border-border dark:bg-[#141414] dark:border-[#1E1E1E] px-6 py-4 sticky top-0 z-40">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-6">
+            <Link prefetch={false} href="/panel/soportes" className="text-[#e94446] font-medium no-underline hover:no-underline">
               Soportes
             </Link>
           </div>
@@ -631,10 +649,10 @@ export default function SoporteDetailPage() {
                   <Button
                     variant="outline"
                     onClick={() => {
-                      // Cambiar a modo edición actualizando la URL
                       const newUrl = `/panel/soportes/${id}?mode=edit`
                       router.push(newUrl)
                     }}
+                    className="border-border text-foreground hover:bg-muted dark:border-[#404040] dark:text-[#D1D1D1] dark:hover:bg-[#1E1E1E] dark:hover:text-[#FFFFFF]"
                   >
                     <Edit className="w-4 h-4 mr-2" />
                     Editar
@@ -642,7 +660,7 @@ export default function SoporteDetailPage() {
                 )}
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button variant="outline" className="text-red-600 hover:text-red-700">
+                    <Button variant="outline" className="border-border text-red-600 hover:bg-red-600/10 hover:text-red-600 dark:border-red-600 dark:text-red-600 dark:hover:bg-red-600/10 dark:hover:border-red-600 dark:hover:text-red-600">
                       <Trash2 className="w-4 h-4 mr-2" />
                       Eliminar
                     </Button>
@@ -670,18 +688,15 @@ export default function SoporteDetailPage() {
               <>
                 <Button
                   variant="outline"
-                  onClick={() => {
-                    // Cambiar a modo visualización
-                    const newUrl = `/panel/soportes/${id}?mode=view`
-                    router.push(newUrl)
-                  }}
+                  onClick={() => router.push('/panel/soportes')}
+                  className="border-border text-foreground hover:bg-muted hover:text-foreground dark:border-[#404040] dark:text-[#D1D1D1] dark:hover:bg-[#1E1E1E] dark:hover:text-[#FFFFFF]"
                 >
                   Cancelar
                 </Button>
                 <Button
                   onClick={handleSave}
                   disabled={saving}
-                  className="bg-[#e94446] hover:bg-[#d63d3f] text-white"
+                  className="bg-[#e94446] hover:bg-[#D7514C] text-white shadow-[0_0_12px_rgba(233,68,70,0.45)] hover:shadow-[0_0_20px_rgba(233,68,70,0.6)] dark:text-white"
                 >
                   <Save className="w-4 h-4 mr-2" />
                   {saving ? "Guardando..." : "Guardar"}
@@ -692,7 +707,7 @@ export default function SoporteDetailPage() {
         </div>
 
         {/* Soporte Details */}
-        <Card>
+        <Card className="dark:bg-[#141414] dark:border-[#1E1E1E]">
           <CardHeader>
             <CardTitle>
               Información del Soporte
@@ -711,6 +726,7 @@ export default function SoporteDetailPage() {
                       id="internalCode"
                       value={formData.internalCode}
                       onChange={(e) => setFormData({...formData, internalCode: e.target.value})}
+                      className="focus-visible:border-[#e94446] focus-visible:ring-[#e94446]/50"
                     />
                   ) : (
                     <p className="text-sm text-muted-foreground mt-1">{formData.internalCode || support?.internalCode || "N/A"}</p>
@@ -724,6 +740,7 @@ export default function SoporteDetailPage() {
                       id="userCode"
                       value={formData.userCode}
                       onChange={(e) => setFormData({...formData, userCode: e.target.value})}
+                      className="focus-visible:border-[#e94446] focus-visible:ring-[#e94446]/50"
                     />
                   ) : (
                     <p className="text-sm text-muted-foreground mt-1">{formData.userCode || support?.userCode || "N/A"}</p>
@@ -737,6 +754,7 @@ export default function SoporteDetailPage() {
                       id="title"
                       value={formData.title}
                       onChange={(e) => setFormData({...formData, title: e.target.value})}
+                      className="focus-visible:border-[#e94446] focus-visible:ring-[#e94446]/50"
                     />
                   ) : (
                     <p className="text-sm text-muted-foreground mt-1">{formData.title || support?.title || "N/A"}</p>
@@ -747,12 +765,12 @@ export default function SoporteDetailPage() {
                   <Label htmlFor="type">Tipo</Label>
                   {editing ? (
                     <Select value={formData.type} onValueChange={(value) => setFormData({...formData, type: value})}>
-                      <SelectTrigger>
+                      <SelectTrigger className="overflow-hidden dark:bg-[#1E1E1E] dark:hover:bg-[#2a2a2a] dark:border-[#1E1E1E] dark:text-foreground">
                         <SelectValue placeholder="Seleccionar tipo" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="dark:bg-[#141414] dark:border-[#1E1E1E]">
                         {TYPE_OPTIONS.map((type) => (
-                          <SelectItem key={type} value={type}>
+                          <SelectItem key={type} value={type} className="dark:focus:bg-[#1e1e1e] dark:hover:bg-[#1e1e1e] dark:focus:text-foreground dark:hover:text-foreground">
                             {type}
                           </SelectItem>
                         ))}
@@ -768,13 +786,16 @@ export default function SoporteDetailPage() {
                     <Label htmlFor="status">Estado</Label>
                     {editing ? (
                       <Select value={formData.status} onValueChange={(value) => setFormData({...formData, status: value as keyof typeof STATUS_META})}>
-                        <SelectTrigger>
+                        <SelectTrigger className="overflow-hidden dark:bg-[#1E1E1E] dark:hover:bg-[#2a2a2a] dark:border-[#1E1E1E] dark:text-foreground">
                           <SelectValue placeholder="Seleccionar estado" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="dark:bg-[#141414] dark:border-[#1E1E1E]">
                           {Object.entries(STATUS_META).map(([key, value]) => (
-                            <SelectItem key={key} value={key}>
-                              {value.label}
+                            <SelectItem key={key} value={key} className="dark:focus:bg-[#1e1e1e] dark:hover:bg-[#1e1e1e] dark:focus:text-foreground dark:hover:text-foreground">
+                              <div className="flex items-center gap-2">
+                                <span className={`inline-block w-3 h-3 rounded-full ${value.className}`} />
+                                {value.label}
+                              </div>
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -796,6 +817,7 @@ export default function SoporteDetailPage() {
                         value={typeof formData.owner === "string" ? formData.owner : ownerDisplayString(formData.owner)}
                         onChange={(e) => setFormData({...formData, owner: e.target.value})}
                         placeholder="Nombre del owner"
+                        className="focus-visible:border-[#e94446] focus-visible:ring-[#e94446]/50"
                       />
                     ) : (
                       <div className="mt-1">
@@ -817,6 +839,7 @@ export default function SoporteDetailPage() {
                       type="number"
                       value={formData.widthM}
                       onChange={(e) => setFormData({...formData, widthM: e.target.value})}
+                      className="focus-visible:border-[#e94446] focus-visible:ring-[#e94446]/50"
                     />
                   ) : (
                     <p className="text-sm text-muted-foreground mt-1">{formData.widthM ? `${formData.widthM}m` : "N/A"}</p>
@@ -831,6 +854,7 @@ export default function SoporteDetailPage() {
                       type="number"
                       value={formData.heightM}
                       onChange={(e) => setFormData({...formData, heightM: e.target.value})}
+                      className="focus-visible:border-[#e94446] focus-visible:ring-[#e94446]/50"
                     />
                   ) : (
                     <p className="text-sm text-muted-foreground mt-1">{formData.heightM ? `${formData.heightM}m` : "N/A"}</p>
@@ -845,6 +869,7 @@ export default function SoporteDetailPage() {
                       type="number"
                       value={formData.dailyImpressions}
                       onChange={(e) => setFormData({...formData, dailyImpressions: e.target.value})}
+                      className="focus-visible:border-[#e94446] focus-visible:ring-[#e94446]/50"
                     />
                   ) : (
                     <p className="text-sm text-muted-foreground mt-1">{formData.dailyImpressions || "N/A"}</p>
@@ -881,6 +906,7 @@ export default function SoporteDetailPage() {
                       type="number"
                       value={formData.priceMonth}
                       onChange={(e) => setFormData({...formData, priceMonth: e.target.value})}
+                      className="focus-visible:border-[#e94446] focus-visible:ring-[#e94446]/50"
                     />
                   ) : (
                     <p className="text-sm text-muted-foreground mt-1">
@@ -901,6 +927,7 @@ export default function SoporteDetailPage() {
                   value={formData.description}
                   onChange={(e) => setFormData({...formData, description: e.target.value})}
                   rows={4}
+                  className="focus-visible:border-[#e94446] focus-visible:ring-[#e94446]/50"
                 />
               ) : (
                 <p className="text-sm text-muted-foreground mt-1">{formData.description || support?.description || "N/A"}</p>
@@ -988,6 +1015,7 @@ export default function SoporteDetailPage() {
                     id="googleMapsLink"
                     value={formData.googleMapsLink}
                     onChange={(e) => setFormData({...formData, googleMapsLink: e.target.value})}
+                    className="focus-visible:border-[#e94446] focus-visible:ring-[#e94446]/50"
                     onBlur={async (e) => {
                       const newLink = e.target.value.trim();
                       if (newLink) {
@@ -1085,7 +1113,7 @@ export default function SoporteDetailPage() {
 
         {/* Company Info */}
         {support.company && support.company.name && (
-          <Card className="mt-6">
+          <Card className="mt-6 dark:bg-[#141414] dark:border-[#1E1E1E]">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Globe className="w-5 h-5" />

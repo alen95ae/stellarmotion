@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
-import { Plus, Search, Eye, Edit, Trash2, MapPin, Euro, Upload, Download, Filter, Calculator, Hash } from "lucide-react"
+import { Plus, Search, Eye, Edit, Trash2, MapPin, Euro, Upload, Calculator, Hash, FileSpreadsheet, FileDown } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { toast } from "sonner"
@@ -384,10 +384,10 @@ export default function SoportesPage() {
     <Sidebar>
       <div className="min-h-screen bg-background">
         {/* Header */}
-        <header className="bg-background border-b border-border px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center">
-            <Link prefetch={false} href="/panel/soportes" className="text-[#e94446] hover:text-[#d63d3f] font-medium mr-8">
+        <header className="bg-background border-b border-border dark:bg-[#141414] dark:border-[#1E1E1E] px-6 py-4 sticky top-0 z-40">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-6">
+            <Link prefetch={false} href="/panel/soportes" className="text-[#e94446] font-medium no-underline hover:no-underline">
               Soportes
             </Link>
           </div>
@@ -403,52 +403,51 @@ export default function SoportesPage() {
         </div>
 
         {/* Search and Actions */}
-        <Card className="mb-6">
-          <CardContent className="pt-6">
-            <div className="flex gap-4 items-end">
-              <div className="flex-1">
-                <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                  Buscar soportes
-                </label>
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Buscar por código, título, ciudad, tipo o propietario..."
-                    value={q}
-                    onChange={(e) => setQ(e.target.value)}
-                  />
-                  
-                  {/* Filtros avanzados */}
-                  <Select
-                    value={statusFilter.length ? statusFilter.join(',') : 'all'}
-                    onValueChange={(value) => setStatusFilter(value === 'all' ? [] : (value ? value.split(',') : []))}
-                  >
-                    <SelectTrigger className="w-48">
-                      <Filter className="w-4 h-4 mr-2" />
-                      <SelectValue placeholder="Disponibilidad" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todas</SelectItem>
-                      {Object.entries(STATUS_META).map(([key, meta]) => (
-                        <SelectItem key={key} value={key}>
-                          <div className="flex items-center gap-2">
-                            <span className={`inline-block w-3 h-3 rounded-full ${meta.className}`}></span>
-                            {meta.label}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              
+        <div className="bg-card dark:bg-[#141414] border border-border dark:border-[#1E1E1E] rounded-lg p-4 mb-6 shadow-sm">
+          <div className="flex gap-4 items-end">
+            <div className="flex-1">
+              <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                Buscar soportes
+              </label>
               <div className="flex gap-2">
-                <Dialog open={openImport} onOpenChange={setOpenImport}>
-                  <DialogTrigger asChild>
-                    <Button variant="outline">
-                      <Upload className="w-4 h-4 mr-2" />
-                      Importar CSV
-                    </Button>
-                  </DialogTrigger>
+                <Input
+                  placeholder="Buscar por código, título, ciudad, tipo o propietario..."
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                  className="focus-visible:border-[#e94446] focus-visible:ring-[#e94446]/50"
+                />
+                
+                {/* Filtros avanzados */}
+                <Select
+                  value={statusFilter.length ? statusFilter.join(',') : 'all'}
+                  onValueChange={(value) => setStatusFilter(value === 'all' ? [] : (value ? value.split(',') : []))}
+                >
+                  <SelectTrigger className="w-48 overflow-hidden dark:bg-[#1E1E1E] dark:hover:bg-[#2a2a2a] dark:border-[#1E1E1E] dark:text-foreground">
+                    <SelectValue placeholder="Estado" />
+                  </SelectTrigger>
+                  <SelectContent className="dark:bg-[#141414] dark:border-[#1E1E1E]">
+                    <SelectItem value="all" className="dark:focus:bg-[#1e1e1e] dark:hover:bg-[#1e1e1e] dark:focus:text-foreground dark:hover:text-foreground">Estado</SelectItem>
+                    {Object.entries(STATUS_META).map(([key, meta]) => (
+                      <SelectItem key={key} value={key} className="dark:focus:bg-[#1e1e1e] dark:hover:bg-[#1e1e1e] dark:focus:text-foreground dark:hover:text-foreground">
+                        <div className="flex items-center gap-2">
+                          <span className={`inline-block w-3 h-3 rounded-full ${meta.className}`}></span>
+                          {meta.label}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            <div className="flex gap-2">
+              <Dialog open={openImport} onOpenChange={setOpenImport}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="border-border text-foreground hover:bg-muted hover:text-foreground dark:border-[#404040] dark:text-[#D1D1D1] dark:hover:bg-[#1E1E1E] dark:hover:text-[#FFFFFF]">
+                    <FileSpreadsheet className="w-4 h-4 mr-2" />
+                    Exportar CSV
+                  </Button>
+                </DialogTrigger>
                   <DialogContent className="max-w-4xl">
                     <DialogHeader>
                       <DialogTitle>Importar soportes (CSV)</DialogTitle>
@@ -507,26 +506,27 @@ export default function SoportesPage() {
                 
                 <Button
                   variant="outline"
+                  size="sm"
                   onClick={exportPDF}
                   disabled={!someSelected}
+                  className="border-border text-foreground hover:bg-muted hover:text-foreground dark:border-[#404040] dark:text-[#D1D1D1] dark:hover:bg-[#1E1E1E] dark:hover:text-[#FFFFFF]"
                 >
-                  <Download className="w-4 h-4 mr-2" />
-                  Catálogo PDF
+                  <FileDown className="w-4 h-4 mr-2" />
+                  Exportar PDF
                 </Button>
                 
                 <Link prefetch={false} href="/panel/soportes/nuevo">
-                  <Button className="bg-[#e94446] hover:bg-[#d63e3f] text-white">
+                  <Button className="bg-[#e94446] hover:bg-[#D7514C] text-white shadow-[0_0_12px_rgba(233,68,70,0.45)] hover:shadow-[0_0_20px_rgba(233,68,70,0.6)] dark:text-white">
                     <Plus className="w-4 h-4 mr-2" />
                     Nuevo Soporte
                   </Button>
                 </Link>
               </div>
             </div>
-          </CardContent>
-        </Card>
+        </div>
 
         {/* Results */}
-        <Card>
+        <Card className="dark:bg-[#141414] dark:border-[#1E1E1E]">
           <CardHeader>
             <CardTitle>Soportes ({supports.length})</CardTitle>
             <CardDescription>
@@ -556,6 +556,7 @@ export default function SoportesPage() {
                         checked={allSelected ? true : (someSelected ? 'indeterminate' : false)}
                         onCheckedChange={(v) => toggleAll(Boolean(v))}
                         aria-label="Seleccionar todo"
+                        className="data-[state=checked]:!bg-[#e94446] data-[state=checked]:!border-[#e94446] data-[state=checked]:!text-white"
                       />
                     </TableHead>
                     <TableHead>Código Interno</TableHead>
@@ -579,6 +580,7 @@ export default function SoportesPage() {
                             setSelected(prev => ({ ...prev, [support.id]: Boolean(v) }))
                           }
                           aria-label={`Seleccionar ${support.code}`}
+                          className="data-[state=checked]:!bg-[#e94446] data-[state=checked]:!border-[#e94446] data-[state=checked]:!text-white"
                         />
                       </TableCell>
                       <TableCell className="whitespace-nowrap">
@@ -662,8 +664,9 @@ export default function SoportesPage() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => router.push(`/panel/soportes/${support.id}?mode=view`)}
-                            title="Ver"
+                            onClick={() => window.open(`${typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_SITE_URL ? process.env.NEXT_PUBLIC_SITE_URL : 'http://localhost:3001'}/product/${support.id}`, '_blank')}
+                            title="Ver en la web"
+                            className="border-border text-foreground hover:bg-muted dark:border-[#404040] dark:text-[#D1D1D1] dark:hover:bg-[#1E1E1E] dark:hover:text-[#FFFFFF]"
                           >
                             <Eye className="w-3 h-3" />
                           </Button>
@@ -672,6 +675,7 @@ export default function SoportesPage() {
                             size="sm"
                             onClick={() => router.push(`/panel/soportes/${support.id}?mode=edit`)}
                             title="Editar"
+                            className="border-border text-foreground hover:bg-muted dark:border-[#404040] dark:text-[#D1D1D1] dark:hover:bg-[#1E1E1E] dark:hover:text-[#FFFFFF]"
                           >
                             <Edit className="w-3 h-3" />
                           </Button>
@@ -679,8 +683,8 @@ export default function SoportesPage() {
                             variant="outline"
                             size="sm"
                             onClick={() => handleDelete(support.id)}
-                            className="text-red-600 hover:text-red-700"
                             title="Borrar"
+                            className="border-border text-red-600 hover:bg-red-600/10 hover:text-red-600 dark:border-red-600 dark:text-red-600 dark:hover:bg-red-600/10 dark:hover:border-red-600 dark:hover:text-red-600"
                           >
                             <Trash2 className="w-3 h-3" />
                           </Button>

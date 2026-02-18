@@ -134,7 +134,7 @@ export default function OwnersLeadsPapeleraPage() {
   return (
     <Sidebar>
       <div className="min-h-screen bg-background">
-        <header className="bg-[#141414] border-b border-[#1E1E1E] px-6 py-4 sticky top-0 z-40">
+        <header className="bg-background border-b border-border dark:bg-[#141414] dark:border-[#1E1E1E] px-6 py-4 sticky top-0 z-40">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-6">
               <Link prefetch={false} href="/panel/owners" className="text-[#e94446] font-medium hover:text-[#d63d3f]">
@@ -153,20 +153,20 @@ export default function OwnersLeadsPapeleraPage() {
           </p>
         </div>
 
-        <div className="sticky top-14 z-10 bg-card border border-border rounded-lg p-4 mb-6 shadow-sm">
+        <div className="bg-card dark:bg-[#141414] border border-border dark:border-[#1E1E1E] rounded-lg p-4 mb-6 shadow-sm">
           <div className="flex flex-wrap gap-3 items-center">
             <div className="flex-1 min-w-[200px] max-w-md">
               <Input
                 placeholder="Buscar en papelera..."
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                className="w-full"
+                className="w-full focus-visible:border-[#e94446] focus-visible:ring-[#e94446]/50"
               />
             </div>
           </div>
         </div>
 
-        <Card>
+        <Card className="dark:bg-[#141414] dark:border-[#1E1E1E]">
           <CardHeader>
             <CardTitle>Papelera ({pagination.total})</CardTitle>
             <CardDescription>Registros movidos a papelera. Puedes restaurarlos a la lista de Owners.</CardDescription>
@@ -188,6 +188,7 @@ export default function OwnersLeadsPapeleraPage() {
                         checked={allSelected ? true : someSelected ? "indeterminate" : false}
                         onCheckedChange={(v) => toggleAll(Boolean(v))}
                         aria-label="Seleccionar todo"
+                        className="data-[state=checked]:!bg-[#e94446] data-[state=checked]:!border-[#e94446] data-[state=checked]:!text-white"
                       />
                     </TableHead>
                     <TableHead>Nombre</TableHead>
@@ -209,6 +210,7 @@ export default function OwnersLeadsPapeleraPage() {
                             setSelected((prev) => ({ ...prev, [l.id]: Boolean(v) }))
                           }
                           aria-label={`Seleccionar ${l.nombre}`}
+                          className="data-[state=checked]:!bg-[#e94446] data-[state=checked]:!border-[#e94446] data-[state=checked]:!text-white"
                         />
                       </TableCell>
                       <TableCell className="max-w-[22ch]">
@@ -238,15 +240,16 @@ export default function OwnersLeadsPapeleraPage() {
                             size="sm"
                             onClick={() => handleRestore(l.id)}
                             title="Restaurar"
+                            className="border-border text-foreground hover:bg-muted dark:border-[#404040] dark:text-[#D1D1D1] dark:hover:bg-[#1E1E1E] dark:hover:text-[#FFFFFF]"
                           >
                             <RotateCcw className="w-4 h-4" />
                           </Button>
                           <Button
                             variant="outline"
                             size="sm"
-                            className="text-destructive hover:text-destructive"
                             onClick={() => handleDelete(l.id)}
                             title="Eliminar"
+                            className="border-border text-red-600 hover:bg-red-600/10 hover:text-red-600 dark:border-red-600 dark:text-red-600 dark:hover:bg-red-600/10 dark:hover:border-red-600 dark:hover:text-red-600"
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>

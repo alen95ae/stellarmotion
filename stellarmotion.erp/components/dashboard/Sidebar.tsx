@@ -8,36 +8,12 @@ import { ThemeToggle } from '@/components/ThemeToggle'
 import {
   Home,
   TrendingUp,
-  MapPin,
-  Truck,
-  UserCheck,
-  FolderKanban,
-  Handshake,
-  Scale,
-  Beaker,
-  Receipt,
-  MessageCircle,
-  Globe,
-  Settings,
-  BarChart3,
-  TrendingDown,
-  DollarSign,
-  Activity,
-  ArrowRight,
-  ChevronRight,
-  Bell,
-  Search,
-  ShoppingCart,
   Monitor,
-  Package,
-  FileText,
-  CreditCard,
-  Heart,
-  Shield,
+  Settings,
+  ChevronRight,
   Terminal,
   Filter,
   FlaskConical,
-  Globe2,
   HeartHandshake,
   Rabbit,
   Rat
@@ -90,16 +66,11 @@ export default function Sidebar({ children }: SidebarProps) {
     { id: 'ventas', name: 'Ventas', icon: HeartHandshake, path: '/panel/ventas' },
     { id: 'metricas', name: 'Métricas', icon: TrendingUp, path: '/panel/metricas' },
     { id: 'soportes', name: 'Soportes', icon: Monitor, path: '/panel/soportes' },
-    { id: 'logistica', name: 'Logística', icon: Globe2, path: '/panel/logistica' },
     { id: 'owners', name: 'Owners', icon: Rabbit, path: '/panel/owners' },
     { id: 'clientes', name: 'Brands', icon: Rat, path: '/panel/clientes' },
     { id: 'proyectos', name: 'Proyectos', icon: Terminal, path: '/panel/proyectos' },
     { id: 'crm', name: 'CRM', icon: Filter, path: '/panel/crm' },
-    { id: 'legal', name: 'Legal', icon: Scale, path: '/panel/legal' },
     { id: 'iyd', name: 'I+D', icon: FlaskConical, path: '/panel/iyd' },
-    { id: 'facturacion', name: 'Facturación', icon: Receipt, path: '/panel/facturacion' },
-    { id: 'atencion', name: 'Atención a brands', icon: MessageCircle, path: '/panel/atencion' },
-    { id: 'sitio', name: 'Sitio web', icon: Globe, path: '/panel/sitio' },
     { id: 'ajustes', name: 'Ajustes', icon: Settings, path: '/panel/ajustes' }
   ]
 
@@ -118,14 +89,8 @@ export default function Sidebar({ children }: SidebarProps) {
     if (pathname.startsWith('/panel/owners')) return 'owners'
     if (pathname.startsWith('/panel/ventas')) return 'ventas'
     if (pathname.startsWith('/panel/metricas')) return 'metricas'
-    if (pathname.startsWith('/panel/logistica')) return 'logistica'
     if (pathname.startsWith('/panel/proyectos')) return 'proyectos'
-    if (pathname.startsWith('/panel/crm')) return 'crm'
-    if (pathname.startsWith('/panel/legal')) return 'legal'
     if (pathname.startsWith('/panel/iyd')) return 'iyd'
-    if (pathname.startsWith('/panel/facturacion')) return 'facturacion'
-    if (pathname.startsWith('/panel/atencion')) return 'atencion'
-    if (pathname.startsWith('/panel/sitio')) return 'sitio'
     if (pathname.startsWith('/panel/ajustes')) return 'ajustes'
     return 'dashboard'
   }
@@ -136,7 +101,7 @@ export default function Sidebar({ children }: SidebarProps) {
     <div className="flex min-h-screen">
       {/* Sidebar */}
       <motion.aside
-        className="sticky top-0 self-start border-r z-50 transition-colors duration-300 bg-[#141414] border-border"
+        className="sticky top-0 self-start border-r z-50 transition-colors duration-300 bg-card border-border dark:bg-[#141414]"
         style={{ minHeight: '100vh' }}
         variants={sidebarVariants}
         animate={sidebarCollapsed ? 'collapsed' : 'expanded'}
@@ -188,7 +153,7 @@ export default function Sidebar({ children }: SidebarProps) {
                   variant={activeModule === module.id ? 'default' : 'ghost'}
                   className={`w-full justify-start h-12 transition-colors ${activeModule === module.id
                       ? 'bg-[#e94446] hover:bg-[#e94446] text-white'
-                      : 'text-foreground hover:!bg-[#1e1e1e] hover:!text-white dark:hover:!bg-[#1e1e1e] dark:hover:!text-white'
+                      : 'text-foreground hover:bg-muted hover:text-foreground dark:hover:!bg-[#1e1e1e] dark:hover:!text-white'
                     }`}
                   onClick={() => handleModuleClick(module)}
                 >
@@ -211,7 +176,7 @@ export default function Sidebar({ children }: SidebarProps) {
           </nav>
 
           <div className="pt-4 mt-auto border-t border-border flex justify-center">
-             <ThemeToggle className="!bg-[#141414]" />
+             <ThemeToggle className="dark:!bg-[#141414]" />
           </div>
         </div>
 

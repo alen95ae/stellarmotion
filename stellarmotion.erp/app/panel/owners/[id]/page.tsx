@@ -337,9 +337,11 @@ export default function EditOwnerPage() {
   return (
     <Sidebar>
       <div className="min-h-screen bg-background">
-        <header className="bg-[#141414] border-b border-[#1E1E1E] px-6 py-4 sticky top-0 z-40">
+        <header className="bg-background border-b border-border dark:bg-[#141414] dark:border-[#1E1E1E] px-6 py-4 sticky top-0 z-40">
           <div className="flex items-center justify-between gap-4">
-            <span className="text-[#e94446] font-medium">Owners</span>
+            <Link prefetch={false} href="/panel/owners" className="text-[#e94446] font-medium no-underline hover:no-underline">
+            Owners
+          </Link>
             <HeaderUser />
           </div>
         </header>
@@ -347,16 +349,27 @@ export default function EditOwnerPage() {
         <main className="w-full px-6 py-8">
           <div className="mb-6 flex justify-end gap-2">
             <Link prefetch={false} href="/panel/owners">
-              <Button type="button" variant="outline">Cancelar</Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="border-border text-foreground hover:bg-muted hover:text-foreground dark:border-[#404040] dark:text-[#D1D1D1] dark:hover:bg-[#1E1E1E] dark:hover:text-[#FFFFFF]"
+              >
+                Cancelar
+              </Button>
             </Link>
-            <Button type="submit" form="owner-form" disabled={saving} className="bg-[#e94446] hover:bg-[#D7514C] dark:text-white">
+            <Button
+              type="submit"
+              form="owner-form"
+              disabled={saving}
+              className="bg-[#e94446] hover:bg-[#D7514C] text-white shadow-[0_0_12px_rgba(233,68,70,0.45)] hover:shadow-[0_0_20px_rgba(233,68,70,0.6)] dark:text-white"
+            >
               <Save className="w-4 h-4 mr-2" />
               {saving ? "Guardando..." : "Guardar"}
             </Button>
           </div>
           <form id="owner-form" onSubmit={handleSubmit} className="space-y-6">
             {/* Información básica */}
-            <Card>
+            <Card className="dark:bg-[#141414] dark:border-[#1E1E1E]">
               <CardHeader>
                 <CardTitle>Información básica</CardTitle>
                 <CardDescription>Nombre, tipo y datos fiscales.</CardDescription>
@@ -371,6 +384,7 @@ export default function EditOwnerPage() {
                       onChange={(e) => setForm((p) => ({ ...p, nombre: e.target.value }))}
                       required
                       placeholder="Nombre"
+                      className="focus-visible:border-[#e94446] focus-visible:ring-[#e94446]/50"
                     />
                   </div>
                   <div>
@@ -385,16 +399,16 @@ export default function EditOwnerPage() {
                         }))
                       }
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="overflow-hidden dark:bg-[#1E1E1E] dark:hover:bg-[#2a2a2a] dark:border-[#1E1E1E] dark:text-foreground">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="INDIVIDUAL">
+                      <SelectContent className="dark:bg-[#141414] dark:border-[#1E1E1E]">
+                        <SelectItem value="INDIVIDUAL" className="dark:focus:bg-[#1e1e1e] dark:hover:bg-[#1e1e1e] dark:focus:text-foreground dark:hover:text-foreground">
                           <span className="flex items-center gap-2">
                             <User className="w-4 h-4" /> Individual
                           </span>
                         </SelectItem>
-                        <SelectItem value="COMPANY">
+                        <SelectItem value="COMPANY" className="dark:focus:bg-[#1e1e1e] dark:hover:bg-[#1e1e1e] dark:focus:text-foreground dark:hover:text-foreground">
                           <span className="flex items-center gap-2">
                             <Building2 className="w-4 h-4" /> Empresa
                           </span>
@@ -474,6 +488,7 @@ export default function EditOwnerPage() {
                       value={form.empresa}
                       onChange={(e) => setForm((p) => ({ ...p, empresa: e.target.value }))}
                       placeholder="Empresa"
+                      className="focus-visible:border-[#e94446] focus-visible:ring-[#e94446]/50"
                     />
                   </div>
                 )}
@@ -486,6 +501,7 @@ export default function EditOwnerPage() {
                       value={form.nif}
                       onChange={(e) => setForm((p) => ({ ...p, nif: e.target.value }))}
                       placeholder="NIF o CIF"
+                      className="focus-visible:border-[#e94446] focus-visible:ring-[#e94446]/50"
                     />
                   </div>
                   <div>
@@ -495,6 +511,7 @@ export default function EditOwnerPage() {
                       value={form.razonSocial}
                       onChange={(e) => setForm((p) => ({ ...p, razonSocial: e.target.value }))}
                       placeholder="Razón social"
+                      className="focus-visible:border-[#e94446] focus-visible:ring-[#e94446]/50"
                     />
                   </div>
                 </div>
@@ -506,14 +523,14 @@ export default function EditOwnerPage() {
                     onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))}
                     placeholder="Notas internas"
                     rows={3}
-                    className="resize-none"
+                    className="resize-none focus-visible:border-[#e94446] focus-visible:ring-[#e94446]/50"
                   />
                 </div>
               </CardContent>
             </Card>
 
             {/* Clasificación */}
-            <Card>
+            <Card className="dark:bg-[#141414] dark:border-[#1E1E1E]">
               <CardHeader>
                 <CardTitle>Clasificación</CardTitle>
                 <CardDescription>Sector, categorías, interés y origen.</CardDescription>
@@ -527,6 +544,7 @@ export default function EditOwnerPage() {
                       value={form.sector}
                       onChange={(e) => setForm((p) => ({ ...p, sector: e.target.value }))}
                       placeholder="Sector"
+                      className="focus-visible:border-[#e94446] focus-visible:ring-[#e94446]/50"
                     />
                   </div>
                   <div>
@@ -536,6 +554,7 @@ export default function EditOwnerPage() {
                       value={form.interes}
                       onChange={(e) => setForm((p) => ({ ...p, interes: e.target.value }))}
                       placeholder="Interés"
+                      className="focus-visible:border-[#e94446] focus-visible:ring-[#e94446]/50"
                     />
                   </div>
                   <div>
@@ -545,6 +564,7 @@ export default function EditOwnerPage() {
                       value={form.origen}
                       onChange={(e) => setForm((p) => ({ ...p, origen: e.target.value }))}
                       placeholder="Origen"
+                      className="focus-visible:border-[#e94446] focus-visible:ring-[#e94446]/50"
                     />
                   </div>
                 </div>
@@ -592,7 +612,7 @@ export default function EditOwnerPage() {
 
             {/* Información de contacto + Dirección en dos columnas */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
+              <Card className="dark:bg-[#141414] dark:border-[#1E1E1E]">
                 <CardHeader>
                   <CardTitle>Información de contacto</CardTitle>
                   <CardDescription>Teléfono, email y sitio web.</CardDescription>
@@ -605,6 +625,7 @@ export default function EditOwnerPage() {
                       value={form.phone}
                       onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))}
                       placeholder="Teléfono"
+                      className="focus-visible:border-[#e94446] focus-visible:ring-[#e94446]/50"
                     />
                   </div>
                   <div>
@@ -657,11 +678,12 @@ export default function EditOwnerPage() {
                       value={form.website}
                       onChange={(e) => setForm((p) => ({ ...p, website: e.target.value }))}
                       placeholder="Ej. www.ejemplo.com"
+                      className="focus-visible:border-[#e94446] focus-visible:ring-[#e94446]/50"
                     />
                   </div>
                 </CardContent>
               </Card>
-              <Card>
+              <Card className="dark:bg-[#141414] dark:border-[#1E1E1E]">
                 <CardHeader>
                   <CardTitle>Dirección</CardTitle>
                   <CardDescription>Dirección, ciudad, país y código postal.</CardDescription>
@@ -674,26 +696,27 @@ export default function EditOwnerPage() {
                       value={form.address}
                       onChange={(e) => setForm((p) => ({ ...p, address: e.target.value }))}
                       placeholder="Calle, número"
+                      className="focus-visible:border-[#e94446] focus-visible:ring-[#e94446]/50"
                     />
                   </div>
                   <div>
                     <Label htmlFor="city">Ciudad</Label>
-                    <Input id="city" value={form.city} onChange={(e) => setForm((p) => ({ ...p, city: e.target.value }))} placeholder="Ciudad" />
+                    <Input id="city" value={form.city} onChange={(e) => setForm((p) => ({ ...p, city: e.target.value }))} placeholder="Ciudad" className="focus-visible:border-[#e94446] focus-visible:ring-[#e94446]/50" />
                   </div>
                   <div>
                     <Label htmlFor="country">País</Label>
-                    <Input id="country" value={form.country} onChange={(e) => setForm((p) => ({ ...p, country: e.target.value }))} placeholder="País" />
+                    <Input id="country" value={form.country} onChange={(e) => setForm((p) => ({ ...p, country: e.target.value }))} placeholder="País" className="focus-visible:border-[#e94446] focus-visible:ring-[#e94446]/50" />
                   </div>
                   <div>
                     <Label htmlFor="postalCode">Código postal</Label>
-                    <Input id="postalCode" value={form.postalCode} onChange={(e) => setForm((p) => ({ ...p, postalCode: e.target.value }))} placeholder="Código postal" />
+                    <Input id="postalCode" value={form.postalCode} onChange={(e) => setForm((p) => ({ ...p, postalCode: e.target.value }))} placeholder="Código postal" className="focus-visible:border-[#e94446] focus-visible:ring-[#e94446]/50" />
                   </div>
                 </CardContent>
               </Card>
             </div>
 
             {/* Ubicación y mapa */}
-            <Card className="w-full max-w-[50%]">
+            <Card className="w-full max-w-[50%] dark:bg-[#141414] dark:border-[#1E1E1E]">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <MapPin className="w-5 h-5" />
@@ -716,6 +739,7 @@ export default function EditOwnerPage() {
                         setForm((p) => ({ ...p, latitud: v === "" ? null : Number.isNaN(n) ? p.latitud : n }));
                       }}
                       placeholder="Ej. 40.4168"
+                      className="focus-visible:border-[#e94446] focus-visible:ring-[#e94446]/50"
                     />
                   </div>
                   <div>
@@ -731,6 +755,7 @@ export default function EditOwnerPage() {
                         setForm((p) => ({ ...p, longitud: v === "" ? null : Number.isNaN(n) ? p.longitud : n }));
                       }}
                       placeholder="Ej. -3.7038"
+                      className="focus-visible:border-[#e94446] focus-visible:ring-[#e94446]/50"
                     />
                   </div>
                 </div>

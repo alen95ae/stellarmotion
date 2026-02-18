@@ -14,6 +14,7 @@ import Sidebar from "@/components/dashboard/Sidebar";
 import HeaderUser from "@/components/dashboard/HeaderUser";
 import { TableCellTruncate } from "@/components/TableCellTruncate";
 import BulkActionsOwners from "@/components/owners/BulkActionsOwners";
+import EditableOwnerCell from "@/components/owners/EditableOwnerCell";
 
 const STORAGE_KEY = "owners_filtros";
 
@@ -277,6 +278,23 @@ export default function OwnersPage() {
     fetchContacts(1);
   }
 
+  async function handleFieldSave(id: string, field: string, value: string) {
+    try {
+      const res = await fetch(`/api/contactos/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ [field]: value }),
+      });
+      if (!res.ok) throw new Error("Error al guardar");
+      const update = (c: Contact) => (c.id === id ? { ...c, [field]: value } : c);
+      setContacts((prev) => prev.map(update));
+      setAllContactsForSort((prev) => prev.map(update));
+      toast.success("Guardado");
+    } catch {
+      toast.error("Error al guardar");
+    }
+  }
+
   function bulkExportSelection() {
     const rows = displayContacts.filter((c) => selected[c.id]);
     if (rows.length === 0) {
@@ -397,7 +415,7 @@ export default function OwnersPage() {
   return (
     <Sidebar>
       <div className="min-h-screen bg-background">
-        <header className="bg-[#141414] border-b border-[#1E1E1E] px-6 py-4 sticky top-0 z-40">
+        <header className="bg-background border-b border-border dark:bg-[#141414] dark:border-[#1E1E1E] px-6 py-4 sticky top-0 z-40">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-6">
               <span className="text-[#e94446] font-medium">Owners</span>
@@ -414,50 +432,50 @@ export default function OwnersPage() {
           </p>
         </div>
 
-        <div className="sticky top-14 z-10 bg-card dark:bg-[#141414] border border-border rounded-lg p-4 mb-6 shadow-sm">
+        <div className="bg-card dark:bg-[#141414] border border-border rounded-lg p-4 mb-6 shadow-sm">
           {(filters.q || filters.sector !== "ALL" || filters.interes !== "ALL" || filters.origen !== "ALL" || sortColumn) && (
-            <div className="flex flex-wrap gap-2 items-center mb-4 pb-4 border-b border-[#1E1E1E]">
+            <div className="flex flex-wrap gap-2 items-center mb-4 pb-4 border-b border-border dark:border-[#1E1E1E]">
               {filters.q && (
-                <div className="flex items-center gap-1 bg-blue-900/50 hover:bg-blue-800/50 border border-blue-700/40 rounded-full px-3 py-1.5 text-sm text-blue-200">
+                <div className="flex items-center gap-1 bg-blue-100 hover:bg-blue-200 border border-blue-200 rounded-full px-3 py-1.5 text-sm text-blue-800 dark:bg-blue-900/50 dark:hover:bg-blue-800/50 dark:border-blue-700/40 dark:text-blue-200">
                   <span className="font-medium">Búsqueda:</span>
-                  <span className="text-blue-100">{filters.q}</span>
-                  <button type="button" onClick={() => eliminarFiltro("q")} className="ml-0.5 text-blue-300 hover:text-[#3EE6C1] transition-colors" aria-label="Quitar filtro">
+                  <span className="text-blue-700 dark:text-blue-100">{filters.q}</span>
+                  <button type="button" onClick={() => eliminarFiltro("q")} className="ml-0.5 text-blue-600 hover:text-blue-800 dark:text-blue-300 dark:hover:text-[#3EE6C1] transition-colors" aria-label="Quitar filtro">
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
               )}
               {filters.sector !== "ALL" && (
-                <div className="flex items-center gap-1 bg-emerald-900/40 hover:bg-emerald-800/40 border border-emerald-600/40 rounded-full px-3 py-1.5 text-sm text-emerald-200">
+                <div className="flex items-center gap-1 bg-emerald-100 hover:bg-emerald-200 border border-emerald-200 rounded-full px-3 py-1.5 text-sm text-emerald-800 dark:bg-emerald-900/40 dark:hover:bg-emerald-800/40 dark:border-emerald-600/40 dark:text-emerald-200">
                   <span className="font-medium">Sector:</span>
-                  <span className="text-emerald-100">{filters.sector}</span>
-                  <button type="button" onClick={() => eliminarFiltro("sector")} className="ml-0.5 text-emerald-300 hover:text-[#3EE6C1] transition-colors" aria-label="Quitar sector">
+                  <span className="text-emerald-700 dark:text-emerald-100">{filters.sector}</span>
+                  <button type="button" onClick={() => eliminarFiltro("sector")} className="ml-0.5 text-emerald-600 hover:text-emerald-800 dark:text-emerald-300 dark:hover:text-[#3EE6C1] transition-colors" aria-label="Quitar sector">
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
               )}
               {filters.interes !== "ALL" && (
-                <div className="flex items-center gap-1 bg-purple-900/40 hover:bg-purple-800/40 border border-purple-600/40 rounded-full px-3 py-1.5 text-sm text-purple-200">
+                <div className="flex items-center gap-1 bg-purple-100 hover:bg-purple-200 border border-purple-200 rounded-full px-3 py-1.5 text-sm text-purple-800 dark:bg-purple-900/40 dark:hover:bg-purple-800/40 dark:border-purple-600/40 dark:text-purple-200">
                   <span className="font-medium">Interés:</span>
-                  <span className="text-purple-100">{filters.interes}</span>
-                  <button type="button" onClick={() => eliminarFiltro("interes")} className="ml-0.5 text-purple-300 hover:text-[#3EE6C1] transition-colors" aria-label="Quitar interés">
+                  <span className="text-purple-700 dark:text-purple-100">{filters.interes}</span>
+                  <button type="button" onClick={() => eliminarFiltro("interes")} className="ml-0.5 text-purple-600 hover:text-purple-800 dark:text-purple-300 dark:hover:text-[#3EE6C1] transition-colors" aria-label="Quitar interés">
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
               )}
               {filters.origen !== "ALL" && (
-                <div className="flex items-center gap-1 bg-amber-900/40 hover:bg-amber-800/40 border border-amber-600/40 rounded-full px-3 py-1.5 text-sm text-amber-200">
+                <div className="flex items-center gap-1 bg-amber-100 hover:bg-amber-200 border border-amber-200 rounded-full px-3 py-1.5 text-sm text-amber-800 dark:bg-amber-900/40 dark:hover:bg-amber-800/40 dark:border-amber-600/40 dark:text-amber-200">
                   <span className="font-medium">Origen:</span>
-                  <span className="text-amber-100">{filters.origen}</span>
-                  <button type="button" onClick={() => eliminarFiltro("origen")} className="ml-0.5 text-amber-300 hover:text-[#3EE6C1] transition-colors" aria-label="Quitar origen">
+                  <span className="text-amber-700 dark:text-amber-100">{filters.origen}</span>
+                  <button type="button" onClick={() => eliminarFiltro("origen")} className="ml-0.5 text-amber-600 hover:text-amber-800 dark:text-amber-300 dark:hover:text-[#3EE6C1] transition-colors" aria-label="Quitar origen">
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
               )}
               {sortColumn && (
-                <div className="flex items-center gap-1 bg-cyan-900/40 hover:bg-cyan-800/40 border border-cyan-600/40 rounded-full px-3 py-1.5 text-sm text-cyan-200">
+                <div className="flex items-center gap-1 bg-cyan-100 hover:bg-cyan-200 border border-cyan-200 rounded-full px-3 py-1.5 text-sm text-cyan-800 dark:bg-cyan-900/40 dark:hover:bg-cyan-800/40 dark:border-cyan-600/40 dark:text-cyan-200">
                   <span className="font-medium">Orden:</span>
-                  <span className="text-cyan-100">Nombre ({sortDirection === "asc" ? "A-Z" : "Z-A"})</span>
-                  <button type="button" onClick={() => eliminarFiltro("sort")} className="ml-0.5 text-cyan-300 hover:text-[#3EE6C1] transition-colors" aria-label="Quitar orden">
+                  <span className="text-cyan-700 dark:text-cyan-100">Nombre ({sortDirection === "asc" ? "A-Z" : "Z-A"})</span>
+                  <button type="button" onClick={() => eliminarFiltro("sort")} className="ml-0.5 text-cyan-600 hover:text-cyan-800 dark:text-cyan-300 dark:hover:text-[#3EE6C1] transition-colors" aria-label="Quitar orden">
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -510,18 +528,23 @@ export default function OwnersPage() {
               </SelectContent>
             </Select>
             <div className="flex-1" />
-            <Button variant="outline" size="sm" asChild>
+            <Button variant="outline" size="sm" asChild className="border-border text-foreground hover:bg-muted hover:text-foreground dark:border-[#404040] dark:text-[#D1D1D1] dark:hover:bg-[#1E1E1E] dark:hover:text-[#FFFFFF]">
               <Link prefetch={false} href="/panel/owners/leads/papelera">
                 <Trash className="w-4 h-4 mr-2" />
                 Papelera
               </Link>
             </Button>
-            <Button variant="outline" size="sm" onClick={exportAllCsv}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={exportAllCsv}
+              className="border-border text-foreground hover:bg-muted hover:text-foreground dark:border-[#404040] dark:text-[#D1D1D1] dark:hover:bg-[#1E1E1E] dark:hover:text-[#FFFFFF]"
+            >
               <FileSpreadsheet className="w-4 h-4 mr-2" />
               Exportar CSV
             </Button>
             <Link prefetch={false} href="/panel/owners/nuevo">
-              <Button className="bg-[#e94446] hover:bg-[#D7514C] text-white">
+              <Button className="bg-[#e94446] hover:bg-[#D7514C] text-white shadow-[0_0_12px_rgba(233,68,70,0.45)] hover:shadow-[0_0_20px_rgba(233,68,70,0.6)] dark:text-white">
                 <Plus className="w-4 h-4 mr-2" />
                 Nuevo
               </Button>
@@ -599,35 +622,62 @@ export default function OwnersPage() {
                           ) : (
                             <User className="w-4 h-4 shrink-0 text-muted-foreground" />
                           )}
-                          <TableCellTruncate value={c.displayName} maxCh={20} />
+                          <EditableOwnerCell
+                            id={c.id}
+                            field="displayName"
+                            value={c.displayName}
+                            type="text"
+                            onSave={handleFieldSave}
+                            className="flex-1 min-w-0"
+                          />
                         </div>
                       </TableCell>
                       <TableCell className="max-w-[20ch]">
-                        {c.website ? (
-                          <a
-                            href={c.website.startsWith("http") ? c.website : `https://${c.website}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-[#e94446] hover:text-[#d63d3f] truncate block max-w-full"
-                            title={c.website}
-                          >
-                            <TableCellTruncate value={c.website} maxCh={22} />
-                          </a>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
+                        <EditableOwnerCell
+                          id={c.id}
+                          field="website"
+                          value={c.website}
+                          type="text"
+                          onSave={handleFieldSave}
+                        />
                       </TableCell>
                       <TableCell className="max-w-[22ch]">
-                        <TableCellTruncate value={c.email} />
+                        <EditableOwnerCell
+                          id={c.id}
+                          field="email"
+                          value={c.email}
+                          type="text"
+                          onSave={handleFieldSave}
+                        />
                       </TableCell>
                       <TableCell className="max-w-[14ch]">
-                        <TableCellTruncate value={c.phone} />
+                        <EditableOwnerCell
+                          id={c.id}
+                          field="phone"
+                          value={c.phone}
+                          type="text"
+                          onSave={handleFieldSave}
+                        />
                       </TableCell>
                       <TableCell className="max-w-[18ch]">
-                        <TableCellTruncate value={c.city} />
+                        <EditableOwnerCell
+                          id={c.id}
+                          field="city"
+                          value={c.city}
+                          type="text"
+                          onSave={handleFieldSave}
+                        />
                       </TableCell>
                       <TableCell className="max-w-[12ch]">
-                        <TableCellTruncate value={c.sector ?? "—"} />
+                        <EditableOwnerCell
+                          id={c.id}
+                          field="sector"
+                          value={c.sector ?? ""}
+                          type="select"
+                          options={["", ...uniqueSectores]}
+                          optionLabels={{ "": "—" }}
+                          onSave={handleFieldSave}
+                        />
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2">
@@ -636,7 +686,7 @@ export default function OwnersPage() {
                               variant="outline"
                               size="sm"
                               title="Editar"
-                              className="border-[#404040] text-[#D1D1D1] hover:bg-[#1E1E1E] hover:text-[#FFFFFF]"
+                              className="border-border text-foreground hover:bg-muted dark:border-[#404040] dark:text-[#D1D1D1] dark:hover:bg-[#1E1E1E] dark:hover:text-[#FFFFFF]"
                             >
                               <Edit className="w-4 h-4" />
                             </Button>
@@ -646,7 +696,7 @@ export default function OwnersPage() {
                             size="sm"
                             onClick={() => window.open("/panel/crm", "_blank")}
                             title="Enviar a pipeline"
-                            className="border-[#404040] text-[#D1D1D1] hover:bg-[#1E1E1E] hover:text-[#FFFFFF]"
+                            className="border-border text-foreground hover:bg-muted dark:border-[#404040] dark:text-[#D1D1D1] dark:hover:bg-[#1E1E1E] dark:hover:text-[#FFFFFF]"
                           >
                             <Send className="w-4 h-4" />
                           </Button>
@@ -655,7 +705,7 @@ export default function OwnersPage() {
                             size="sm"
                             onClick={() => handlePapelera(c.id)}
                             title="Papelera"
-                            className="border-[#404040] text-[#D1D1D1] hover:bg-[#1E1E1E] hover:text-[#FFFFFF]"
+                            className="border-border text-foreground hover:bg-muted dark:border-[#404040] dark:text-[#D1D1D1] dark:hover:bg-[#1E1E1E] dark:hover:text-[#FFFFFF]"
                           >
                             <Trash className="w-4 h-4" />
                           </Button>
@@ -664,7 +714,7 @@ export default function OwnersPage() {
                             size="sm"
                             onClick={() => handleDelete(c.id)}
                             title="Eliminar"
-                            className="border-red-600 text-red-600 hover:bg-red-600/10 hover:border-red-600 hover:text-red-600"
+                            className="border-border text-red-600 hover:bg-red-600/10 hover:text-red-600 dark:border-red-600 dark:text-red-600 dark:hover:bg-red-600/10 dark:hover:border-red-600 dark:hover:text-red-600"
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>

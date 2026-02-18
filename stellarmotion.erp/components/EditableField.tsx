@@ -7,18 +7,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
-// Constantes para colores de estado
+// Constantes para colores de estado (pill pequeño, con dark mode)
 const STATUS_META = {
-  DISPONIBLE:   { label: 'Disponible',    className: 'bg-green-100 text-green-800 border-green-200' },
-  RESERVADO:    { label: 'Reservado',     className: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
-  OCUPADO:      { label: 'Ocupado',       className: 'bg-red-100 text-red-800 border-red-200' },
-  MANTENIMIENTO:{ label: 'Mantenimiento', className: 'bg-gray-100 text-gray-800 border-gray-200' },
-  NO_DISPONIBLE:{ label: 'No disponible', className: 'bg-gray-100 text-gray-800 border-gray-200' },
+  DISPONIBLE:   { label: 'Disponible',    className: 'rounded-full px-2 py-0.5 text-xs border bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800' },
+  RESERVADO:    { label: 'Reservado',     className: 'rounded-full px-2 py-0.5 text-xs border bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800' },
+  OCUPADO:      { label: 'Ocupado',       className: 'rounded-full px-2 py-0.5 text-xs border bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800' },
+  MANTENIMIENTO:{ label: 'Mantenimiento', className: 'rounded-full px-2 py-0.5 text-xs border bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700' },
+  NO_DISPONIBLE:{ label: 'No disponible', className: 'rounded-full px-2 py-0.5 text-xs border bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700' },
   // Estados en minúsculas (compatibilidad)
-  disponible:   { label: 'Disponible',    className: 'bg-green-100 text-green-800 border-green-200' },
-  reservado:    { label: 'Reservado',     className: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
-  ocupado:      { label: 'Ocupado',       className: 'bg-red-100 text-red-800 border-red-200' },
-  mantenimiento:{ label: 'Mantenimiento', className: 'bg-gray-100 text-gray-800 border-gray-200' },
+  disponible:   { label: 'Disponible',    className: 'rounded-full px-2 py-0.5 text-xs border bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800' },
+  reservado:    { label: 'Reservado',     className: 'rounded-full px-2 py-0.5 text-xs border bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800' },
+  ocupado:      { label: 'Ocupado',       className: 'rounded-full px-2 py-0.5 text-xs border bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800' },
+  mantenimiento:{ label: 'Mantenimiento', className: 'rounded-full px-2 py-0.5 text-xs border bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700' },
 } as const
 
 interface EditableFieldProps {
@@ -142,65 +142,38 @@ export default function EditableField({
       className={`p-1 rounded min-h-[32px] flex items-center ${className} ${
         isNonEditable || field === 'location'
           ? 'cursor-not-allowed opacity-60' 
-          : 'cursor-pointer hover:bg-gray-100'
+          : 'cursor-pointer hover:bg-muted/60 dark:hover:bg-[#1e1e1e]/80'
       }`}
       onClick={isNonEditable || field === 'location' ? undefined : startEditing}
       title={displayTitle}
     >
       {field === 'status' ? (
         (() => {
-          // Normalizar el valor del estado
-          const normalizedStatus = String(value || '').toLowerCase();
-          
-          // Mapear estados a colores y etiquetas
-          const getStatusConfig = (status: string) => {
-            switch (status) {
-              case 'disponible':
-                return {
-                  label: 'Disponible',
-                  className: 'bg-green-100 text-green-800 border-green-200'
-                };
-              case 'reservado':
-                return {
-                  label: 'Reservado', 
-                  className: 'bg-yellow-100 text-yellow-800 border-yellow-200'
-                };
-              case 'ocupado':
-                return {
-                  label: 'Ocupado',
-                  className: 'bg-red-100 text-red-800 border-red-200'
-                };
-              case 'mantenimiento':
-                return {
-                  label: 'Mantenimiento',
-                  className: 'bg-gray-100 text-gray-800 border-gray-200'
-                };
-              default:
-                return {
-                  label: String(value || 'Desconocido'),
-                  className: 'bg-gray-100 text-gray-800 border-gray-200'
-                };
-            }
-          };
-          
-          const statusConfig = getStatusConfig(normalizedStatus);
-          
+          const normalizedStatus = String(value || '').toUpperCase();
+          const key = normalizedStatus in STATUS_META ? normalizedStatus : (normalizedStatus.toLowerCase() in STATUS_META ? normalizedStatus.toLowerCase() : null);
+          const meta = key ? STATUS_META[key as keyof typeof STATUS_META] : null;
+          const label = meta?.label ?? String(value || 'Desconocido');
+          const className = meta?.className ?? 'rounded-full px-2 py-0.5 text-xs border bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700';
           return (
-            <Badge className={statusConfig.className}>
-              {statusConfig.label}
+            <Badge className={className}>
+              {label}
             </Badge>
           );
         })()
       ) : field === 'owner' ? (
-        <Badge className="bg-blue-100 text-blue-800 border-blue-200">
+        <Badge className="rounded-full px-3 py-1.5 text-sm border bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/50 dark:text-blue-200 dark:border-blue-700/40">
           {value || '—'}
         </Badge>
       ) : field === 'code' ? (
-        <span className="inline-flex items-center rounded-md bg-neutral-100 px-2 py-1 font-mono text-xs text-gray-800 border border-neutral-200">
+        <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-mono bg-neutral-100 text-gray-800 border border-neutral-200 dark:bg-gray-700/50 dark:border-gray-600 dark:text-gray-200">
+          {value || '—'}
+        </span>
+      ) : field === 'type' ? (
+        <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs bg-neutral-100 text-gray-800 border border-neutral-200 dark:bg-gray-700/50 dark:border-gray-600 dark:text-gray-200">
           {value || '—'}
         </span>
       ) : type === 'select' && options ? (
-        <Badge variant="secondary">{value || '—'}</Badge>
+        <Badge className="rounded-full px-2 py-0.5 text-xs border border-border">{value || '—'}</Badge>
       ) : isNumeric ? (
         <span>{
           typeof value === 'number'
