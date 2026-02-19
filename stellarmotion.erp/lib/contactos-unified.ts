@@ -1,27 +1,25 @@
 /**
- * Tabla unificada public.contactos (leads + contactos).
- * Leads: lifecycle_status = 'lead'. Contactos: lifecycle_status != 'lead'.
- * Requiere en Supabase: enum crm_lifecycle_enum, crm_source_enum y tabla contactos.
+ * Tabla unificada public.contactos.
+ * Roles de negocio: owner, brand, maker (contacto_rol_enum[]).
+ * Email: jsonb array (e.g. ["email@example.com"]).
+ * No existe lifecycle_status en el esquema actual.
  */
 import { supabaseAdmin } from "./supabase-admin";
 
-export type LifecycleStatus = "lead" | "contact" | "customer" | "opportunity";
 export type SourceEnum = "scraping" | "manual" | "web" | "import" | "other";
 
 export interface ContactoRow {
   id: string;
   user_id: string | null;
   roles: string[];
-  lifecycle_status: string;
   origen: string | null;
   tipo_entidad: string | null;
   nombre: string | null;
-  razon_social: string | null;
-  nombre_razon_social?: string | null;
+  apellidos: string | null;
+  razon_social: string;
   nif: string | null;
-  email: string | null;
+  email: unknown;
   telefono: string | null;
-  telefono_secundario: string | null;
   sitio_web: string | null;
   idioma: string | null;
   direccion: string | null;
@@ -32,25 +30,25 @@ export interface ContactoRow {
   longitud: number | null;
   sector: string | null;
   interes: string | null;
-  categories: string[] | null;
+  categories: unknown;
   persona_contacto: unknown;
   notas: string | null;
-  rating: number | null;
   comercial_asignado_id: string | null;
-  datos_fiscales: unknown;
-  metadata_scraping: unknown;
+  empresa_id: string | null;
+  representante_legal: string | null;
+  puesto: string | null;
+  tiene_permisos: boolean | null;
+  permite_instalacion: boolean | null;
   created_at: string | null;
   updated_at: string | null;
   deleted_at: string | null;
 }
 
-/** Persona de contacto (para tipo empresa) */
 export interface PersonaContactoItem {
   nombre: string;
   email?: string;
 }
 
-/** Formato contacto para la sección Contactos (lista/detalle) */
 export interface ContactoFormato {
   id: string;
   displayName: string;
@@ -81,7 +79,6 @@ export interface ContactoFormato {
   longitud?: number | null;
 }
 
-/** Formato lead para la sección Leads */
 export interface LeadFormato {
   id: string;
   nombre: string;
@@ -103,11 +100,51 @@ export interface LeadFormato {
   deleted_at?: string | null;
 }
 
+/* ── helpers para email jsonb ── */
+
+function emailFromJsonb(raw: unknown): string | undefined {
+  if (!raw) return undefined;
+  if (Array.isArray(raw)) {
+    const list = raw.filter((e): e is string => typeof e === "string" && e.trim() !== "");
+    return list.length > 0 ? list.join(", ") : undefined;
+  }
+  if (typeof raw === "string") return raw.trim() || undefined;
+  return undefined;
+}
+
+function emailArrayFromJsonb(raw: unknown): string[] {
+  if (!raw) return [];
+  if (Array.isArray(raw)) {
+    return raw.filter((e): e is string => typeof e === "string" && e.trim() !== "").map((e) => e.trim());
+  }
+  if (typeof raw === "string" && raw.trim()) {
+    return raw.includes(",") ? raw.split(",").map((e) => e.trim()).filter(Boolean) : [raw.trim()];
+  }
+  return [];
+}
+
+function emailToJsonb(email: string | undefined | null): unknown {
+  if (!email) return [];
+  const trimmed = email.trim();
+  if (!trimmed) return [];
+  return trimmed.includes(",")
+    ? trimmed.split(",").map((e) => e.trim()).filter(Boolean)
+    : [trimmed];
+}
+
+/** Siempre devuelve array JSONB para columna telefono (nunca string ni null). */
+function phoneToJsonb(phone: string | undefined | null): string[] {
+  if (!phone || !String(phone).trim()) return [];
+  return [String(phone).trim()];
+}
+
+/* ── helpers para persona_contacto y categories ── */
+
 function parsePersonaContacto(v: unknown): PersonaContactoItem[] {
   if (!v) return [];
   if (Array.isArray(v)) {
     return v
-      .filter((x) => x && (typeof x === "object") && "nombre" in x)
+      .filter((x) => x && typeof x === "object" && "nombre" in x)
       .map((x) => ({
         nombre: String((x as any).nombre ?? "").trim(),
         email: (x as any).email != null ? String((x as any).email).trim() : undefined,
@@ -121,26 +158,35 @@ function parsePersonaContacto(v: unknown): PersonaContactoItem[] {
   return [];
 }
 
+function parseCategories(raw: unknown): string[] {
+  if (Array.isArray(raw)) return raw.filter((c): c is string => typeof c === "string");
+  return [];
+}
+
+/* ── row → formato ── */
+
 function rowToContacto(r: ContactoRow): ContactoFormato {
-  const email = r.email?.trim() || undefined;
+  const email = emailFromJsonb(r.email);
   const personaContacto = parsePersonaContacto(r.persona_contacto);
-  const categories = Array.isArray(r.categories) ? r.categories.filter((c): c is string => typeof c === "string") : [];
-  const displayName = r.nombre ?? r.razon_social ?? (r as any).nombre_razon_social ?? "";
+  const categories = parseCategories(r.categories);
+  const displayName = r.nombre ?? r.razon_social ?? "";
+  const roles = Array.isArray(r.roles) ? r.roles : [];
+  const relation = roles.includes("owner") ? "OWNER" : roles.includes("brand") ? "BRAND" : roles.includes("maker") ? "MAKER" : "CUSTOMER";
   return {
     id: r.id,
     displayName: displayName || "",
     nombre: r.nombre ?? undefined,
     razonSocial: r.razon_social ?? undefined,
-    legalName: r.razon_social ?? (r as any).nombre_razon_social ?? undefined,
+    legalName: r.razon_social ?? undefined,
     nif: r.nif ?? undefined,
-    phone: r.telefono ?? undefined,
-    email: email ?? undefined,
+    phone: Array.isArray(r.telefono) ? (r.telefono[0] ?? undefined) : (r.telefono ?? undefined),
+    email,
     address: r.direccion ?? undefined,
     city: r.ciudad ?? undefined,
     postalCode: r.codigo_postal ?? undefined,
     country: r.pais ?? undefined,
-    relation: "CUSTOMER",
-    status: r.lifecycle_status || "contact",
+    relation,
+    status: "active",
     notes: r.notas ?? undefined,
     salesOwnerId: r.comercial_asignado_id ?? undefined,
     createdAt: r.created_at ?? undefined,
@@ -158,11 +204,11 @@ function rowToContacto(r: ContactoRow): ContactoFormato {
 }
 
 function rowToLead(r: ContactoRow): LeadFormato {
-  const emailArr = r.email ? (r.email.includes(",") ? r.email.split(",").map((e) => e.trim()).filter(Boolean) : [r.email.trim()]) : [];
-  const categories = Array.isArray(r.categories) ? r.categories : [];
+  const emailArr = emailArrayFromJsonb(r.email);
+  const categories = parseCategories(r.categories);
   return {
     id: r.id,
-    nombre: r.nombre ?? r.razon_social ?? (r as any).nombre_razon_social ?? "",
+    nombre: r.nombre ?? r.razon_social ?? "",
     email: emailArr.length ? emailArr : undefined,
     telefono: r.telefono ?? undefined,
     ciudad: r.ciudad ?? undefined,
@@ -182,7 +228,9 @@ function rowToLead(r: ContactoRow): LeadFormato {
   };
 }
 
-/** Listar Owners unificado: contactos con rol 'owner' O lifecycle_status = 'lead' (no eliminados). Una sola lista. */
+/* ── queries ── */
+
+/** Listar contactos por rol: OWNER / BRAND / MAKER. */
 export async function getContactos(filters: {
   q?: string;
   relation?: string;
@@ -194,16 +242,23 @@ export async function getContactos(filters: {
   limit?: number;
 }): Promise<{ data: ContactoFormato[]; total: number }> {
   try {
-    let q = supabaseAdmin
+    const isBrand = filters.relation === "BRAND";
+    const isMaker = filters.relation === "MAKER";
+    const base = supabaseAdmin
       .from("contactos")
       .select("*", { count: "exact" })
-      .or("roles.cs.{\"owner\"},lifecycle_status.eq.lead")
       .is("deleted_at", null)
       .order("razon_social", { ascending: true });
 
+    let q = isBrand
+      ? base.contains("roles", ["brand"])
+      : isMaker
+        ? base.contains("roles", ["maker"])
+        : base.contains("roles", ["owner"]);
+
     if (filters.q?.trim()) {
       const t = filters.q.trim().replace(/,/g, " ");
-      q = q.or(`nombre.ilike.%${t}%,razon_social.ilike.%${t}%,email.ilike.%${t}%,telefono.ilike.%${t}%,nif.ilike.%${t}%`);
+      q = q.or(`nombre.ilike.%${t}%,razon_social.ilike.%${t}%,telefono.ilike.%${t}%,nif.ilike.%${t}%`);
     }
     if (filters.kind === "INDIVIDUAL") {
       q = q.eq("tipo_entidad", "persona");
@@ -227,9 +282,8 @@ export async function getContactos(filters: {
     q = q.range(from, to);
 
     const { data, error, count } = await q;
-
     if (error) {
-      console.error("getContactos error:", error);
+      console.error("getContactos error:", JSON.stringify(error));
       return { data: [], total: 0 };
     }
     const rows = (data || []) as ContactoRow[];
@@ -240,7 +294,7 @@ export async function getContactos(filters: {
   }
 }
 
-/** Listar leads: lifecycle_status = 'lead' Y que NO tengan rol 'owner'. Opcionalmente incluir eliminados. */
+/** Listar contactos generales (sin filtro de rol). Usado por APIs legacy de leads. */
 export async function getLeads(filters: {
   q?: string;
   sector?: string;
@@ -254,19 +308,15 @@ export async function getLeads(filters: {
     let q = supabaseAdmin
       .from("contactos")
       .select("*", { count: "exact" })
-      .eq("lifecycle_status", "lead")
       .order("created_at", { ascending: false });
 
     if (!filters.includeDeleted) {
       q = q.is("deleted_at", null);
     }
 
-    // Excluir leads que ya tienen rol 'owner' (solo mostrar leads que aún no son owners)
-    q = q.not("roles", "cs", ["owner"]);
-
     if (filters.q?.trim()) {
       const t = filters.q.trim().replace(/,/g, " ");
-      q = q.or(`nombre.ilike.%${t}%,razon_social.ilike.%${t}%,email.ilike.%${t}%,telefono.ilike.%${t}%,sector.ilike.%${t}%`);
+      q = q.or(`nombre.ilike.%${t}%,razon_social.ilike.%${t}%,telefono.ilike.%${t}%,sector.ilike.%${t}%`);
     }
     if (filters.sector?.trim() && filters.sector !== "ALL") {
       q = q.eq("sector", filters.sector.trim());
@@ -282,9 +332,8 @@ export async function getLeads(filters: {
     q = q.range(from, to);
 
     const { data, error, count } = await q;
-
     if (error) {
-      console.error("getLeads error:", error);
+      console.error("getLeads error:", JSON.stringify(error));
       return { data: [], total: 0 };
     }
     const rows = (data || []) as ContactoRow[];
@@ -295,9 +344,13 @@ export async function getLeads(filters: {
   }
 }
 
-/** Obtener un contacto/lead por ID */
 export async function getContactoById(id: string): Promise<ContactoFormato | null> {
-  const { data, error } = await supabaseAdmin.from("contactos").select("*").eq("id", id).is("deleted_at", null).maybeSingle();
+  const { data, error } = await supabaseAdmin
+    .from("contactos")
+    .select("*")
+    .eq("id", id)
+    .is("deleted_at", null)
+    .maybeSingle();
   if (error || !data) return null;
   return rowToContacto(data as ContactoRow);
 }
@@ -308,18 +361,21 @@ export async function getLeadById(id: string): Promise<LeadFormato | null> {
   return rowToLead(data as ContactoRow);
 }
 
-/** Crear contacto (como contact, no lead) */
+/** Crear contacto. relation → rol: OWNER→owner, BRAND→brand, MAKER→maker. Default: owner. */
 export async function createContacto(payload: Partial<ContactoFormato>): Promise<ContactoFormato | null> {
+  const isOwner = payload.relation === "OWNER";
+  const isBrand = payload.relation === "BRAND";
+  const isMaker = payload.relation === "MAKER";
+  const roles = isOwner ? ["owner"] : isBrand ? ["brand"] : isMaker ? ["maker"] : ["owner"];
   const insert: Record<string, unknown> = {
-    roles: ["contact"],
-    lifecycle_status: "contact",
-    origen: "manual",
+    roles,
+    origen: payload.origen?.trim() || "manual",
     tipo_entidad: payload.kind === "INDIVIDUAL" ? "persona" : "empresa",
     nombre: payload.nombre?.trim() || payload.displayName?.trim() || null,
     razon_social: payload.razonSocial?.trim() || payload.displayName?.trim() || "Sin nombre",
     nif: payload.nif?.trim() || null,
-    email: payload.email?.trim() || null,
-    telefono: payload.phone?.trim() || null,
+    email: emailToJsonb(payload.email),
+    telefono: phoneToJsonb(payload.phone),
     direccion: payload.address?.trim() || null,
     ciudad: payload.city?.trim() || null,
     codigo_postal: payload.postalCode?.trim() || null,
@@ -328,27 +384,39 @@ export async function createContacto(payload: Partial<ContactoFormato>): Promise
     notas: payload.notes?.trim() || null,
     comercial_asignado_id: payload.salesOwnerId || null,
     sector: payload.sector?.trim() || null,
+    interes: payload.interes?.trim() || null,
+    latitud: payload.latitud ?? null,
+    longitud: payload.longitud ?? null,
+    categories: Array.isArray(payload.categories) ? payload.categories : [],
+    persona_contacto: Array.isArray(payload.persona_contacto) && payload.persona_contacto.length
+      ? payload.persona_contacto.filter((p) => p?.nombre?.trim()).map((p) => ({ nombre: p.nombre.trim(), email: p.email?.trim() || null }))
+      : null,
   };
+  console.log("createContacto insert payload:", JSON.stringify({ ...insert, email: insert.email, telefono: insert.telefono }));
   const { data, error } = await supabaseAdmin.from("contactos").insert(insert).select().single();
+  console.log("createContacto resultado insert:", { hasData: !!data, error: error ? JSON.stringify(error) : null });
   if (error) {
-    console.error("createContacto:", error);
+    console.error("createContacto:", JSON.stringify(error));
+    return null;
+  }
+  if (!data) {
+    console.error("createContacto: insert ok pero data vacío");
     return null;
   }
   return rowToContacto(data as ContactoRow);
 }
 
-/** Crear lead */
+/** Crear contacto con formato lead (usado por /api/leads POST). Crea con rol owner por defecto. */
 export async function createLead(payload: Partial<LeadFormato>): Promise<LeadFormato | null> {
-  const emailStr = Array.isArray(payload.email) ? payload.email.filter(Boolean).join(",") : payload.email;
+  const emailArr = Array.isArray(payload.email) ? payload.email.filter(Boolean) : payload.email ? [payload.email] : [];
   const insert: Record<string, unknown> = {
-    roles: ["lead"],
-    lifecycle_status: "lead",
+    roles: ["owner"],
     origen: (payload.origen as string) || "manual",
     tipo_entidad: "empresa",
     nombre: payload.nombre?.trim() || null,
     razon_social: payload.nombre?.trim() || "Sin nombre",
-    email: emailStr?.trim() || null,
-    telefono: payload.telefono?.trim() || null,
+    email: emailArr.length > 0 ? emailArr : [],
+    telefono: phoneToJsonb(payload.telefono),
     direccion: payload.calle?.trim() || null,
     ciudad: payload.ciudad?.trim() || null,
     codigo_postal: payload.postal_code?.trim() || null,
@@ -362,23 +430,23 @@ export async function createLead(payload: Partial<LeadFormato>): Promise<LeadFor
   };
   const { data, error } = await supabaseAdmin.from("contactos").insert(insert).select().single();
   if (error) {
-    console.error("createLead:", error);
+    console.error("createLead:", JSON.stringify(error));
     return null;
   }
   return rowToLead(data as ContactoRow);
 }
 
-/** Actualizar contacto */
 export async function updateContacto(id: string, payload: Partial<ContactoFormato>): Promise<ContactoFormato | null> {
   const up: Record<string, unknown> = {
     updated_at: new Date().toISOString(),
   };
+  if (payload.kind !== undefined) up.tipo_entidad = payload.kind === "INDIVIDUAL" ? "persona" : "empresa";
   if (payload.nombre !== undefined) up.nombre = payload.nombre?.trim() || null;
   if (payload.razonSocial !== undefined) up.razon_social = payload.razonSocial?.trim() || null;
   if (payload.displayName !== undefined && payload.razonSocial === undefined) up.razon_social = payload.displayName.trim();
   if (payload.nif !== undefined) up.nif = payload.nif?.trim() || null;
-  if (payload.phone !== undefined) up.telefono = payload.phone?.trim() || null;
-  if (payload.email !== undefined) up.email = payload.email?.trim() || null;
+  if (payload.phone !== undefined) up.telefono = phoneToJsonb(payload.phone);
+  if (payload.email !== undefined) up.email = emailToJsonb(payload.email);
   if (payload.address !== undefined) up.direccion = payload.address?.trim() || null;
   if (payload.city !== undefined) up.ciudad = payload.city?.trim() || null;
   if (payload.postalCode !== undefined) up.codigo_postal = payload.postalCode?.trim() || null;
@@ -403,15 +471,17 @@ export async function updateContacto(id: string, payload: Partial<ContactoFormat
   return rowToContacto(data as ContactoRow);
 }
 
-/** Actualizar lead */
 export async function updateLead(id: string, payload: Partial<LeadFormato>): Promise<LeadFormato | null> {
   const up: Record<string, unknown> = { updated_at: new Date().toISOString() };
-  if (payload.nombre !== undefined) up.nombre = payload.nombre.trim();
-  if (payload.nombre !== undefined) up.razon_social = payload.nombre.trim();
-  if (payload.email !== undefined) {
-    up.email = Array.isArray(payload.email) ? payload.email.filter(Boolean).join(",") : payload.email;
+  if (payload.nombre !== undefined) {
+    up.nombre = payload.nombre.trim();
+    up.razon_social = payload.nombre.trim();
   }
-  if (payload.telefono !== undefined) up.telefono = payload.telefono?.trim() || null;
+  if (payload.email !== undefined) {
+    const emailArr = Array.isArray(payload.email) ? payload.email.filter(Boolean) : [];
+    up.email = emailArr.length > 0 ? emailArr : [];
+  }
+  if (payload.telefono !== undefined) up.telefono = phoneToJsonb(payload.telefono);
   if (payload.ciudad !== undefined) up.ciudad = payload.ciudad?.trim() || null;
   if (payload.calle !== undefined) up.direccion = payload.calle?.trim() || null;
   if (payload.postal_code !== undefined) up.codigo_postal = payload.postal_code?.trim() || null;
@@ -429,31 +499,31 @@ export async function updateLead(id: string, payload: Partial<LeadFormato>): Pro
   return rowToLead(data as ContactoRow);
 }
 
-/** Eliminar contacto (hard delete) */
 export async function deleteContacto(id: string): Promise<boolean> {
   const { error } = await supabaseAdmin.from("contactos").delete().eq("id", id);
   return !error;
 }
 
-/** Soft delete lead (deleted_at) */
 export async function softDeleteLead(id: string): Promise<boolean> {
   const { error } = await supabaseAdmin.from("contactos").update({ deleted_at: new Date().toISOString() }).eq("id", id);
   return !error;
 }
 
-/** Restaurar lead (quitar deleted_at) */
 export async function restoreLead(id: string): Promise<boolean> {
   const { error } = await supabaseAdmin.from("contactos").update({ deleted_at: null }).eq("id", id);
   return !error;
 }
 
-/** Convertir lead a contacto (cambiar lifecycle_status y roles) */
+/** Convertir contacto: asegurar que tiene rol owner. */
 export async function convertLeadToContacto(id: string): Promise<ContactoFormato | null> {
+  const { data: row } = await supabaseAdmin.from("contactos").select("roles").eq("id", id).maybeSingle();
+  if (!row) return null;
+  const currentRoles = Array.isArray((row as any).roles) ? (row as any).roles as string[] : [];
+  const newRoles = Array.from(new Set([...currentRoles, "owner"]));
   const { data, error } = await supabaseAdmin
     .from("contactos")
     .update({
-      lifecycle_status: "contact",
-      roles: ["contact"],
+      roles: newRoles,
       deleted_at: null,
       updated_at: new Date().toISOString(),
     })
@@ -464,7 +534,7 @@ export async function convertLeadToContacto(id: string): Promise<ContactoFormato
   return rowToContacto(data as ContactoRow);
 }
 
-/** Promocionar lead a Owner: añade 'owner' a roles, lifecycle_status = 'customer'. El registro pasa a listado Owners. */
+/** Añadir rol owner a un contacto existente. */
 export async function promoteLeadToOwner(contactId: string): Promise<boolean> {
   const { data: row, error: fetchError } = await supabaseAdmin
     .from("contactos")
@@ -478,14 +548,13 @@ export async function promoteLeadToOwner(contactId: string): Promise<boolean> {
     .from("contactos")
     .update({
       roles: newRoles,
-      lifecycle_status: "customer",
       updated_at: new Date().toISOString(),
     })
     .eq("id", contactId);
   return !updateError;
 }
 
-/** Listar solo leads eliminados (papelera) */
+/** Listar contactos soft-deleted (papelera). */
 export async function getLeadsPapelera(filters: {
   q?: string;
   page?: number;
@@ -495,13 +564,12 @@ export async function getLeadsPapelera(filters: {
     let q = supabaseAdmin
       .from("contactos")
       .select("*", { count: "exact" })
-      .eq("lifecycle_status", "lead")
       .not("deleted_at", "is", null)
       .order("deleted_at", { ascending: false });
 
     if (filters.q?.trim()) {
       const t = filters.q.trim().replace(/,/g, " ");
-      q = q.or(`nombre.ilike.%${t}%,razon_social.ilike.%${t}%,email.ilike.%${t}%,telefono.ilike.%${t}%`);
+      q = q.or(`nombre.ilike.%${t}%,razon_social.ilike.%${t}%,telefono.ilike.%${t}%`);
     }
 
     const page = filters.page ?? 1;
@@ -512,7 +580,7 @@ export async function getLeadsPapelera(filters: {
 
     const { data, error, count } = await q;
     if (error) {
-      console.error("getLeadsPapelera error:", error);
+      console.error("getLeadsPapelera error:", JSON.stringify(error));
       return { data: [], total: 0 };
     }
     const rows = (data || []) as ContactoRow[];
@@ -523,13 +591,13 @@ export async function getLeadsPapelera(filters: {
   }
 }
 
-/** Valores únicos para filtros (leads) */
+/** Valores únicos para filtros (todos los contactos no eliminados). */
 export async function getLeadsUniqueValues(field: "sector" | "interes" | "origen"): Promise<string[]> {
   const col = field === "origen" ? "origen" : field;
   const { data, error } = await supabaseAdmin
     .from("contactos")
     .select(col)
-    .eq("lifecycle_status", "lead")
+    .is("deleted_at", null)
     .not(col, "is", null);
   if (error) return [];
   const set = new Set<string>();
@@ -540,14 +608,21 @@ export async function getLeadsUniqueValues(field: "sector" | "interes" | "origen
   return Array.from(set).sort();
 }
 
-/** Valores únicos para filtros (lista unificada Owners: owners + leads) */
-export async function getContactosUniqueValues(field: "origen" | "sector" | "interes"): Promise<string[]> {
-  const { data, error } = await supabaseAdmin
+/** Valores únicos filtrados por rol (OWNER / BRAND / MAKER). */
+export async function getContactosUniqueValues(
+  field: "origen" | "sector" | "interes",
+  relation?: string
+): Promise<string[]> {
+  const base = supabaseAdmin
     .from("contactos")
     .select(field)
-    .or("roles.cs.{\"owner\"},lifecycle_status.eq.lead")
     .is("deleted_at", null)
     .not(field, "is", null);
+
+  const role = relation === "BRAND" ? "brand" : relation === "MAKER" ? "maker" : "owner";
+  const q = base.contains("roles", [role]);
+
+  const { data, error } = await q;
   if (error) return [];
   const set = new Set<string>();
   (data || []).forEach((r: Record<string, string>) => {

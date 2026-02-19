@@ -10,8 +10,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Building2, User, Plus, Edit, Trash2, FileSpreadsheet, Trash, Send, ArrowUpDown, X } from "lucide-react";
 import { toast } from "sonner";
-import Sidebar from "@/components/dashboard/Sidebar";
-import HeaderUser from "@/components/dashboard/HeaderUser";
 import { TableCellTruncate } from "@/components/TableCellTruncate";
 import BulkActionsOwners from "@/components/owners/BulkActionsOwners";
 import EditableOwnerCell from "@/components/owners/EditableOwnerCell";
@@ -413,18 +411,8 @@ export default function OwnersPage() {
   }
 
   return (
-    <Sidebar>
-      <div className="min-h-screen bg-background">
-        <header className="bg-background border-b border-border dark:bg-[#141414] dark:border-[#1E1E1E] px-6 py-4 sticky top-0 z-40">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-6">
-              <span className="text-[#e94446] font-medium">Owners</span>
-            </div>
-            <HeaderUser />
-          </div>
-        </header>
-
-        <main className="w-full px-6 py-8">
+    <div className="min-h-screen bg-background">
+      <main className="w-full px-6 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">Owners</h1>
           <p className="text-muted-foreground">
@@ -756,7 +744,6 @@ export default function OwnersPage() {
           </div>
         )}
       </main>
-      </div>
-    </Sidebar>
+    </div>
   );
 }

@@ -20,8 +20,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { toast } from "sonner"
 import EditableField from "@/components/EditableField"
 import BulkActions from "@/components/BulkActions"
-import Sidebar from "@/components/dashboard/Sidebar"
-import HeaderUser from "@/components/dashboard/HeaderUser"
 
 // Constantes para colores de estado
 const STATUS_META = {
@@ -381,21 +379,7 @@ export default function SoportesPage() {
   }
 
   return (
-    <Sidebar>
-      <div className="min-h-screen bg-background">
-        {/* Header */}
-        <header className="bg-background border-b border-border dark:bg-[#141414] dark:border-[#1E1E1E] px-6 py-4 sticky top-0 z-40">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-6">
-            <Link prefetch={false} href="/panel/soportes" className="text-[#e94446] font-medium no-underline hover:no-underline">
-              Soportes
-            </Link>
-          </div>
-          <HeaderUser />
-        </div>
-      </header>
-
-      {/* Main Content */}
+    <div className="min-h-screen bg-background">
       <main className="w-full px-6 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">Gestión de Soportes</h1>
@@ -698,7 +682,6 @@ export default function SoportesPage() {
           </CardContent>
         </Card>
       </main>
-      </div>
-    </Sidebar>
+    </div>
   )
 }

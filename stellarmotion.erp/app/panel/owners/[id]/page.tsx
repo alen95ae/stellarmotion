@@ -10,10 +10,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Save, MapPin, Building2, User, X } from "lucide-react";
+import { Save, MapPin, Building2, User, X, Check } from "lucide-react";
 import { toast } from "sonner";
-import Sidebar from "@/components/dashboard/Sidebar";
-import HeaderUser from "@/components/dashboard/HeaderUser";
 import dynamic from "next/dynamic";
 import { buildGoogleMapsLinkFromCoords } from "@/lib/extract-google-maps-coords";
 import GoogleMapsLoader from "@/components/GoogleMapsLoader";
@@ -78,6 +76,7 @@ export default function EditOwnerPage() {
   const id = params?.id as string;
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [mapCoordsLoading, setMapCoordsLoading] = useState(false);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [uniqueSectores, setUniqueSectores] = useState<string[]>([]);
@@ -94,6 +93,7 @@ export default function EditOwnerPage() {
   const emailInputRef = useRef<HTMLInputElement>(null);
   const [categoriasInputValue, setCategoriasInputValue] = useState("");
   const categoriasInputRef = useRef<HTMLInputElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -109,8 +109,12 @@ export default function EditOwnerPage() {
           throw new Error("Error al cargar");
         }
         const data = await res.json();
-        const emailStr = data.email ?? "";
-        const emails = emailStr ? emailStr.split(",").map((e: string) => e.trim()).filter(Boolean) : [];
+        const rawEmail = data.email ?? "";
+        const emails = Array.isArray(rawEmail)
+          ? rawEmail.filter((e: string) => typeof e === "string" && e.trim()).map((e: string) => e.trim())
+          : typeof rawEmail === "string" && rawEmail.trim()
+            ? rawEmail.split(",").map((e: string) => e.trim()).filter(Boolean)
+            : [];
         const rawPersonas = Array.isArray(data.persona_contacto) ? data.persona_contacto : [];
         const kind = data.kind === "COMPANY" ? "COMPANY" : "INDIVIDUAL";
         const persona_contacto = rawPersonas.filter((p: PersonaContactoItem) => p?.nombre?.trim());
@@ -126,7 +130,7 @@ export default function EditOwnerPage() {
           razonSocial: data.razonSocial ?? data.displayName ?? "",
           persona_contacto,
           emails: emails,
-          phone: data.phone ?? "",
+          phone: Array.isArray(data.phone) ? (data.phone[0] ?? "") : (data.phone ?? ""),
           website: data.website ?? "",
           address: data.address ?? "",
           city: data.city ?? "",
@@ -280,7 +284,15 @@ export default function EditOwnerPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!id) return;
+    if (!id) {
+      toast.error("Error: no se pudo obtener el ID del contacto");
+      return;
+    }
+    const displayName = (form.nombre.trim() || form.razonSocial.trim() || "").trim();
+    if (!displayName) {
+      toast.error("El nombre es requerido");
+      return;
+    }
     setSaving(true);
     try {
       const emailStr = form.emails.filter(Boolean).join(",");
@@ -317,6 +329,8 @@ export default function EditOwnerPage() {
       });
       if (!res.ok) throw new Error("Error al guardar");
       toast.success("Owner actualizado");
+      setSaved(true);
+      setTimeout(() => router.push("/panel/owners"), 1200);
     } catch {
       toast.error("Error al guardar");
     } finally {
@@ -326,27 +340,19 @@ export default function EditOwnerPage() {
 
   if (loading) {
     return (
-      <Sidebar>
-        <div className="min-h-screen bg-background flex items-center justify-center">
-          <p className="text-muted-foreground">Cargando...</p>
-        </div>
-      </Sidebar>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-muted-foreground">Cargando...</p>
+      </div>
     );
   }
 
   return (
-    <Sidebar>
-      <div className="min-h-screen bg-background">
-        <header className="bg-background border-b border-border dark:bg-[#141414] dark:border-[#1E1E1E] px-6 py-4 sticky top-0 z-40">
-          <div className="flex items-center justify-between gap-4">
-            <Link prefetch={false} href="/panel/owners" className="text-[#e94446] font-medium no-underline hover:no-underline">
-            Owners
-          </Link>
-            <HeaderUser />
-          </div>
-        </header>
-
-        <main className="w-full px-6 py-8">
+    <div className="min-h-screen bg-background">
+      <main className="w-full px-6 py-8">
+        <div className="mb-6">
+          <h1 className="text-3xl font-semibold text-foreground">Editar owner</h1>
+          <p className="text-muted-foreground text-sm mt-1">Modifica la información del contacto.</p>
+        </div>
           <div className="mb-6 flex justify-end gap-2">
             <Link prefetch={false} href="/panel/owners">
               <Button
@@ -354,20 +360,29 @@ export default function EditOwnerPage() {
                 variant="outline"
                 className="border-border text-foreground hover:bg-muted hover:text-foreground dark:border-[#404040] dark:text-[#D1D1D1] dark:hover:bg-[#1E1E1E] dark:hover:text-[#FFFFFF]"
               >
-                Cancelar
+                Descartar
               </Button>
             </Link>
             <Button
-              type="submit"
-              form="owner-form"
+              type="button"
+              onClick={() => handleSubmit({ preventDefault: () => {} } as React.FormEvent)}
               disabled={saving}
-              className="bg-[#e94446] hover:bg-[#D7514C] text-white shadow-[0_0_12px_rgba(233,68,70,0.45)] hover:shadow-[0_0_20px_rgba(233,68,70,0.6)] dark:text-white"
+              className={`bg-[#e94446] hover:bg-[#D7514C] text-white shadow-[0_0_12px_rgba(233,68,70,0.45)] hover:shadow-[0_0_20px_rgba(233,68,70,0.6)] dark:text-white transition-all duration-300 ${saved ? "bg-green-600 hover:bg-green-600 scale-105" : ""}`}
             >
-              <Save className="w-4 h-4 mr-2" />
-              {saving ? "Guardando..." : "Guardar"}
+              {saved ? (
+                <>
+                  <Check className="w-4 h-4 mr-2" />
+                  Guardado
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  {saving ? "Guardando..." : "Guardar"}
+                </>
+              )}
             </Button>
           </div>
-          <form id="owner-form" onSubmit={handleSubmit} className="space-y-6">
+          <form id="owner-form" ref={formRef} onSubmit={handleSubmit} className="space-y-6">
             {/* Información básica */}
             <Card className="dark:bg-[#141414] dark:border-[#1E1E1E]">
               <CardHeader>
@@ -789,7 +804,6 @@ export default function EditOwnerPage() {
             </Card>
           </form>
         </main>
-      </div>
-    </Sidebar>
+    </div>
   );
 }

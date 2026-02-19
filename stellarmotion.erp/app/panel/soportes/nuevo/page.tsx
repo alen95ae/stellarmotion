@@ -14,8 +14,6 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ArrowLeft, Save, MapPin, Upload, Globe } from "lucide-react"
 import { toast } from "sonner"
-import Sidebar from "@/components/dashboard/Sidebar"
-import HeaderUser from "@/components/dashboard/HeaderUser"
 import { PhotonAutocomplete } from "@/components/PhotonAutocomplete"
 import dynamic from "next/dynamic"
 import { buildGoogleMapsLinkFromCoords, extractCoordinatesFromGoogleMapsLink } from "@/lib/extract-google-maps-coords"
@@ -258,22 +256,8 @@ export default function NuevoSoportePage() {
   }
 
   return (
-    <Sidebar>
-      <div className="min-h-screen bg-background">
-        {/* Header */}
-        <header className="bg-background border-b border-border dark:bg-[#141414] dark:border-[#1E1E1E] px-6 py-4 sticky top-0 z-40">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-6">
-              <Link prefetch={false} href="/panel/soportes" className="text-[#e94446] font-medium no-underline hover:no-underline">
-                Soportes
-              </Link>
-            </div>
-            <HeaderUser />
-          </div>
-        </header>
-
-        {/* Main Content */}
-        <main className="container mx-auto px-6 py-8">
+    <div className="min-h-screen bg-background">
+      <main className="container mx-auto px-6 py-8">
           <div className="mb-8 flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-foreground mb-2">
@@ -608,8 +592,7 @@ export default function NuevoSoportePage() {
             </CardContent>
           </Card>
 
-        </main>
-      </div>
-    </Sidebar>
+      </main>
+    </div>
   )
 }

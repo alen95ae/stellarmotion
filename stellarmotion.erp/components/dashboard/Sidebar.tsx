@@ -1,25 +1,23 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter, usePathname } from 'next/navigation'
 import Image from 'next/image'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import {
   Home,
-  TrendingUp,
   Monitor,
-  Settings,
   ChevronRight,
   Terminal,
   Filter,
-  FlaskConical,
-  HeartHandshake,
   Rabbit,
-  Rat
+  Rat,
+  Squirrel,
+  HeartHandshake,
+  Settings
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 
 const sidebarVariants = {
   expanded: { width: 280 },
@@ -42,18 +40,7 @@ export default function Sidebar({ children }: SidebarProps) {
   const router = useRouter()
   const pathname = usePathname()
 
-  // Lógica de estado del sidebar basada en la ruta
-  useEffect(() => {
-    if (pathname === '/dashboard') {
-      // Panel principal: siempre abierto
-      setSidebarCollapsed(false)
-    } else {
-      // Cualquier otra página: siempre cerrado
-      setSidebarCollapsed(true)
-    }
-    // Resetear el flag de toggle del usuario
-    setIsUserToggle(false)
-  }, [pathname])
+  // Comportamiento unificado: mismo sidebar en todo el ERP (sin colapsar por ruta)
 
   // Función para manejar el toggle manual del usuario
   const handleToggle = () => {
@@ -62,15 +49,14 @@ export default function Sidebar({ children }: SidebarProps) {
   }
 
   const erpModules = [
-    { id: 'dashboard', name: 'Panel principal', icon: Home, path: '/dashboard' },
-    { id: 'ventas', name: 'Ventas', icon: HeartHandshake, path: '/panel/ventas' },
-    { id: 'metricas', name: 'Métricas', icon: TrendingUp, path: '/panel/metricas' },
+    { id: 'dashboard', name: 'Panel principal', icon: Home, path: '/panel' },
     { id: 'soportes', name: 'Soportes', icon: Monitor, path: '/panel/soportes' },
+    { id: 'ventas', name: 'Ventas', icon: HeartHandshake, path: '/panel/ventas' },
+    { id: 'clientes', name: 'Brands', icon: Rat, path: '/panel/brands' },
     { id: 'owners', name: 'Owners', icon: Rabbit, path: '/panel/owners' },
-    { id: 'clientes', name: 'Brands', icon: Rat, path: '/panel/clientes' },
+    { id: 'makers', name: 'Makers', icon: Squirrel, path: '/panel/makers' },
     { id: 'proyectos', name: 'Proyectos', icon: Terminal, path: '/panel/proyectos' },
     { id: 'crm', name: 'CRM', icon: Filter, path: '/panel/crm' },
-    { id: 'iyd', name: 'I+D', icon: FlaskConical, path: '/panel/iyd' },
     { id: 'ajustes', name: 'Ajustes', icon: Settings, path: '/panel/ajustes' }
   ]
 
@@ -82,15 +68,14 @@ export default function Sidebar({ children }: SidebarProps) {
 
   // Determinar el módulo activo basado en la ruta actual
   const getActiveModule = () => {
-    if (pathname === '/dashboard') return 'dashboard'
+    if (pathname === '/panel' || pathname === '/panel/') return 'dashboard'
     if (pathname.startsWith('/panel/crm')) return 'crm'
     if (pathname.startsWith('/panel/soportes')) return 'soportes'
-    if (pathname.startsWith('/panel/clientes')) return 'clientes'
-    if (pathname.startsWith('/panel/owners')) return 'owners'
     if (pathname.startsWith('/panel/ventas')) return 'ventas'
-    if (pathname.startsWith('/panel/metricas')) return 'metricas'
+    if (pathname.startsWith('/panel/brands') || pathname.startsWith('/panel/clientes')) return 'clientes'
+    if (pathname.startsWith('/panel/makers')) return 'makers'
+    if (pathname.startsWith('/panel/owners')) return 'owners'
     if (pathname.startsWith('/panel/proyectos')) return 'proyectos'
-    if (pathname.startsWith('/panel/iyd')) return 'iyd'
     if (pathname.startsWith('/panel/ajustes')) return 'ajustes'
     return 'dashboard'
   }
@@ -151,13 +136,13 @@ export default function Sidebar({ children }: SidebarProps) {
               >
                 <Button
                   variant={activeModule === module.id ? 'default' : 'ghost'}
-                  className={`w-full justify-start h-12 transition-colors ${activeModule === module.id
+                  className={`w-full justify-start h-14 transition-colors text-base ${activeModule === module.id
                       ? 'bg-[#e94446] hover:bg-[#e94446] text-white'
-                      : 'text-foreground hover:bg-muted hover:text-foreground dark:hover:!bg-[#1e1e1e] dark:hover:!text-white'
+                      : 'text-black dark:text-white hover:!bg-muted hover:!text-[#e94446] dark:hover:!bg-[#1e1e1e] dark:hover:!text-[#e94446]'
                     }`}
                   onClick={() => handleModuleClick(module)}
                 >
-                  <module.icon className="w-5 h-5 mr-3" />
+                  <module.icon className="w-6 h-6 mr-3 shrink-0" />
                   <AnimatePresence>
                     {!sidebarCollapsed && (
                       <motion.span
@@ -165,6 +150,7 @@ export default function Sidebar({ children }: SidebarProps) {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.2 }}
+                        className="text-[15px] font-medium"
                       >
                         {module.name}
                       </motion.span>

@@ -9,11 +9,14 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { AlertCircle } from "lucide-react"
+import { Checkbox } from "@/components/ui/checkbox"
+import { AlertCircle, Eye, EyeOff } from "lucide-react"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
+  const [rememberMe, setRememberMe] = useState(false)
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const router = useRouter()
@@ -27,6 +30,7 @@ export default function LoginPage() {
       const result = await signIn("credentials", {
         email,
         password,
+        rememberMe,
         redirect: false,
       })
 
@@ -43,8 +47,12 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
+    <div
+      className="min-h-screen flex items-center justify-center p-4 relative bg-cover bg-center bg-no-repeat"
+      style={{ backgroundImage: "url(/New_york_times_square-terabass.png)" }}
+    >
+      <div className="absolute inset-0 bg-gray-200/70" aria-hidden />
+      <Card className="w-full max-w-md relative z-10">
         <CardHeader className="text-center">
           <div className="text-2xl font-bold text-[#D54644] mb-2">
             StellarMotion<sup className="text-sm">®</sup>
@@ -70,21 +78,43 @@ export default function LoginPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@stellarmotion.io"
+                placeholder="tu@email.com"
                 required
               />
             </div>
             
             <div className="space-y-2">
               <Label htmlFor="password">Contraseña</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
+              <div className="relative flex">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="pr-10"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded text-gray-500 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
+                  aria-label={showPassword ? "Ocultar contraseña" : "Ver contraseña"}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="remember"
+                checked={rememberMe}
+                onCheckedChange={(v) => setRememberMe(Boolean(v))}
               />
+              <Label htmlFor="remember" className="text-sm font-normal cursor-pointer">
+                Mantener sesión iniciada
+              </Label>
             </div>
             
             <Button 
@@ -95,13 +125,6 @@ export default function LoginPage() {
               {loading ? "Iniciando..." : "Iniciar sesión"}
             </Button>
           </form>
-          
-          <div className="mt-4 text-center text-sm text-gray-600">
-            <p>Credenciales de prueba:</p>
-            <p className="font-mono text-xs mt-1">
-              admin@stellarmotion.io / admin123
-            </p>
-          </div>
         </CardContent>
       </Card>
     </div>

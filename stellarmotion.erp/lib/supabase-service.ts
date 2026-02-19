@@ -277,17 +277,17 @@ function mapSoporteFromSupabase(record: any): Soporte {
     owner: record.owner
       ? {
           id: record.owner.id,
-          empresa: record.owner.empresa ?? null,
-          nombre: record.owner.nombre ?? null,
-          apellidos: record.owner.apellidos ?? null,
+          empresa: record.owner.contacto?.razon_social ?? null,
+          nombre: record.owner.contacto?.nombre ?? null,
+          apellidos: record.owner.contacto?.apellidos ?? null,
           email: record.owner.email ?? null
         }
       : undefined,
     usuario: record.owner
       ? {
           id: record.owner.id,
-          name: [record.owner.nombre, record.owner.apellidos].filter(Boolean).join(' ') || record.owner.email || '',
-          companyName: record.owner.empresa ?? undefined,
+          name: [record.owner.contacto?.nombre, record.owner.contacto?.apellidos].filter(Boolean).join(' ') || record.owner.email || '',
+          companyName: record.owner.contacto?.razon_social ?? undefined,
           email: record.owner.email || ''
         }
       : undefined,
@@ -369,18 +369,22 @@ export class SupabaseService {
       const from = (page - 1) * limit;
       const to = from + limit - 1;
 
-      // Query: JOIN soportes.owner_id → usuarios.id (Supabase detecta la FK automáticamente)
       let query = supabaseAdmin
         .from('soportes')
         .select(
           `
           *,
-          owner:usuarios (
+          owner:usuarios!owner_id (
             id,
-            empresa,
-            nombre,
-            apellidos,
-            email
+            email,
+            contacto:contactos!contacto_id (
+              id,
+              nombre,
+              apellidos,
+              razon_social,
+              telefono,
+              email
+            )
           )
           `,
           { count: 'exact' }
@@ -456,7 +460,7 @@ export class SupabaseService {
       const soportes = (data || []).map((record: any) => {
         try {
           if (record.owner) {
-            console.log('🔍 [getSoportes] record.owner:', { empresa: record.owner.empresa, nombre: record.owner.nombre, apellidos: record.owner.apellidos, email: record.owner.email });
+            console.log('[getSoportes] owner:', record.owner.id, 'contacto:', record.owner.contacto?.nombre);
           }
           return mapSoporteFromSupabase(record);
         } catch (mapError) {
@@ -490,12 +494,17 @@ export class SupabaseService {
         .select(
           `
           *,
-          owner:usuarios (
+          owner:usuarios!owner_id (
             id,
-            empresa,
-            nombre,
-            apellidos,
-            email
+            email,
+            contacto:contactos!contacto_id (
+              id,
+              nombre,
+              apellidos,
+              razon_social,
+              telefono,
+              email
+            )
           )
           `
         )

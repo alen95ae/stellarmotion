@@ -1,20 +1,19 @@
 import { supabaseAdmin } from './supabase-admin'
 
-// Interfaz para el usuario en Supabase
 export interface UsuarioSupabase {
   id: string
   email: string
   passwordhash?: string
-  nombre?: string
   rol_id?: string
   activo: boolean
-  fecha_creacion?: string
   ultimo_acceso?: string
   created_at?: string
   updated_at?: string
+  invitacion_id?: string
+  email_verificado: boolean
+  contacto_id?: string
 }
 
-// Interfaz para el usuario en el frontend (compatible con UserRecord)
 export interface Usuario {
   id: string
   fields: {
@@ -28,17 +27,18 @@ export interface Usuario {
   }
 }
 
-/**
- * Convertir usuario de Supabase al formato esperado por el frontend
- */
 function supabaseToUsuario(record: any): Usuario {
+  const contacto = record.contacto;
+  const rolRecord = record.rol;
+  const nombre = contacto?.nombre ?? contacto?.razon_social ?? '';
+  const rolName = rolRecord?.nombre ?? 'invitado';
   return {
     id: record.id,
     fields: {
       Email: record.email,
-      PasswordHash: record.passwordhash || record.password_hash || undefined,
-      Nombre: record.nombre || '',
-      Rol: record.rol || 'invitado',
+      PasswordHash: record.passwordhash || undefined,
+      Nombre: nombre,
+      Rol: rolName,
       RolId: record.rol_id || undefined,
       Activo: record.activo ?? true,
       UltimoAcceso: record.ultimo_acceso || undefined,
@@ -46,299 +46,165 @@ function supabaseToUsuario(record: any): Usuario {
   }
 }
 
-/**
- * Buscar usuario por email
- */
+const USUARIO_SELECT = `
+  id,
+  email,
+  passwordhash,
+  rol_id,
+  activo,
+  ultimo_acceso,
+  created_at,
+  updated_at,
+  invitacion_id,
+  email_verificado,
+  contacto_id,
+  rol:roles!rol_id(id, nombre),
+  contacto:contactos!contacto_id(id, nombre, apellidos, razon_social, telefono, ciudad, pais, email, roles)
+`;
+
 export async function findUserByEmailSupabase(email: string): Promise<Usuario | null> {
   const emailNormalized = email.trim().toLowerCase()
-  console.log('🔍 [Supabase ERP] Buscando usuario con email:', emailNormalized)
-  console.log('🔐 [Supabase ERP] Usando cliente: supabaseAdmin (SERVICE_ROLE_KEY)')
-  console.log('🔐 [Supabase ERP] Schema: public')
-  console.log('🔐 [Supabase ERP] Tabla: usuarios')
-  
+  console.log('[Auth] findUserByEmail:', emailNormalized)
+
   const { data, error } = await supabaseAdmin
     .from('usuarios')
-    .select('*')
+    .select(USUARIO_SELECT)
     .eq('email', emailNormalized)
     .limit(1)
     .maybeSingle()
 
   if (error) {
-    console.error('❌ [Supabase ERP] Error finding user by email:', error)
-    console.error('❌ [Supabase ERP] Error code:', error.code)
-    console.error('❌ [Supabase ERP] Error message:', error.message)
-    console.error('❌ [Supabase ERP] Error details:', error.details)
-    console.error('❌ [Supabase ERP] Error hint:', error.hint)
+    console.error('[Auth] findUserByEmail error:', error.code, error.message)
     return null
   }
-
   if (!data) {
-    console.log('⚠️ [Supabase ERP] No se encontró usuario con email:', emailNormalized)
+    console.log('[Auth] findUserByEmail: not found')
     return null
   }
 
-  console.log('✅ [Supabase ERP] Usuario encontrado:', data.id, data.email)
-  return supabaseToUsuario(data as UsuarioSupabase)
+  console.log('[Auth] findUserByEmail: found', data.id)
+  return supabaseToUsuario(data)
 }
 
-/**
- * Obtener ID de rol por nombre
- */
 async function getRoleId(rol: string): Promise<string | undefined> {
-  try {
-    console.log('🔍 [getRoleId] Buscando rol:', rol)
-    const { data: roleData, error: roleError } = await supabaseAdmin
-      .from('roles')
-      .select('id')
-      .eq('nombre', rol)
-      .maybeSingle()
-    
-    if (roleError && roleError.code !== 'PGRST116') {
-      console.error('❌ [getRoleId] Error obteniendo rol:', roleError)
-      return undefined
-    }
-    
-    if (roleData) {
-      console.log('✅ [getRoleId] Rol encontrado:', rol, 'ID:', roleData.id)
-      return roleData.id
-    } else {
-      console.warn(`⚠️ [getRoleId] Rol '${rol}' no encontrado en la tabla roles.`)
-      return undefined
-    }
-  } catch (error: any) {
-    console.error('❌ [getRoleId] Error al obtener rol:', error.message)
-    return undefined
-  }
+  const { data, error } = await supabaseAdmin
+    .from('roles')
+    .select('id')
+    .eq('nombre', rol)
+    .maybeSingle()
+  if (error || !data) return undefined
+  return data.id
 }
 
-/**
- * Crear nuevo usuario
- * NOTA: Solo campos del paso 1. Los campos del paso 2 (ciudad, tipo_owner, nombre_empresa, tipo_empresa)
- * van a la tabla owners cuando se completa el paso 2.
- */
 export async function createUserSupabase(
   email: string,
   passwordHash: string,
-  nombre?: string,
+  _nombre?: string,
   rol?: string,
-  telefono?: string,
-  pais?: string,
-  apellidos?: string
+  _telefono?: string,
+  _pais?: string,
+  _apellidos?: string
 ): Promise<Usuario> {
   const now = new Date().toISOString()
-  
-  // Obtener rol_id si se proporciona un nombre de rol
   let rol_id: string | undefined = undefined
   if (rol) {
     rol_id = await getRoleId(rol)
   }
-  
-  const userData: any = {
+
+  const userData: Record<string, unknown> = {
     email: email.trim().toLowerCase(),
     passwordhash: passwordHash,
-    nombre: nombre?.trim() || null,
     activo: true,
-    fecha_creacion: now,
     created_at: now,
-    updated_at: now
+    updated_at: now,
   }
-  
-  if (rol_id) {
-    userData.rol_id = rol_id
-  }
-  
-  // Agregar campos opcionales del paso 1 (solo los que van en tabla usuarios)
-  if (telefono) userData.telefono = telefono.trim()
-  if (pais) userData.pais = pais.trim()
-  if (apellidos) userData.apellidos = apellidos.trim()
-  
-  // NOTA: ciudad, tipo_owner, nombre_empresa, tipo_empresa van a tabla owners en el paso 2
-  
-  console.log('🔐 [createUserSupabase] Usando cliente: supabaseAdmin (SERVICE_ROLE_KEY)')
-  console.log('🔐 [createUserSupabase] Schema: public')
-  console.log('🔐 [createUserSupabase] Tabla: usuarios')
-  console.log('📤 [createUserSupabase] Insertando:', {
-    email: userData.email,
-    nombre: userData.nombre,
-    apellidos: userData.apellidos || 'no proporcionado',
-    telefono: userData.telefono || 'no proporcionado',
-    pais: userData.pais || 'no proporcionado',
-    hasRolId: !!userData.rol_id
-  })
-  
+  if (rol_id) userData.rol_id = rol_id
+
   const { data, error } = await supabaseAdmin
     .from('usuarios')
     .insert([userData])
-    .select()
+    .select(USUARIO_SELECT)
     .single()
 
   if (error) {
-    console.error('❌ [createUserSupabase] Error creating user:', error)
-    console.error('❌ [createUserSupabase] Error code:', error.code)
-    console.error('❌ [createUserSupabase] Error message:', error.message)
-    console.error('❌ [createUserSupabase] Error details:', error.details)
-    console.error('❌ [createUserSupabase] Error hint:', error.hint)
+    console.error('[Auth] createUser error:', error.code, error.message)
     throw new Error(`Error creating user: ${error.message} (code: ${error.code})`)
   }
-
-  if (!data) {
-    throw new Error('No data returned after creating user')
-  }
-
-  return supabaseToUsuario(data as UsuarioSupabase)
+  if (!data) throw new Error('No data returned after creating user')
+  return supabaseToUsuario(data)
 }
 
-/**
- * Actualizar último acceso del usuario
- */
 export async function updateLastAccessSupabase(userId: string): Promise<void> {
   const { error } = await supabaseAdmin
     .from('usuarios')
-    .update({
-      ultimo_acceso: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    })
+    .update({ ultimo_acceso: new Date().toISOString(), updated_at: new Date().toISOString() })
     .eq('id', userId)
-
-  if (error) {
-    console.error('Error updating last access:', error)
-  }
+  if (error) console.error('[Auth] updateLastAccess error:', error.message)
 }
 
-/**
- * Obtener usuario por ID
- */
 export async function getUserByIdSupabase(userId: string): Promise<any | null> {
-  console.log('🔍 [getUserByIdSupabase] Obteniendo usuario por ID:', userId)
-  console.log('🔐 [getUserByIdSupabase] Usando cliente: supabaseAdmin (SERVICE_ROLE_KEY)')
-  console.log('🔐 [getUserByIdSupabase] Schema: public')
-  console.log('🔐 [getUserByIdSupabase] Tabla: usuarios')
-  
+  console.log('[Auth] getUserById:', userId)
+
   const { data, error } = await supabaseAdmin
     .from('usuarios')
-    .select('*')
+    .select(USUARIO_SELECT)
     .eq('id', userId)
     .single()
 
   if (error) {
-    if (error.code === 'PGRST116') {
-      console.log('⚠️ [getUserByIdSupabase] Usuario no encontrado (PGRST116)')
-      return null
-    }
-    console.error('❌ [getUserByIdSupabase] Error getting user by id:', error)
-    console.error('❌ [getUserByIdSupabase] Error code:', error.code)
-    console.error('❌ [getUserByIdSupabase] Error message:', error.message)
-    console.error('❌ [getUserByIdSupabase] Error details:', error.details)
+    if (error.code === 'PGRST116') return null
+    console.error('[Auth] getUserById error:', error.code, error.message)
     return null
   }
+  if (!data) return null
 
-  if (!data) {
-    console.log('⚠️ [getUserByIdSupabase] No data returned')
-    return null
-  }
+  const contacto = (data as any).contacto;
+  const rolRecord = (data as any).rol;
+  const roleName = rolRecord?.nombre ?? 'invitado';
 
-  // Obtener el nombre del rol desde la tabla roles
-  let roleName = 'invitado'
-  if (data.rol_id) {
-    try {
-      console.log('🔍 [getUserByIdSupabase] Obteniendo nombre del rol, rol_id:', data.rol_id)
-      const { data: roleData, error: roleError } = await supabaseAdmin
-        .from('roles')
-        .select('nombre')
-        .eq('id', data.rol_id)
-        .single()
-      
-      if (roleError) {
-        console.error('❌ [getUserByIdSupabase] Error obteniendo nombre del rol:', roleError)
-      } else if (roleData?.nombre) {
-        roleName = roleData.nombre
-        console.log('✅ [getUserByIdSupabase] Rol encontrado:', roleName)
-      }
-    } catch (error: any) {
-      console.error('❌ [getUserByIdSupabase] Error obteniendo nombre del rol:', error.message)
-    }
-  }
-
-  const usuario = supabaseToUsuario(data as UsuarioSupabase)
   return {
-    ...usuario,
+    id: data.id,
     email: data.email,
-    nombre: data.nombre,
-    apellidos: data.apellidos || null,
-    telefono: data.telefono || null,
-    pais: data.pais || null,
-    // NOTA: ciudad, tipo_owner, nombre_empresa, tipo_empresa están en tabla owners, no en usuarios
+    nombre: contacto?.nombre ?? contacto?.razon_social ?? null,
+    apellidos: contacto?.apellidos ?? null,
+    telefono: contacto?.telefono ?? null,
+    pais: contacto?.pais ?? null,
+    ciudad: contacto?.ciudad ?? null,
     rol: roleName,
     rol_id: data.rol_id || null,
+    contacto_id: data.contacto_id || null,
+    contacto_roles: contacto?.roles ?? [],
+    activo: data.activo,
   }
 }
 
-/**
- * Actualizar rol del usuario
- */
 export async function updateUserRoleSupabase(userId: string, role: string): Promise<void> {
-  console.log('🔍 [updateUserRoleSupabase] Actualizando rol del usuario:', userId, 'a rol:', role)
-  console.log('🔐 [updateUserRoleSupabase] Usando cliente: supabaseAdmin (SERVICE_ROLE_KEY)')
-  console.log('🔐 [updateUserRoleSupabase] Schema: public')
-  
-  // Obtener rol_id
-  console.log('🔍 [updateUserRoleSupabase] Buscando rol en tabla roles')
   const { data: roleData, error: roleError } = await supabaseAdmin
     .from('roles')
     .select('id')
     .eq('nombre', role)
     .maybeSingle()
-  
-  if (roleError) {
-    console.error('❌ [updateUserRoleSupabase] Error obteniendo rol:', roleError)
-    console.error('❌ [updateUserRoleSupabase] Error code:', roleError.code)
-    console.error('❌ [updateUserRoleSupabase] Error message:', roleError.message)
-    throw new Error(`Error obteniendo rol: ${roleError.message} (code: ${roleError.code})`)
-  }
-  
-  if (!roleData) {
-    console.error('❌ [updateUserRoleSupabase] Rol no encontrado:', role)
+
+  if (roleError || !roleData) {
     throw new Error(`Rol ${role} no encontrado`)
   }
 
-  console.log('✅ [updateUserRoleSupabase] Rol encontrado:', role, 'ID:', roleData.id)
-  console.log('🔄 [updateUserRoleSupabase] Actualizando usuario en tabla usuarios')
-  
   const { error } = await supabaseAdmin
     .from('usuarios')
-    .update({
-      rol_id: roleData.id,
-      updated_at: new Date().toISOString()
-    })
+    .update({ rol_id: roleData.id, updated_at: new Date().toISOString() })
     .eq('id', userId)
 
   if (error) {
-    console.error('❌ [updateUserRoleSupabase] Error updating user role:', error)
-    console.error('❌ [updateUserRoleSupabase] Error code:', error.code)
-    console.error('❌ [updateUserRoleSupabase] Error message:', error.message)
-    console.error('❌ [updateUserRoleSupabase] Error details:', error.details)
-    console.error('❌ [updateUserRoleSupabase] Error hint:', error.hint)
-    throw new Error(`Error updating user role: ${error.message} (code: ${error.code})`)
+    throw new Error(`Error updating user role: ${error.message}`)
   }
-  
-  console.log('✅ [updateUserRoleSupabase] Rol actualizado correctamente')
 }
 
-/**
- * Verificar si un usuario existe por ID
- */
 export async function userExistsById(userId: string): Promise<boolean> {
   const { data, error } = await supabaseAdmin
     .from('usuarios')
     .select('id')
     .eq('id', userId)
     .maybeSingle()
-
-  if (error && error.code !== 'PGRST116') {
-    console.error('Error checking user existence:', error)
-    return false
-  }
-
+  if (error && error.code !== 'PGRST116') return false
   return !!data
 }
-

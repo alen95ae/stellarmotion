@@ -16,7 +16,6 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Plus, Search, Filter, Download, Building2, User, Edit, Trash2, Home, Upload, Users, Merge, AlertTriangle } from "lucide-react"
 import { toast } from "sonner"
-import HeaderUser from "@/components/dashboard/HeaderUser"
 
 interface Contact {
   id: string
@@ -502,20 +501,6 @@ export default function ClientesPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="bg-background border-b border-border px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center">
-            <Link prefetch={false} href="/dashboard" className="text-muted-foreground hover:text-foreground mr-4">
-              ← Dashboard
-            </Link>
-            <div className="text-xl font-bold text-foreground">Brands</div>
-          </div>
-          <HeaderUser />
-        </div>
-      </header>
-
-      {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">Gestión de Brands</h1>

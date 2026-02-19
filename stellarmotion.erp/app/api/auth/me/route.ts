@@ -1,75 +1,75 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 import { verifySession } from '@/lib/auth'
 import { getUserByIdSupabase } from '@/lib/supabaseUsers'
-import { supabaseAdmin } from '@/lib/supabase-admin'
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const token = request.cookies.get('st_session')?.value
-    
-    if (!token) {
-      console.error('❌ [ERP /api/auth/me] No se encontró token st_session');
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    const session = await getServerSession(authOptions);
+    let userId: string | null = null;
+    let fallbackEmail: string | null = null;
+    let fallbackName: string | null = null;
+    let fallbackRole: string | null = null;
+
+    if (session?.user) {
+      const u = session.user as { id?: string; email?: string | null; name?: string | null; role?: string; sub?: string };
+      userId = u.id ?? u.sub ?? null;
+      fallbackEmail = u.email ?? null;
+      fallbackName = u.name ?? null;
+      fallbackRole = u.role ?? null;
     }
 
-    let payload;
-    try {
-      payload = await verifySession(token);
-      
+    if (!userId) {
+      const cookieStore = await cookies();
+      const tokenValue = cookieStore.get('st_session')?.value;
+      if (!tokenValue) {
+        return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+      }
+      const payload = await verifySession(tokenValue);
       if (!payload || !payload.sub) {
-        console.error("❌ [ERP /api/auth/me] JWT inválido:", {
-          hasPayload: !!payload,
-          hasSub: !!payload?.sub,
-          tokenStart: token.substring(0, 15) + "...",
-        });
-        return NextResponse.json({ error: "Sesión inválida" }, { status: 401 });
+        return NextResponse.json({ error: 'Sesión inválida' }, { status: 401 });
       }
-    } catch (err) {
-      console.error("❌ [ERP /api/auth/me] Error verificando sesión:", err);
-      return NextResponse.json({ error: "Token inválido" }, { status: 401 });
+      userId = payload.sub;
+      fallbackEmail = payload.email ?? null;
+      fallbackName = payload.name ?? null;
+      fallbackRole = payload.role ?? null;
     }
 
-    // Obtener información completa del usuario
-    const user = await getUserByIdSupabase(payload.sub)
-    
+    if (!userId) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
+
+    const user = await getUserByIdSupabase(userId);
     if (!user) {
-      return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 })
+      return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
     }
 
-    // Asegurar que tenemos el nombre del rol correcto
-    let roleName = user.rol || payload.role || 'client'
-    if (user.rol_id && !user.rol) {
-      // Si tenemos rol_id pero no el nombre, obtenerlo
-      const { data: roleData } = await supabaseAdmin
-        .from('roles')
-        .select('nombre')
-        .eq('id', user.rol_id)
-        .single()
-      
-      if (roleData?.nombre) {
-        roleName = roleData.nombre
-      }
-    }
+    const roleName = user.rol || fallbackRole || 'invitado';
+
+    console.log('[Auth /me] userId:', userId, 'rol:', roleName, 'contacto_id:', user.contacto_id, 'contacto_roles:', user.contacto_roles);
 
     return NextResponse.json({
       success: true,
       user: {
         id: user.id,
         sub: user.id,
-        email: user.email || payload.email,
-        name: user.nombre || payload.name,
-        nombre: user.nombre || payload.name,
+        email: user.email || fallbackEmail,
+        name: user.nombre || fallbackName,
+        nombre: user.nombre || fallbackName,
         apellidos: user.apellidos || null,
         telefono: user.telefono || null,
         pais: user.pais || null,
-        // NOTA: ciudad, tipo_owner, nombre_empresa, tipo_empresa están en tabla owners
+        ciudad: user.ciudad || null,
         rol: roleName,
         role: roleName,
-      }
-    })
+        contacto_id: user.contacto_id || null,
+        contacto_roles: user.contacto_roles || [],
+      },
+    });
   } catch (error) {
-    console.error('Error obteniendo usuario actual:', error)
-    return NextResponse.json({ error: 'Error al obtener usuario' }, { status: 500 })
+    console.error('[Auth /me] Error:', error);
+    return NextResponse.json({ error: 'Error al obtener usuario' }, { status: 500 });
   }
 }
-

@@ -1,63 +1,83 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createOpportunity, getOpportunities } from '@/lib/crm/opportunities';
-import { getUserIdFromRequest } from '@/lib/crm/auth-helper';
-import type { CreateOpportunityDTO } from '@/types/crm';
+import { NextRequest, NextResponse } from "next/server";
+import { supabaseAdmin } from "@/lib/supabase-admin";
 
-export const runtime = 'nodejs';
+export const runtime = "nodejs";
 
-/**
- * GET /api/crm/opportunities
- * Obtener todas las oportunidades del usuario
- */
-export async function GET(req: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    const userId = await getUserIdFromRequest();
-    
-    const { searchParams } = new URL(req.url);
-    const filters = {
-      account_id: searchParams.get('account_id') || undefined,
-      stage_id: searchParams.get('stage_id') || undefined,
-      is_won: searchParams.get('is_won') === 'true' ? true : undefined,
-      is_lost: searchParams.get('is_lost') === 'true' ? true : undefined,
-    };
-    
-    const opportunities = await getOpportunities(userId, filters);
-    
-    return NextResponse.json({ opportunities }, { status: 200 });
-  } catch (error: any) {
-    return NextResponse.json(
-      { error: error.message || 'Error al obtener oportunidades' },
-      { status: 500 }
-    );
-  }
-}
+    const body = await request.json();
+    const {
+      pipeline_id,
+      stage_id,
+      contacto_id,
+      lead_id,
+      descripcion,
+      valor_estimado,
+      moneda,
+      ciudad,
+      origen,
+      interes,
+      estado,
+      motivo_perdida,
+    } = body;
 
-/**
- * POST /api/crm/opportunities
- * Crear una nueva oportunidad
- */
-export async function POST(req: NextRequest) {
-  try {
-    const userId = await getUserIdFromRequest();
-    const body: CreateOpportunityDTO = await req.json();
-    
-    // Validaciones
-    if (!body.account_id || !body.nombre || !body.importe_estimado) {
+    const contactId = contacto_id ?? lead_id;
+    if (!pipeline_id || !stage_id) {
       return NextResponse.json(
-        { error: 'account_id, nombre e importe_estimado son requeridos' },
+        { success: false, error: "Pipeline y etapa son requeridos" },
         { status: 400 }
       );
     }
-    
-    const opportunity = await createOpportunity(userId, body);
-    
-    return NextResponse.json({ opportunity }, { status: 201 });
-  } catch (error: any) {
+    if (!contactId) {
+      return NextResponse.json(
+        { success: false, error: "El contacto es requerido" },
+        { status: 400 }
+      );
+    }
+
+    const { data: existing } = await supabaseAdmin
+      .from("sales_opportunities")
+      .select("posicion_en_etapa")
+      .eq("stage_id", stage_id)
+      .order("posicion_en_etapa", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const posicion_en_etapa = ((existing?.posicion_en_etapa as number) ?? 0) + 1;
+
+    const insert: Record<string, unknown> = {
+      pipeline_id,
+      stage_id,
+      contacto_id: contactId,
+      descripcion: descripcion || null,
+      valor_estimado: valor_estimado ?? null,
+      moneda: moneda || "EUR",
+      ciudad: ciudad || null,
+      origen: origen || null,
+      interes: interes || null,
+      estado: estado || "abierta",
+      motivo_perdida: motivo_perdida || null,
+      posicion_en_etapa,
+    };
+
+    const { data, error } = await supabaseAdmin
+      .from("sales_opportunities")
+      .insert(insert)
+      .select()
+      .single();
+
+    if (error) {
+      return NextResponse.json(
+        { success: false, error: error.message || "Error al crear oportunidad" },
+        { status: 500 }
+      );
+    }
+    return NextResponse.json({ success: true, data });
+  } catch (err) {
+    console.error("Error POST /api/crm/opportunities:", err);
     return NextResponse.json(
-      { error: error.message || 'Error al crear oportunidad' },
+      { success: false, error: "Error al crear oportunidad" },
       { status: 500 }
     );
   }
 }
-
-

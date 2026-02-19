@@ -1,11 +1,9 @@
+import PanelChrome from "@/components/dashboard/PanelChrome"
+
 export default function PanelLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  return (
-    <div className="min-h-screen bg-background">
-      {children}
-    </div>
-  )
+  return <PanelChrome>{children}</PanelChrome>
 }

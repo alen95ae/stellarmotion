@@ -15,8 +15,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { ArrowLeft, Save, MapPin, Trash2, Edit, Eye, Calculator, Hash, Link as LinkIcon, Upload, Globe } from "lucide-react"
 import { toast } from "sonner"
-import Sidebar from "@/components/dashboard/Sidebar"
-import HeaderUser from "@/components/dashboard/HeaderUser"
 import { PhotonAutocomplete } from "@/components/PhotonAutocomplete"
 import dynamic from "next/dynamic"
 import { buildGoogleMapsLinkFromCoords, extractCoordinatesFromGoogleMapsLink } from "@/lib/extract-google-maps-coords"
@@ -587,50 +585,30 @@ export default function SoporteDetailPage() {
 
   if (loading) {
     return (
-      <Sidebar>
-        <div className="min-h-screen bg-background flex items-center justify-center">
-          <div className="text-center text-muted-foreground">Cargando...</div>
-        </div>
-      </Sidebar>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center text-muted-foreground">Cargando...</div>
+      </div>
     )
   }
 
   if (!support) {
     return (
-      <Sidebar>
-        <div className="min-h-screen bg-background flex items-center justify-center">
-          <div className="text-center text-muted-foreground">Soporte no encontrado</div>
-        </div>
-      </Sidebar>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center text-muted-foreground">Soporte no encontrado</div>
+      </div>
     )
   }
 
   if (mode === 'view') {
     return (
-      <Sidebar>
-        <div className="min-h-screen bg-background flex items-center justify-center">
-          <div className="text-center text-muted-foreground">Redirigiendo a la web...</div>
-        </div>
-      </Sidebar>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center text-muted-foreground">Redirigiendo a la web...</div>
+      </div>
     )
   }
 
   return (
-    <Sidebar>
-      <div className="min-h-screen bg-background">
-        {/* Header */}
-        <header className="bg-background border-b border-border dark:bg-[#141414] dark:border-[#1E1E1E] px-6 py-4 sticky top-0 z-40">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-6">
-            <Link prefetch={false} href="/panel/soportes" className="text-[#e94446] font-medium no-underline hover:no-underline">
-              Soportes
-            </Link>
-          </div>
-          <HeaderUser />
-        </div>
-      </header>
-
-      {/* Main Content */}
+    <div className="min-h-screen bg-background">
       <main className="container mx-auto px-6 py-8">
         <div className="mb-8 flex items-center justify-between">
           <div>
@@ -1131,7 +1109,6 @@ export default function SoporteDetailPage() {
           </Card>
         )}
       </main>
-      </div>
-    </Sidebar>
+    </div>
   )
 }

@@ -9,8 +9,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Checkbox } from "@/components/ui/checkbox";
 import { RotateCcw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import Sidebar from "@/components/dashboard/Sidebar";
-import HeaderUser from "@/components/dashboard/HeaderUser";
 import { TableCellTruncate } from "@/components/TableCellTruncate";
 import BulkActionsPapelera from "@/components/owners/BulkActionsPapelera";
 
@@ -132,20 +130,8 @@ export default function OwnersLeadsPapeleraPage() {
   }
 
   return (
-    <Sidebar>
-      <div className="min-h-screen bg-background">
-        <header className="bg-background border-b border-border dark:bg-[#141414] dark:border-[#1E1E1E] px-6 py-4 sticky top-0 z-40">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-6">
-              <Link prefetch={false} href="/panel/owners" className="text-[#e94446] font-medium hover:text-[#d63d3f]">
-                Owners
-              </Link>
-            </div>
-            <HeaderUser />
-          </div>
-        </header>
-
-        <main className="w-full px-6 py-8">
+    <div className="min-h-screen bg-background">
+      <main className="w-full px-6 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">Papelera</h1>
           <p className="text-muted-foreground">
@@ -285,7 +271,6 @@ export default function OwnersLeadsPapeleraPage() {
           </div>
         )}
       </main>
-      </div>
-    </Sidebar>
+    </div>
   );
 }

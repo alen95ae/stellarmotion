@@ -1,485 +1,815 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { 
-  Users, 
-  TrendingUp, 
-  DollarSign, 
-  Target,
-  Filter,
-  Plus,
-  Search,
-  ArrowRight,
-  CheckCircle2,
-  XCircle,
-  Clock,
-  Mail,
-  Phone,
-  Building2
-} from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import Sidebar from '@/components/dashboard/Sidebar'
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Loader2, Plus, Trash2, Edit, MoreVertical, Search } from "lucide-react";
+import { toast } from "sonner";
 
-interface CRMStats {
-  totalLeads: number
-  totalAccounts: number
-  totalOpportunities: number
-  totalWon: number
-  totalLost: number
-  pipelineValue: number
-  wonValue: number
+interface Pipeline {
+  id: string;
+  nombre: string;
+  descripcion?: string | null;
+  is_default?: boolean;
 }
 
-interface Lead {
-  id: string
-  nombre: string
-  email: string
-  empresa?: string
-  status: string
-  score: number
-  source: string
-  created_at: string
+interface Stage {
+  id: string;
+  pipeline_id: string;
+  nombre: string;
+  posicion: number;
 }
 
 interface Opportunity {
-  id: string
-  nombre: string
-  importe_estimado: number
-  moneda: string
-  probabilidad_cierre: number
-  fecha_cierre_estimada?: string
-  is_won: boolean
-  is_lost: boolean
-  account?: {
-    nombre: string
-  }
+  id: string;
+  stage_id: string;
+  descripcion?: string | null;
+  valor_estimado?: number | null;
+  moneda?: string;
+  lead_id?: string | null;
+  lead_nombre?: string | null;
+  ciudad?: string | null;
+  origen?: string | null;
+  interes?: string | null;
+  estado?: string | null;
 }
+
+const ESTADO_OPTS = [
+  { value: "abierta", label: "Abierta" },
+  { value: "ganada", label: "Ganada" },
+  { value: "perdida", label: "Perdida" },
+];
+
+const INTERES_OPTS = [
+  { value: "bajo", label: "Bajo" },
+  { value: "medio", label: "Medio" },
+  { value: "alto", label: "Alto" },
+];
 
 export default function CRMPage() {
-  const router = useRouter()
-  const [loading, setLoading] = useState(true)
-  const [stats, setStats] = useState<CRMStats>({
-    totalLeads: 0,
-    totalAccounts: 0,
-    totalOpportunities: 0,
-    totalWon: 0,
-    totalLost: 0,
-    pipelineValue: 0,
-    wonValue: 0
-  })
-  const [recentLeads, setRecentLeads] = useState<Lead[]>([])
-  const [recentOpportunities, setRecentOpportunities] = useState<Opportunity[]>([])
-  const [searchTerm, setSearchTerm] = useState('')
-  const [error, setError] = useState<string | null>(null)
+  const [pipelines, setPipelines] = useState<Pipeline[]>([]);
+  const [pipelineId, setPipelineId] = useState<string | null>(null);
+  const [stages, setStages] = useState<Stage[]>([]);
+  const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingOpps, setLoadingOpps] = useState(false);
+  const [searchQ, setSearchQ] = useState("");
+
+  const [modalOportunidad, setModalOportunidad] = useState(false);
+  const [modalPipeline, setModalPipeline] = useState(false);
+  const [modalEtapa, setModalEtapa] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const [formStageId, setFormStageId] = useState("");
+  const [formDescripcion, setFormDescripcion] = useState("");
+  const [formValor, setFormValor] = useState<number | "">("");
+  const [formCiudad, setFormCiudad] = useState("");
+  const [formOrigen, setFormOrigen] = useState("");
+  const [formInteres, setFormInteres] = useState("");
+  const [formEstado, setFormEstado] = useState("abierta");
+  const [formLeadId, setFormLeadId] = useState<string | null>(null);
+
+  const [formPipelineNombre, setFormPipelineNombre] = useState("");
+  const [formPipelineDesc, setFormPipelineDesc] = useState("");
+  const [formEtapaNombre, setFormEtapaNombre] = useState("");
+  const [contactosList, setContactosList] = useState<{ id: string; displayName: string }[]>([]);
+  const [loadingContactos, setLoadingContactos] = useState(false);
+
+  const fetchPipelines = async () => {
+    try {
+      const res = await fetch("/api/crm/pipelines", { credentials: "include" });
+      const data = await res.json();
+      const list = data.success && data.data ? data.data : [];
+      setPipelines(Array.isArray(list) ? list : []);
+      const defaultP = list.find((p: Pipeline) => p.is_default) ?? list[0];
+      if (defaultP?.id) setPipelineId(defaultP.id);
+    } catch (e) {
+      toast.error("Error al cargar pipelines");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchContactos = async () => {
+    setLoadingContactos(true);
+    try {
+      const res = await fetch("/api/contactos?limit=500", { credentials: "include" });
+      const json = await res.json();
+      const list = Array.isArray(json?.data) ? json.data : [];
+      setContactosList(
+        list.map((c: { id: string; displayName?: string }) => ({
+          id: c.id,
+          displayName: c.displayName ?? c.nombre ?? "",
+        }))
+      );
+    } catch {
+      setContactosList([]);
+    } finally {
+      setLoadingContactos(false);
+    }
+  };
 
   useEffect(() => {
-    // Datos de ejemplo (mock) - sin conexión a BD
-    loadMockData()
-  }, [])
+    fetchPipelines();
+  }, []);
 
-  const loadMockData = () => {
-    setLoading(true)
-    
-    // Simular carga
-    setTimeout(() => {
-      // Datos de ejemplo para leads
-      const mockLeads: Lead[] = [
-        {
-          id: '1',
-          nombre: 'Juan Pérez',
-          email: 'juan@empresa.com',
-          empresa: 'Empresa S.L.',
-          status: 'qualified',
-          score: 85,
-          source: 'web',
-          created_at: new Date().toISOString()
-        },
-        {
-          id: '2',
-          nombre: 'María García',
-          email: 'maria@agencia.com',
-          empresa: 'Agencia Publicitaria',
-          status: 'contacted',
-          score: 72,
-          source: 'referral',
-          created_at: new Date(Date.now() - 86400000).toISOString()
-        },
-        {
-          id: '3',
-          nombre: 'Carlos López',
-          email: 'carlos@anunciante.com',
-          empresa: 'Anunciante Corp',
-          status: 'new',
-          score: 45,
-          source: 'email',
-          created_at: new Date(Date.now() - 172800000).toISOString()
-        },
-        {
-          id: '4',
-          nombre: 'Ana Martínez',
-          email: 'ana@partner.com',
-          empresa: 'Partner OOH',
-          status: 'qualified',
-          score: 90,
-          source: 'event',
-          created_at: new Date(Date.now() - 259200000).toISOString()
-        },
-        {
-          id: '5',
-          nombre: 'Pedro Sánchez',
-          email: 'pedro@cliente.com',
-          empresa: 'Cliente Premium',
-          status: 'contacted',
-          score: 68,
-          source: 'phone',
-          created_at: new Date(Date.now() - 345600000).toISOString()
-        }
-      ]
-
-      // Datos de ejemplo para oportunidades
-      const mockOpportunities: Opportunity[] = [
-        {
-          id: '1',
-          nombre: 'Campaña Q1 2025 - Madrid',
-          importe_estimado: 15000,
-          moneda: 'EUR',
-          probabilidad_cierre: 75,
-          fecha_cierre_estimada: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
-          is_won: false,
-          is_lost: false,
-          account: { nombre: 'Empresa S.L.' }
-        },
-        {
-          id: '2',
-          nombre: 'Campaña Digital Barcelona',
-          importe_estimado: 8500,
-          moneda: 'EUR',
-          probabilidad_cierre: 50,
-          fecha_cierre_estimada: new Date(Date.now() + 45 * 86400000).toISOString().split('T')[0],
-          is_won: false,
-          is_lost: false,
-          account: { nombre: 'Agencia Publicitaria' }
-        },
-        {
-          id: '3',
-          nombre: 'Campaña Verano 2025',
-          importe_estimado: 25000,
-          moneda: 'EUR',
-          probabilidad_cierre: 25,
-          fecha_cierre_estimada: new Date(Date.now() + 60 * 86400000).toISOString().split('T')[0],
-          is_won: false,
-          is_lost: false,
-          account: { nombre: 'Anunciante Corp' }
-        },
-        {
-          id: '4',
-          nombre: 'Campaña Navidad 2024',
-          importe_estimado: 12000,
-          moneda: 'EUR',
-          probabilidad_cierre: 100,
-          fecha_cierre_estimada: new Date().toISOString().split('T')[0],
-          is_won: true,
-          is_lost: false,
-          account: { nombre: 'Partner OOH' }
-        },
-        {
-          id: '5',
-          nombre: 'Campaña Invierno',
-          importe_estimado: 5000,
-          moneda: 'EUR',
-          probabilidad_cierre: 0,
-          fecha_cierre_estimada: new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0],
-          is_won: false,
-          is_lost: true,
-          account: { nombre: 'Cliente Premium' }
-        }
-      ]
-
-      // Calcular estadísticas
-      const wonOpps = mockOpportunities.filter((o) => o.is_won)
-      const lostOpps = mockOpportunities.filter((o) => o.is_lost)
-      const pipelineValue = mockOpportunities
-        .filter((o) => !o.is_won && !o.is_lost)
-        .reduce((sum, o) => sum + (o.importe_estimado || 0), 0)
-      const wonValue = wonOpps.reduce((sum, o) => sum + (o.importe_final || o.importe_estimado || 0), 0)
-
-      setStats({
-        totalLeads: mockLeads.length,
-        totalAccounts: 5,
-        totalOpportunities: mockOpportunities.length,
-        totalWon: wonOpps.length,
-        totalLost: lostOpps.length,
-        pipelineValue,
-        wonValue
-      })
-
-      // Leads recientes (últimos 5)
-      setRecentLeads(mockLeads.slice(0, 5))
-
-      // Oportunidades recientes (últimas 5, no ganadas ni perdidas)
-      const activeOpps = mockOpportunities
-        .filter((o) => !o.is_won && !o.is_lost)
-        .slice(0, 5)
-      setRecentOpportunities(activeOpps)
-
-      setLoading(false)
-    }, 500) // Simular delay de carga
-  }
-
-  const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      new: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-      contacted: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-      qualified: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-      converted: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
-      lost: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+  useEffect(() => {
+    if (!pipelineId) {
+      setStages([]);
+      setOpportunities([]);
+      return;
     }
-    return colors[status] || 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300'
-  }
+    (async () => {
+      setLoadingOpps(true);
+      try {
+        const params = new URLSearchParams();
+        if (searchQ) params.set("q", searchQ);
+        const [stagesRes, oppsRes] = await Promise.all([
+          fetch(`/api/crm/pipelines/${pipelineId}/stages`, { credentials: "include" }),
+          fetch(`/api/crm/pipelines/${pipelineId}/opportunities?${params.toString()}`, {
+            credentials: "include",
+          }),
+        ]);
+        const stagesData = await stagesRes.json();
+        const oppsData = await oppsRes.json();
+        setStages(Array.isArray(stagesData.data) ? stagesData.data : []);
+        setOpportunities(Array.isArray(oppsData.data) ? oppsData.data : []);
+      } catch (e) {
+        toast.error("Error al cargar etapas u oportunidades");
+      } finally {
+        setLoadingOpps(false);
+      }
+    })();
+  }, [pipelineId, searchQ]);
 
-  const getSourceIcon = (source: string) => {
-    switch (source) {
-      case 'email':
-        return <Mail className="w-4 h-4" />
-      case 'phone':
-        return <Phone className="w-4 h-4" />
-      case 'web':
-        return <Building2 className="w-4 h-4" />
-      default:
-        return <Users className="w-4 h-4" />
+  const openNuevaOportunidad = (stageId?: string) => {
+    setEditingId(null);
+    setFormStageId(stageId || (stages[0]?.id ?? ""));
+    setFormDescripcion("");
+    setFormValor("");
+    setFormCiudad("");
+    setFormOrigen("");
+    setFormInteres("");
+    setFormEstado("abierta");
+    setFormLeadId(null);
+    fetchContactos();
+    setModalOportunidad(true);
+  };
+
+  const openEditOportunidad = (opp: Opportunity) => {
+    setEditingId(opp.id);
+    setFormStageId(opp.stage_id);
+    setFormDescripcion(opp.descripcion ?? "");
+    setFormValor(opp.valor_estimado ?? "");
+    setFormCiudad(opp.ciudad ?? "");
+    setFormOrigen(opp.origen ?? "");
+    setFormInteres(opp.interes ?? "");
+    setFormEstado(opp.estado ?? "abierta");
+    setFormLeadId(opp.lead_id ?? null);
+    fetchContactos();
+    setModalOportunidad(true);
+  };
+
+  const handleSaveOportunidad = async () => {
+    if (!pipelineId) return;
+    if (!editingId && !formLeadId) {
+      toast.error("Selecciona un contacto");
+      return;
     }
-  }
+    setSaving(true);
+    try {
+      const payload = {
+        pipeline_id: pipelineId,
+        stage_id: formStageId,
+        contacto_id: formLeadId || undefined,
+        descripcion: formDescripcion || null,
+        valor_estimado: formValor === "" ? null : Number(formValor),
+        ciudad: formCiudad || null,
+        origen: formOrigen || null,
+        interes: formInteres || null,
+        estado: formEstado,
+        lead_id: formLeadId || undefined,
+      };
+      if (editingId) {
+        const res = await fetch(`/api/crm/opportunities/${editingId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            descripcion: payload.descripcion,
+            valor_estimado: payload.valor_estimado,
+            ciudad: payload.ciudad,
+            origen: payload.origen,
+            interes: payload.interes,
+            estado: payload.estado,
+            stage_id: payload.stage_id,
+            contacto_id: formLeadId || undefined,
+          }),
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error);
+        toast.success("Oportunidad actualizada");
+      } else {
+        const res = await fetch("/api/crm/opportunities", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error);
+        toast.success("Oportunidad creada");
+      }
+      setModalOportunidad(false);
+      const [stagesRes, oppsRes] = await Promise.all([
+        fetch(`/api/crm/pipelines/${pipelineId}/stages`, { credentials: "include" }),
+        fetch(`/api/crm/pipelines/${pipelineId}/opportunities`, { credentials: "include" }),
+      ]);
+      const stagesData = await stagesRes.json();
+      const oppsData = await oppsRes.json();
+      setStages(Array.isArray(stagesData.data) ? stagesData.data : []);
+      setOpportunities(Array.isArray(oppsData.data) ? oppsData.data : []);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Error al guardar");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCrearPipeline = async () => {
+    if (!formPipelineNombre.trim()) {
+      toast.error("El nombre del pipeline es obligatorio");
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await fetch("/api/crm/pipelines", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          nombre: formPipelineNombre.trim(),
+          descripcion: formPipelineDesc.trim() || null,
+          is_default: pipelines.length === 0,
+        }),
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error);
+      toast.success("Pipeline creado");
+      setModalPipeline(false);
+      setFormPipelineNombre("");
+      setFormPipelineDesc("");
+      await fetchPipelines();
+      if (data.data?.id) setPipelineId(data.data.id);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Error al crear pipeline");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleAgregarEtapa = async () => {
+    if (!pipelineId || !formEtapaNombre.trim()) {
+      toast.error("El nombre de la etapa es obligatorio");
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/crm/pipelines/${pipelineId}/stages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ nombre: formEtapaNombre.trim() }),
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error);
+      toast.success("Etapa creada");
+      setModalEtapa(false);
+      setFormEtapaNombre("");
+      const stagesRes = await fetch(`/api/crm/pipelines/${pipelineId}/stages`, {
+        credentials: "include",
+      });
+      const stagesData = await stagesRes.json();
+      setStages(Array.isArray(stagesData.data) ? stagesData.data : []);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Error al crear etapa");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteOportunidad = async () => {
+    if (!deleteId) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/crm/opportunities/${deleteId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error);
+      toast.success("Oportunidad eliminada");
+      setDeleteId(null);
+      if (pipelineId) {
+        const oppsRes = await fetch(`/api/crm/pipelines/${pipelineId}/opportunities`, {
+          credentials: "include",
+        });
+        const oppsData = await oppsRes.json();
+        setOpportunities(Array.isArray(oppsData.data) ? oppsData.data : []);
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Error al eliminar");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const selectedPipeline = pipelines.find((p) => p.id === pipelineId);
 
   return (
-    <Sidebar>
-      <div className="min-h-screen bg-background p-6">
-        <div className="max-w-7xl mx-auto space-y-6">
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">CRM</h1>
-              <p className="text-muted-foreground mt-1">Gestión de leads, cuentas y oportunidades</p>
-              <div className="mt-2 p-2 bg-blue-50 border border-blue-200 dark:bg-blue-900/20 dark:border-blue-800 rounded-lg text-blue-800 dark:text-blue-300 text-xs">
-                📊 Modo demo: Mostrando datos de ejemplo (sin conexión a BD)
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                onClick={() => router.push('/panel/crm/leads')}
-                className="flex items-center gap-2"
-              >
-                <Filter className="w-4 h-4" />
-                Ver Leads
-              </Button>
-              <Button
-                onClick={() => router.push('/panel/crm/leads/nuevo')}
-                className="bg-[#e94446] hover:bg-[#d63a3a] text-white flex items-center gap-2"
-              >
-                <Plus className="w-4 h-4" />
-                Nuevo Lead
-              </Button>
+    <div className="p-6">
+      <header className="mb-6">
+        <h1 className="text-2xl font-bold text-foreground">Pipeline</h1>
+        <p className="text-muted-foreground text-sm">Oportunidades por etapa</p>
+      </header>
+
+      {loading ? (
+        <div className="flex justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+        </div>
+      ) : pipelines.length === 0 ? (
+        <Card className="border-border bg-card">
+          <CardContent className="py-16 px-6 text-center">
+            <p className="text-foreground font-medium mb-2">
+              Aún no tienes ningún pipeline
+            </p>
+            <p className="text-muted-foreground text-sm mb-6 max-w-sm mx-auto">
+              Crea tu primer pipeline para empezar a gestionar oportunidades de venta.
+            </p>
+            <Button
+              className="bg-[#e94446] hover:bg-[#d63d3f] text-white"
+              onClick={() => {
+                setFormPipelineNombre("");
+                setFormPipelineDesc("");
+                setModalPipeline(true);
+              }}
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Crear pipeline
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          <div className="flex flex-wrap items-center gap-3 mb-4">
+            <Select
+              value={pipelineId ?? ""}
+              onValueChange={(v) => setPipelineId(v || null)}
+            >
+              <SelectTrigger className="w-[200px] bg-muted/50 border-border text-foreground font-medium">
+                <SelectValue placeholder="Pipeline" />
+              </SelectTrigger>
+              <SelectContent>
+                {pipelines.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.nombre}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {selectedPipeline && (
+              <Badge variant="secondary" className="text-foreground border-border">
+                {selectedPipeline.nombre}
+              </Badge>
+            )}
+            <div className="flex-1" />
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-border"
+              onClick={() => {
+                setFormEtapaNombre("");
+                setModalEtapa(true);
+              }}
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Agregar etapa
+            </Button>
+            <Button
+              className="bg-[#e94446] hover:bg-[#d63d3f] text-white"
+              onClick={() => openNuevaOportunidad()}
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Nueva oportunidad
+            </Button>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 mb-4">
+            <div className="relative flex-1 min-w-[200px] max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar oportunidades..."
+                value={searchQ}
+                onChange={(e) => setSearchQ(e.target.value)}
+                className="pl-9 bg-background border-border"
+              />
             </div>
           </div>
 
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Leads</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.totalLeads}</div>
-                <p className="text-xs text-muted-foreground">Leads activos</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Cuentas</CardTitle>
-                <Building2 className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.totalAccounts}</div>
-                <p className="text-xs text-muted-foreground">Cuentas registradas</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Pipeline</CardTitle>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {new Intl.NumberFormat('es-ES', {
-                    style: 'currency',
-                    currency: 'EUR'
-                  }).format(stats.pipelineValue)}
-                </div>
-                <p className="text-xs text-muted-foreground">{stats.totalOpportunities} oportunidades</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Ganadas</CardTitle>
-                <CheckCircle2 className="h-4 w-4 text-green-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-green-600">
-                  {new Intl.NumberFormat('es-ES', {
-                    style: 'currency',
-                    currency: 'EUR'
-                  }).format(stats.wonValue)}
-                </div>
-                <p className="text-xs text-muted-foreground">{stats.totalWon} oportunidades ganadas</p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Recent Leads */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Leads Recientes</CardTitle>
-                  <CardDescription>Últimos leads agregados al sistema</CardDescription>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => router.push('/panel/crm/leads')}
-                  className="flex items-center gap-2"
-                >
-                  Ver todos
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                  <div className="text-center py-8 text-muted-foreground">Cargando...</div>
-              ) : recentLeads.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                  No hay leads aún. <Button variant="link" onClick={() => router.push('/panel/crm/leads/nuevo')}>Crear primer lead</Button>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {recentLeads.map((lead) => (
-                    <div
-                      key={lead.id}
-                        className="flex items-center justify-between p-3 border border-border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
-                      onClick={() => router.push(`/panel/crm/leads/${lead.id}`)}
-                    >
-                      <div className="flex items-center gap-3 flex-1">
-                          <div className="p-2 bg-muted rounded-lg">
-                          {getSourceIcon(lead.source)}
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                              <p className="font-medium text-foreground">{lead.nombre}</p>
-                            {lead.empresa && (
-                                <span className="text-sm text-muted-foreground">- {lead.empresa}</span>
+          {loadingOpps ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <div className="flex gap-4 overflow-x-auto pb-4">
+              {stages.map((stage) => {
+                const stageOpps = opportunities.filter((o) => o.stage_id === stage.id);
+                const totalStage = stageOpps.reduce(
+                  (sum, o) => sum + (Number(o.valor_estimado) || 0),
+                  0
+                );
+                return (
+                  <Card
+                    key={stage.id}
+                    className="min-w-[300px] shrink-0 border-border bg-card flex flex-col"
+                  >
+                    <CardHeader className="py-3 flex flex-row items-center justify-between space-y-0">
+                      <CardTitle className="text-base text-foreground flex items-center gap-2">
+                        <span>{stage.nombre}</span>
+                        <span className="text-muted-foreground font-normal text-sm">
+                          {stageOpps.length}
+                        </span>
+                      </CardTitle>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => openNuevaOportunidad(stage.id)}
+                        >
+                          <Plus className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreVertical className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-2 pt-0 flex-1 overflow-auto">
+                      {stageOpps.map((opp) => (
+                        <div
+                          key={opp.id}
+                          className="rounded-lg border border-border bg-background p-3 text-foreground"
+                        >
+                          <div className="text-sm font-medium">
+                            {opp.descripcion || "Sin descripción"}
+                          </div>
+                          {opp.lead_nombre && (
+                            <div className="text-xs text-muted-foreground mt-0.5">
+                              {opp.lead_nombre}
+                            </div>
+                          )}
+                          {opp.valor_estimado != null && (
+                            <div className="text-xs text-muted-foreground mt-1">
+                              {Number(opp.valor_estimado).toLocaleString("es-ES", {
+                                style: "currency",
+                                currency: opp.moneda || "EUR",
+                              })}
+                            </div>
+                          )}
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {opp.estado && (
+                              <Badge variant="outline" className="text-xs">
+                                {opp.estado}
+                              </Badge>
+                            )}
+                            {opp.origen && (
+                              <Badge variant="outline" className="text-xs">
+                                {opp.origen}
+                              </Badge>
+                            )}
+                            {opp.interes && (
+                              <Badge variant="outline" className="text-xs">
+                                {opp.interes}
+                              </Badge>
                             )}
                           </div>
-                            <p className="text-sm text-muted-foreground">{lead.email}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <Badge className={getStatusColor(lead.status)}>
-                          {lead.status}
-                        </Badge>
-                        <div className="text-right">
-                            <div className="text-sm font-medium text-foreground">Score: {lead.score}</div>
-                            <div className="text-xs text-muted-foreground">
-                            {new Date(lead.created_at).toLocaleDateString('es-ES')}
+                          <div className="flex gap-1 mt-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 text-xs"
+                              onClick={() => openEditOportunidad(opp)}
+                            >
+                              <Edit className="w-3 h-3 mr-1" />
+                              Editar
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 text-xs text-destructive hover:text-destructive"
+                              onClick={() => setDeleteId(opp.id)}
+                            >
+                              <Trash2 className="w-3 h-3 mr-1" />
+                              Eliminar
+                            </Button>
                           </div>
                         </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                      ))}
+                      {stageOpps.length > 0 && (
+                        <p className="text-xs text-muted-foreground pt-2 border-t border-border mt-2">
+                          Total de la etapa:{" "}
+                          {totalStage.toLocaleString("es-ES", {
+                            style: "currency",
+                            currency: "EUR",
+                          })}
+                        </p>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </>
+      )}
 
-          {/* Recent Opportunities */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Oportunidades Activas</CardTitle>
-                  <CardDescription>Oportunidades en el pipeline</CardDescription>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => router.push('/panel/crm/opportunities')}
-                  className="flex items-center gap-2"
-                >
-                  Ver todas
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
+      {/* Modal Crear pipeline */}
+      <Dialog open={modalPipeline} onOpenChange={setModalPipeline}>
+        <DialogContent className="bg-card border-border text-foreground sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Crear pipeline</DialogTitle>
+            <DialogDescription>
+              Define un nuevo pipeline de ventas para organizar oportunidades.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label>Nombre</Label>
+              <Input
+                value={formPipelineNombre}
+                onChange={(e) => setFormPipelineNombre(e.target.value)}
+                placeholder="Ej: Ventas publicidad"
+                className="mt-1 bg-background border-border focus-visible:ring-[#e94446]"
+              />
+            </div>
+            <div>
+              <Label>Descripción (opcional)</Label>
+              <Input
+                value={formPipelineDesc}
+                onChange={(e) => setFormPipelineDesc(e.target.value)}
+                placeholder="Breve descripción"
+                className="mt-1 bg-background border-border focus-visible:ring-[#e94446]"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setModalPipeline(false)}>
+              Cancelar
+            </Button>
+            <Button
+              className="bg-[#e94446] hover:bg-[#d63d3f] text-white"
+              onClick={handleCrearPipeline}
+              disabled={saving}
+            >
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Crear"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Agregar etapa */}
+      <Dialog open={modalEtapa} onOpenChange={setModalEtapa}>
+        <DialogContent className="bg-card border-border text-foreground sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Agregar etapa</DialogTitle>
+            <DialogDescription>
+              Añade una nueva etapa al pipeline actual.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label>Nombre de la etapa</Label>
+              <Input
+                value={formEtapaNombre}
+                onChange={(e) => setFormEtapaNombre(e.target.value)}
+                placeholder="Ej: Contacto inicial"
+                className="mt-1 bg-background border-border focus-visible:ring-[#e94446]"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setModalEtapa(false)}>
+              Cancelar
+            </Button>
+            <Button
+              className="bg-[#e94446] hover:bg-[#d63d3f] text-white"
+              onClick={handleAgregarEtapa}
+              disabled={saving}
+            >
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Crear"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Nueva / Editar oportunidad */}
+      <Dialog open={modalOportunidad} onOpenChange={setModalOportunidad}>
+        <DialogContent className="bg-card border-border text-foreground sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>
+              {editingId ? "Editar oportunidad" : "Nueva oportunidad"}
+            </DialogTitle>
+            <DialogDescription>
+              Completa los datos de la oportunidad.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label>Contacto {!editingId && "(requerido)"}</Label>
+              <Select
+                value={formLeadId ?? ""}
+                onValueChange={(v) => setFormLeadId(v || null)}
+                disabled={loadingContactos}
+              >
+                <SelectTrigger className="mt-1 bg-background border-border focus-visible:ring-[#e94446]">
+                  <SelectValue
+                    placeholder={
+                      loadingContactos ? "Cargando contactos…" : "Seleccionar contacto"
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {contactosList.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.displayName || c.id}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Descripción</Label>
+              <Textarea
+                value={formDescripcion}
+                onChange={(e) => setFormDescripcion(e.target.value)}
+                placeholder="Descripción de la oportunidad..."
+                className="mt-1 bg-background border-border focus-visible:ring-[#e94446] min-h-[80px]"
+              />
+            </div>
+            <div>
+              <Label>Valor estimado</Label>
+              <Input
+                type="number"
+                step={0.01}
+                value={formValor}
+                onChange={(e) =>
+                  setFormValor(e.target.value === "" ? "" : Number(e.target.value))
+                }
+                placeholder="0.00"
+                className="mt-1 bg-background border-border focus-visible:ring-[#e94446]"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Ciudad</Label>
+                <Input
+                  value={formCiudad}
+                  onChange={(e) => setFormCiudad(e.target.value)}
+                  placeholder="Ej: Madrid"
+                  className="mt-1 bg-background border-border focus-visible:ring-[#e94446]"
+                />
               </div>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                  <div className="text-center py-8 text-muted-foreground">Cargando...</div>
-              ) : recentOpportunities.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                  No hay oportunidades activas. <Button variant="link" onClick={() => router.push('/panel/crm/opportunities/nuevo')}>Crear oportunidad</Button>
-                </div>
+              <div>
+                <Label>Origen</Label>
+                <Input
+                  value={formOrigen}
+                  onChange={(e) => setFormOrigen(e.target.value)}
+                  placeholder="Ej: Web, Referido, Evento"
+                  className="mt-1 bg-background border-border focus-visible:ring-[#e94446]"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Interés</Label>
+                <Select value={formInteres} onValueChange={setFormInteres}>
+                  <SelectTrigger className="mt-1 bg-background border-border focus-visible:ring-[#e94446]">
+                    <SelectValue placeholder="Seleccionar interés" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {INTERES_OPTS.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>
+                        {o.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Estado</Label>
+                <Select value={formEstado} onValueChange={setFormEstado}>
+                  <SelectTrigger className="mt-1 bg-background border-border focus-visible:ring-[#e94446]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ESTADO_OPTS.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>
+                        {o.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            {!editingId && stages.length > 0 && (
+              <div>
+                <Label>Etapa</Label>
+                <Select value={formStageId} onValueChange={setFormStageId}>
+                  <SelectTrigger className="mt-1 bg-background border-border focus-visible:ring-[#e94446]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {stages.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.nombre}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setModalOportunidad(false)}>
+              Cancelar
+            </Button>
+            <Button
+              className="bg-[#e94446] hover:bg-[#d63d3f] text-white"
+              onClick={handleSaveOportunidad}
+              disabled={saving}
+            >
+              {saving ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : editingId ? (
+                "Guardar"
               ) : (
-                <div className="space-y-3">
-                  {recentOpportunities.map((opp) => (
-                    <div
-                      key={opp.id}
-                        className="flex items-center justify-between p-3 border border-border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
-                      onClick={() => router.push(`/panel/crm/opportunities/${opp.id}`)}
-                    >
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                            <p className="font-medium text-foreground">{opp.nombre}</p>
-                          {opp.account && (
-                              <span className="text-sm text-muted-foreground">- {opp.account.nombre}</span>
-                          )}
-                        </div>
-                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                          <span>
-                            {new Intl.NumberFormat('es-ES', {
-                              style: 'currency',
-                              currency: opp.moneda || 'EUR'
-                            }).format(opp.importe_estimado)}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Target className="w-3 h-3" />
-                            {opp.probabilidad_cierre}%
-                          </span>
-                          {opp.fecha_cierre_estimada && (
-                            <span className="flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
-                              {new Date(opp.fecha_cierre_estimada).toLocaleDateString('es-ES')}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                        <ArrowRight className="w-5 h-5 text-muted-foreground" />
-                    </div>
-                  ))}
-                </div>
+                "Crear"
               )}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    </Sidebar>
-  )
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
+        <AlertDialogContent className="bg-card border-border">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Eliminar oportunidad</AlertDialogTitle>
+            <AlertDialogDescription>
+              ¿Seguro que quieres eliminar esta oportunidad?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteOportunidad}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
 }
-
-

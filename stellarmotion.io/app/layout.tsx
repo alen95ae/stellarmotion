@@ -9,6 +9,7 @@ import "./globals.css"
 import Header from "@/components/Header"
 import Footer from "@/components/Footer"
 import { ThemeProvider } from "@/components/theme-provider"
+import { EstellaChat } from "@/components/EstellaChat"
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -42,6 +43,7 @@ export default function RootLayout({
           </Suspense>
           {children}
           <Footer />
+          <EstellaChat />
           <Analytics />
           <SpeedInsights />
         </ThemeProvider>
