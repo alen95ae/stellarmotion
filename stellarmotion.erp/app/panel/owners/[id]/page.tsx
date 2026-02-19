@@ -335,9 +335,9 @@ export default function EditOwnerPage() {
       toast.success("Owner actualizado");
       setSaved(true);
       setTimeout(() => router.push("/panel/owners"), 1200);
+      // No setSaving(false): mantener "Guardando..." hasta que salga de la página
     } catch {
       toast.error("Error al guardar");
-    } finally {
       setSaving(false);
     }
   };

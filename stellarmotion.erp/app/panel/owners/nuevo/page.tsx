@@ -263,9 +263,9 @@ export default function NuevoOwnerPage() {
       toast.success("Owner creado");
       setSaved(true);
       setTimeout(() => router.push(`/panel/owners/${created.id}`), 1200);
+      // No setSaving(false): mantener "Guardando..." hasta que salga de la página
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Error al crear");
-    } finally {
       setSaving(false);
     }
   };

@@ -2,15 +2,25 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { RotateCcw, Trash2 } from "lucide-react";
+import { RotateCcw, Trash2, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { TableCellTruncate } from "@/components/TableCellTruncate";
 import BulkActionsPapelera from "@/components/makers/BulkActionsPapelera";
+
+function firstOfList(s: string | number | undefined | null | string[]): string {
+  if (s == null && s !== 0) return "";
+  if (Array.isArray(s)) return s.length ? String(s[0]).trim() : "";
+  const str = String(s).trim();
+  if (!str) return "";
+  const parts = str.split(",").map((p) => p.trim()).filter(Boolean);
+  return parts[0] ?? "";
+}
 
 interface Lead {
   id: string;
@@ -23,6 +33,7 @@ interface Lead {
 }
 
 export default function MakersLeadsPapeleraPage() {
+  const router = useRouter();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState({
@@ -40,6 +51,7 @@ export default function MakersLeadsPapeleraPage() {
     setLoading(true);
     try {
       const params = new URLSearchParams();
+      params.set("relation", "MAKER");
       if (q) params.set("q", q);
       params.set("page", String(page));
       params.set("limit", "50");
@@ -132,11 +144,22 @@ export default function MakersLeadsPapeleraPage() {
   return (
     <div className="min-h-screen bg-background">
       <main className="w-full px-6 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Papelera</h1>
-          <p className="text-muted-foreground">
-            Registros movidos a papelera. Puedes restaurarlos a la lista de Makers.
-          </p>
+        <div className="mb-8 flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground mb-2">Papelera</h1>
+            <p className="text-muted-foreground">
+              Registros movidos a papelera. Puedes restaurarlos a la lista de Makers.
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.push("/panel/makers")}
+            className="shrink-0 border-border text-foreground hover:bg-muted dark:border-[#404040] dark:text-[#D1D1D1] dark:hover:bg-[#1E1E1E] dark:hover:text-[#FFFFFF]"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Volver
+          </Button>
         </div>
 
         <div className="bg-card dark:bg-[#141414] border border-border dark:border-[#1E1E1E] rounded-lg p-4 mb-6 shadow-sm">
@@ -203,12 +226,10 @@ export default function MakersLeadsPapeleraPage() {
                         <TableCellTruncate value={l.nombre} />
                       </TableCell>
                       <TableCell className="max-w-[22ch]">
-                        <TableCellTruncate
-                          value={Array.isArray(l.email) ? l.email.join(", ") : (l.email as string)}
-                        />
+                        <TableCellTruncate value={firstOfList(l.email)} />
                       </TableCell>
                       <TableCell className="max-w-[14ch]">
-                        <TableCellTruncate value={l.telefono} />
+                        <TableCellTruncate value={firstOfList(l.telefono)} />
                       </TableCell>
                       <TableCell className="max-w-[18ch]">
                         <TableCellTruncate value={l.ciudad} />

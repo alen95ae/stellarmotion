@@ -8,10 +8,16 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const q = searchParams.get("q") || "";
+    const relation = searchParams.get("relation") || "";
     const page = parseInt(searchParams.get("page") || "1", 10);
     const limit = Math.min(parseInt(searchParams.get("limit") || "50", 10), 500);
 
-    const { data, total } = await getLeadsPapelera({ q: q || undefined, page, limit });
+    const { data, total } = await getLeadsPapelera({
+      q: q || undefined,
+      relation: relation !== "ALL" ? relation : undefined,
+      page,
+      limit,
+    });
     const totalPages = Math.ceil(total / limit) || 1;
 
     return NextResponse.json({

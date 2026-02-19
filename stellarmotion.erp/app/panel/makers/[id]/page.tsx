@@ -327,9 +327,9 @@ export default function EditMakerPage() {
       toast.success("Maker actualizado");
       setSaved(true);
       setTimeout(() => router.push("/panel/makers"), 1200);
+      // No setSaving(false): mantener "Guardando..." hasta que salga de la página
     } catch {
       toast.error("Error al guardar");
-    } finally {
       setSaving(false);
     }
   };

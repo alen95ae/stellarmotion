@@ -6,6 +6,17 @@
  */
 import { supabaseAdmin } from "./supabase-admin";
 
+/** Normaliza texto para búsqueda: quita acentos, ñ→n, ç→c, minúsculas, para que no sea estricto con acentos/símbolos. */
+function normalizeSearchForQuery(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .replace(/ñ/g, "n")
+    .replace(/ç/g, "c")
+    .trim();
+}
+
 export type SourceEnum = "scraping" | "manual" | "web" | "import" | "other";
 
 export interface ContactoRow {
@@ -260,7 +271,14 @@ export async function getContactos(filters: {
 
     if (filters.q?.trim()) {
       const t = filters.q.trim().replace(/,/g, " ");
-      q = q.or(`nombre.ilike.%${t}%,razon_social.ilike.%${t}%,telefono.ilike.%${t}%,nif.ilike.%${t}%`);
+      const tNorm = normalizeSearchForQuery(t);
+      const terms = tNorm && tNorm !== t ? [t, tNorm] : [t];
+      const esc = (x: string) => x.replace(/'/g, "''");
+      // Solo columnas de texto: telefono es JSONB y .ilike falla o devuelve 0 resultados
+      const orClauses = terms.flatMap((term) =>
+        ["nombre", "razon_social", "nif"].map((col) => `${col}.ilike.%${esc(term)}%`)
+      );
+      q = q.or(orClauses.join(","));
     }
     if (filters.kind === "INDIVIDUAL") {
       q = q.eq("tipo_entidad", "persona");
@@ -318,7 +336,8 @@ export async function getLeads(filters: {
 
     if (filters.q?.trim()) {
       const t = filters.q.trim().replace(/,/g, " ");
-      q = q.or(`nombre.ilike.%${t}%,razon_social.ilike.%${t}%,telefono.ilike.%${t}%,sector.ilike.%${t}%`);
+      // telefono es JSONB: no usar .ilike sobre él
+      q = q.or(`nombre.ilike.%${t}%,razon_social.ilike.%${t}%,sector.ilike.%${t}%`);
     }
     if (filters.sector?.trim() && filters.sector !== "ALL") {
       q = q.eq("sector", filters.sector.trim());
@@ -559,6 +578,7 @@ export async function promoteLeadToOwner(contactId: string): Promise<boolean> {
 /** Listar contactos soft-deleted (papelera). */
 export async function getLeadsPapelera(filters: {
   q?: string;
+  relation?: string;
   page?: number;
   limit?: number;
 }): Promise<{ data: LeadFormato[]; total: number }> {
@@ -569,9 +589,21 @@ export async function getLeadsPapelera(filters: {
       .not("deleted_at", "is", null)
       .order("deleted_at", { ascending: false });
 
+    const role = filters.relation === "BRAND" ? "brand" : filters.relation === "MAKER" ? "maker" : filters.relation === "OWNER" ? "owner" : null;
+    if (role) {
+      q = q.contains("roles", [role]);
+    }
+
     if (filters.q?.trim()) {
       const t = filters.q.trim().replace(/,/g, " ");
-      q = q.or(`nombre.ilike.%${t}%,razon_social.ilike.%${t}%,telefono.ilike.%${t}%`);
+      const tNorm = normalizeSearchForQuery(t);
+      const terms = tNorm && tNorm !== t ? [t, tNorm] : [t];
+      const esc = (x: string) => x.replace(/'/g, "''");
+      // telefono es JSONB: no usar .ilike sobre él
+      const orClauses = terms.flatMap((term) =>
+        ["nombre", "razon_social", "nif"].map((col) => `${col}.ilike.%${esc(term)}%`)
+      );
+      q = q.or(orClauses.join(","));
     }
 
     const page = filters.page ?? 1;

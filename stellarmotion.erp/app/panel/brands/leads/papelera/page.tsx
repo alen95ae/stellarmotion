@@ -51,6 +51,7 @@ export default function BrandsLeadsPapeleraPage() {
     setLoading(true);
     try {
       const params = new URLSearchParams();
+      params.set("relation", "BRAND");
       if (q) params.set("q", q);
       params.set("page", String(page));
       params.set("limit", "50");

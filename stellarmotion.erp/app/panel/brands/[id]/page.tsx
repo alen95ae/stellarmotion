@@ -335,9 +335,9 @@ export default function EditBrandPage() {
       toast.success("Brand actualizado");
       setSaved(true);
       setTimeout(() => router.push("/panel/brands"), 1200);
+      // No setSaving(false): mantener "Guardando..." hasta que salga de la página
     } catch {
       toast.error("Error al guardar");
-    } finally {
       setSaving(false);
     }
   };
@@ -371,7 +371,7 @@ export default function EditBrandPage() {
               type="button"
               onClick={() => handleSubmit({ preventDefault: () => {} } as React.FormEvent)}
               disabled={saving}
-              className={`bg-[#e94446] hover:bg-[#D7514C] text-white shadow-[0_0_12px_rgba(233,68,70,0.45)] hover:shadow-[0_0_20px_rgba(233,68,70,0.6)] dark:text-white transition-all duration-300 ${saved ? "bg-green-600 hover:bg-green-600 scale-105" : ""}`}
+              className={`bg-[#e94446] hover:bg-[#D7514C] text-white shadow-[0_0_12px_rgba(233,68,70,0.45)] hover:shadow-[0_0_20px_rgba(233,68,70,0.6)] dark:text-white transition-all duration-300 ${saved ? "scale-105" : ""}`}
             >
               {saved ? (
                 <>
