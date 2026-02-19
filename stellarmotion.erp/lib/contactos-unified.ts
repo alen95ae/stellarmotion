@@ -62,6 +62,7 @@ export interface ContactoFormato {
   city?: string;
   postalCode?: string;
   country?: string;
+  roles?: string[];
   relation: string;
   status: string;
   notes?: string;
@@ -185,6 +186,7 @@ function rowToContacto(r: ContactoRow): ContactoFormato {
     city: r.ciudad ?? undefined,
     postalCode: r.codigo_postal ?? undefined,
     country: r.pais ?? undefined,
+    roles,
     relation,
     status: "active",
     notes: r.notas ?? undefined,
@@ -363,10 +365,9 @@ export async function getLeadById(id: string): Promise<LeadFormato | null> {
 
 /** Crear contacto. relation → rol: OWNER→owner, BRAND→brand, MAKER→maker. Default: owner. */
 export async function createContacto(payload: Partial<ContactoFormato>): Promise<ContactoFormato | null> {
-  const isOwner = payload.relation === "OWNER";
-  const isBrand = payload.relation === "BRAND";
-  const isMaker = payload.relation === "MAKER";
-  const roles = isOwner ? ["owner"] : isBrand ? ["brand"] : isMaker ? ["maker"] : ["owner"];
+  const roles = Array.isArray(payload.roles) && payload.roles.length > 0
+    ? payload.roles.map((r) => r.toLowerCase())
+    : payload.relation === "BRAND" ? ["brand"] : payload.relation === "MAKER" ? ["maker"] : ["owner"];
   const insert: Record<string, unknown> = {
     roles,
     origen: payload.origen?.trim() || "manual",
@@ -465,6 +466,7 @@ export async function updateContacto(id: string, payload: Partial<ContactoFormat
   if (payload.categories !== undefined) up.categories = Array.isArray(payload.categories) ? payload.categories : [];
   if (payload.latitud !== undefined) up.latitud = payload.latitud;
   if (payload.longitud !== undefined) up.longitud = payload.longitud;
+  if (Array.isArray(payload.roles)) up.roles = payload.roles;
 
   const { data, error } = await supabaseAdmin.from("contactos").update(up).eq("id", id).select().single();
   if (error) return null;

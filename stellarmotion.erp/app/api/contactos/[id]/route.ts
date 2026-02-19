@@ -49,6 +49,7 @@ export async function PUT(
   if (body.categories !== undefined) payload.categories = body.categories;
   if (body.latitud !== undefined) payload.latitud = body.latitud;
   if (body.longitud !== undefined) payload.longitud = body.longitud;
+  if (Array.isArray(body.roles)) payload.roles = body.roles;
 
   const updated = await updateContacto(id, payload);
   if (!updated) {

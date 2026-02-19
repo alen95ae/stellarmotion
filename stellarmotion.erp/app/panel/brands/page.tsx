@@ -96,6 +96,7 @@ interface Contact {
   city?: string;
   postalCode?: string;
   country?: string;
+  roles?: string[];
   relation: string;
   sector?: string;
   status: string;
@@ -114,6 +115,8 @@ const RELATION_LABELS: Record<string, string> = {
   CUSTOMER: "Cliente",
   SUPPLIER: "Proveedor",
   BRAND: "Brand",
+  OWNER: "Owner",
+  MAKER: "Maker",
 };
 
 export default function OwnersPage() {
@@ -414,25 +417,39 @@ export default function OwnersPage() {
     fetchContacts(1);
   }
 
-  async function bulkOrigenChange(origen: string) {
+  async function bulkRelationChange(relation: string) {
     if (selectedIds.length === 0) return;
-    if (!confirm(`¿Cambiar origen de ${selectedIds.length} registro(s) a "${origen}"?`)) return;
+    const roleLower = relation.toLowerCase();
     let ok = 0;
+    const updatedMap: Record<string, string[]> = {};
     for (const id of selectedIds) {
+      const contact = displayContacts.find((c) => c.id === id) ?? allContactsForSort.find((c) => c.id === id);
+      if (!contact) continue;
+      const currentRoles = (contact.roles ?? []).map((r) => r.toLowerCase());
+      const hasRole = currentRoles.includes(roleLower);
+      const newRoles = hasRole
+        ? currentRoles.filter((r) => r !== roleLower)
+        : [...currentRoles, roleLower];
+      if (newRoles.length === 0) continue;
       try {
         const res = await fetch(`/api/contactos/${id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ origen }),
+          body: JSON.stringify({ roles: newRoles }),
         });
-        if (res.ok) ok++;
+        if (res.ok) {
+          ok++;
+          updatedMap[id] = newRoles;
+        }
       } catch {
         // continue
       }
     }
-    toast.success(`${ok} registro(s) actualizado(s)`);
-    setSelected({});
-    fetchContacts(1);
+    if (ok > 0) {
+      toast.success(`${ok} registro(s) actualizado(s)`);
+      setSelected({});
+      fetchContacts(computedPagination.page);
+    }
   }
 
   async function bulkPapelera() {
@@ -633,11 +650,11 @@ export default function OwnersPage() {
           <CardContent className="p-0">
             <BulkActionsBrands
               selectedCount={selectedIds.length}
-              onBulkOrigenChange={bulkOrigenChange}
+              relationsInSelection={[...new Set(displayContacts.filter((c) => selected[c.id]).flatMap((c) => (c.roles ?? []).map((r) => r.toUpperCase())).filter(Boolean))]}
+              onBulkRelationChange={bulkRelationChange}
               onBulkExportSelection={bulkExportSelection}
               onBulkPapelera={bulkPapelera}
               onBulkDelete={bulkDelete}
-              uniqueOrigenes={uniqueOrigenes}
               editedCount={Object.keys(editedContacts).length}
               onSaveChanges={handleSaveChanges}
               onDiscardChanges={handleDiscardChanges}

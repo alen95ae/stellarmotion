@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Save, MapPin, Building2, User, X, Check } from "lucide-react";
+import { Save, MapPin, Building2, User, X, Check, Rat, Rabbit, Squirrel } from "lucide-react";
 import { toast } from "sonner";
 import dynamic from "next/dynamic";
 import GoogleMapsLoader from "@/components/GoogleMapsLoader";
@@ -23,6 +23,7 @@ const MAP_HEIGHT = 320;
 
 type FormState = {
   kind: "INDIVIDUAL" | "COMPANY";
+  roles: string[];
   nombre: string;
   empresa: string;
   nif: string;
@@ -47,6 +48,7 @@ type FormState = {
 
 const emptyForm: FormState = {
   kind: "INDIVIDUAL",
+  roles: ["maker"],
   nombre: "",
   empresa: "",
   nif: "",
@@ -223,7 +225,7 @@ export default function NuevoMakerPage() {
       const emailStr = form.emails.filter(Boolean).join(",");
       const empresaNote = form.kind === "INDIVIDUAL" && form.empresa.trim() ? "Empresa: " + form.empresa.trim() + "\n" : "";
       const payload = {
-        relation: "MAKER",
+        roles: form.roles,
         nombre: form.nombre.trim() || undefined,
         razonSocial: form.razonSocial.trim() || undefined,
         displayName: (form.nombre.trim() || form.razonSocial.trim() || "") || undefined,
@@ -289,7 +291,7 @@ export default function NuevoMakerPage() {
             type="button"
             onClick={() => formRef.current?.requestSubmit()}
             disabled={saving}
-            className={`bg-[#e94446] hover:bg-[#D7514C] text-white shadow-[0_0_12px_rgba(233,68,70,0.45)] hover:shadow-[0_0_20px_rgba(233,68,70,0.6)] dark:text-white transition-all duration-300 ${saved ? "bg-green-600 hover:bg-green-600 scale-105" : ""}`}
+            className={`bg-[#e94446] hover:bg-[#D7514C] text-white shadow-[0_0_12px_rgba(233,68,70,0.45)] hover:shadow-[0_0_20px_rgba(233,68,70,0.6)] dark:text-white transition-all duration-300 ${saved ? "scale-105" : ""}`}
           >
             {saved ? (
               <>
@@ -351,6 +353,31 @@ export default function NuevoMakerPage() {
                       </SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                <Label className="shrink-0">Relación</Label>
+                <div className="flex items-center gap-1">
+                  {([["brand", "Brands", Rat], ["owner", "Owners", Rabbit], ["maker", "Makers", Squirrel]] as const).map(([role, label, Icon]) => {
+                    const active = form.roles.includes(role);
+                    return (
+                      <Button
+                        key={role}
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setForm((p) => {
+                          const next = active ? p.roles.filter((r) => r !== role) : [...p.roles, role];
+                          return { ...p, roles: next.length > 0 ? next : p.roles };
+                        })}
+                        className={active ? "bg-[#e94446] text-white border-[#e94446] hover:bg-[#D7514C] dark:bg-[#e94446] dark:border-[#e94446] dark:hover:bg-[#D7514C] dark:text-white" : "dark:border-[#2a2a2a] dark:text-[#D1D1D1] dark:hover:bg-[#1E1E1E] dark:hover:text-[#FFFFFF]"}
+                      >
+                        <Icon className="w-4 h-4 mr-2" />
+                        {label}
+                      </Button>
+                    );
+                  })}
                 </div>
               </div>
 

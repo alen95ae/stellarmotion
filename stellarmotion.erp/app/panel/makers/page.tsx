@@ -8,30 +8,116 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Building2, User, Plus, Edit, Trash2, FileSpreadsheet, Trash, Send, ArrowUpDown, X } from "lucide-react";
+import { Building2, User, Plus, Edit, Trash2, FileSpreadsheet, Trash, Send, ArrowUpDown, X, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { toast } from "sonner";
-import { TableCellTruncate } from "@/components/TableCellTruncate";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import BulkActionsMakers from "@/components/makers/BulkActionsMakers";
-import EditableMakerCell from "@/components/makers/EditableMakerCell";
+
+const TOOLTIP_CONTENT_CLASS = "bg-[#e94446] text-white border-0";
 
 const STORAGE_KEY = "makers_filtros";
+
+function firstOfList(s: string | number | undefined | null): string {
+  if (s == null && s !== 0) return "";
+  const str = String(s).trim();
+  if (!str) return "";
+  const parts = str.split(",").map((p) => p.trim()).filter(Boolean);
+  return parts[0] ?? "";
+}
+
+function csvEsc(s: unknown): string {
+  const str = s == null ? "" : String(s);
+  return `"${str.replace(/"/g, '""')}"`;
+}
+
+const CSV_HEADERS = [
+  "Nombre",
+  "Razón social",
+  "Tipo",
+  "NIF",
+  "Email",
+  "Teléfono",
+  "Web",
+  "Dirección",
+  "Ciudad",
+  "Código postal",
+  "País",
+  "Sector",
+  "Interés",
+  "Origen",
+  "Notas",
+  "Categorías",
+  "Personas de contacto",
+  "Latitud",
+  "Longitud",
+  "Relación",
+];
+
+function contactToCsvRow(c: Contact): string[] {
+  const personaStr =
+    Array.isArray(c.persona_contacto) && c.persona_contacto.length
+      ? c.persona_contacto.map((p) => `${p.nombre || ""} (${p.email || ""})`).join("; ")
+      : "";
+  return [
+    c.displayName ?? c.nombre ?? "",
+    c.razonSocial ?? "",
+    c.kind ?? "",
+    c.nif ?? "",
+    c.email ?? "",
+    c.phone ?? c.telefono ?? "",
+    c.website ?? "",
+    c.address ?? "",
+    c.city ?? "",
+    c.postalCode ?? "",
+    c.country ?? "",
+    c.sector ?? "",
+    c.interes ?? "",
+    c.origen ?? "",
+    c.notes ?? "",
+    Array.isArray(c.categories) ? c.categories.join(", ") : "",
+    personaStr,
+    c.latitud != null ? String(c.latitud) : "",
+    c.longitud != null ? String(c.longitud) : "",
+    RELATION_LABELS[c.relation] ?? c.relation ?? "",
+  ];
+}
 
 interface Contact {
   id: string;
   displayName: string;
   legalName?: string;
+  nombre?: string;
+  razonSocial?: string;
   nif?: string;
   phone?: string;
+  telefono?: string;
   email?: string;
   address?: string;
   city?: string;
+  postalCode?: string;
+  country?: string;
+  roles?: string[];
   relation: string;
   sector?: string;
   status: string;
   kind?: string;
   origen?: string;
+  interes?: string;
   website?: string;
+  notes?: string;
+  persona_contacto?: { nombre: string; email?: string }[];
+  categories?: string[];
+  latitud?: number | null;
+  longitud?: number | null;
 }
+
+const RELATION_LABELS: Record<string, string> = {
+  CUSTOMER: "Cliente",
+  SUPPLIER: "Proveedor",
+  OWNER: "Owner",
+  BRAND: "Brand",
+  MAKER: "Maker",
+};
 
 export default function MakersPage() {
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -54,6 +140,9 @@ export default function MakersPage() {
   const [uniqueOrigenes, setUniqueOrigenes] = useState<string[]>([]);
   const [uniqueSectores, setUniqueSectores] = useState<string[]>([]);
   const [uniqueIntereses, setUniqueIntereses] = useState<string[]>([]);
+
+  const [editedContacts, setEditedContacts] = useState<Record<string, Partial<Contact>>>({});
+  const [savingChanges, setSavingChanges] = useState(false);
 
   useEffect(() => {
     try {
@@ -251,48 +340,44 @@ export default function MakersPage() {
     setSelected(next);
   }
 
-  const RELATION_LABELS: Record<string, string> = {
-    CUSTOMER: "Cliente",
-    SUPPLIER: "Proveedor",
+  const handleFieldChange = (contactId: string, field: keyof Contact, value: string) => {
+    setEditedContacts((prev) => ({
+      ...prev,
+      [contactId]: {
+        ...prev[contactId],
+        [field]: value,
+      },
+    }));
   };
 
-  async function bulkRelationChange(relation: string) {
-    if (selectedIds.length === 0) return;
-    if (!confirm(`¿Cambiar relación de ${selectedIds.length} maker(s) a ${RELATION_LABELS[relation] ?? relation}?`)) return;
-    let ok = 0;
-    for (const id of selectedIds) {
-      try {
-        const res = await fetch(`/api/contactos/${id}`, {
+  const handleSaveChanges = async () => {
+    if (Object.keys(editedContacts).length === 0) return;
+    setSavingChanges(true);
+    try {
+      const count = Object.keys(editedContacts).length;
+      const promises = Object.entries(editedContacts).map(async ([id, changes]) => {
+        return fetch(`/api/contactos/${id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ relation }),
+          body: JSON.stringify(changes),
         });
-        if (res.ok) ok++;
-      } catch {
-        // continue
-      }
-    }
-    toast.success(`${ok} maker(s) actualizado(s)`);
-    setSelected({});
-    fetchContacts(1);
-  }
-
-  async function handleFieldSave(id: string, field: string, value: string) {
-    try {
-      const res = await fetch(`/api/contactos/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ [field]: value }),
       });
-      if (!res.ok) throw new Error("Error al guardar");
-      const update = (c: Contact) => (c.id === id ? { ...c, [field]: value } : c);
-      setContacts((prev) => prev.map(update));
-      setAllContactsForSort((prev) => prev.map(update));
-      toast.success("Guardado");
+      await Promise.all(promises);
+      setEditedContacts({});
+      setSelected({});
+      fetchContacts(1);
+      toast.success(`${count} maker(s) actualizado(s)`);
     } catch {
-      toast.error("Error al guardar");
+      toast.error("Error al guardar cambios");
+    } finally {
+      setSavingChanges(false);
     }
-  }
+  };
+
+  const handleDiscardChanges = () => {
+    setEditedContacts({});
+    toast.info("Cambios descartados");
+  };
 
   function bulkExportSelection() {
     const rows = displayContacts.filter((c) => selected[c.id]);
@@ -300,21 +385,12 @@ export default function MakersPage() {
       toast.error("Selecciona al menos un maker");
       return;
     }
-    const headers = ["Nombre", "Web", "Email", "Teléfono", "Ciudad", "Relación"];
-    const csvRows = [
-      headers.join(";"),
-      ...rows.map((c) =>
-        [
-          `"${(c.displayName || "").replace(/"/g, '""')}"`,
-          `"${(c.website || "").replace(/"/g, '""')}"`,
-          `"${(c.email || "").replace(/"/g, '""')}"`,
-          `"${(c.phone || "").replace(/"/g, '""')}"`,
-          `"${(c.city || "").replace(/"/g, '""')}"`,
-          `"${((RELATION_LABELS[c.relation] ?? c.relation) || "").replace(/"/g, '""')}"`,
-        ].join(";")
-      ),
-    ];
-    const blob = new Blob(["\uFEFF" + csvRows.join("\r\n")], { type: "text/csv;charset=utf-8" });
+    const headerLine = CSV_HEADERS.join(",");
+    const dataLines = rows.map((c) =>
+      contactToCsvRow(c).map((v) => csvEsc(v)).join(",")
+    );
+    const csvContent = [headerLine, ...dataLines].join("\r\n");
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -341,25 +417,39 @@ export default function MakersPage() {
     fetchContacts(1);
   }
 
-  async function bulkOrigenChange(origen: string) {
+  async function bulkRelationChange(relation: string) {
     if (selectedIds.length === 0) return;
-    if (!confirm(`¿Cambiar origen de ${selectedIds.length} registro(s) a "${origen}"?`)) return;
+    const roleLower = relation.toLowerCase();
     let ok = 0;
+    const updatedMap: Record<string, string[]> = {};
     for (const id of selectedIds) {
+      const contact = displayContacts.find((c) => c.id === id) ?? allContactsForSort.find((c) => c.id === id);
+      if (!contact) continue;
+      const currentRoles = (contact.roles ?? []).map((r) => r.toLowerCase());
+      const hasRole = currentRoles.includes(roleLower);
+      const newRoles = hasRole
+        ? currentRoles.filter((r) => r !== roleLower)
+        : [...currentRoles, roleLower];
+      if (newRoles.length === 0) continue;
       try {
         const res = await fetch(`/api/contactos/${id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ origen }),
+          body: JSON.stringify({ roles: newRoles }),
         });
-        if (res.ok) ok++;
+        if (res.ok) {
+          ok++;
+          updatedMap[id] = newRoles;
+        }
       } catch {
         // continue
       }
     }
-    toast.success(`${ok} registro(s) actualizado(s)`);
-    setSelected({});
-    fetchContacts(1);
+    if (ok > 0) {
+      toast.success(`${ok} registro(s) actualizado(s)`);
+      setSelected({});
+      fetchContacts(computedPagination.page);
+    }
   }
 
   async function bulkPapelera() {
@@ -381,34 +471,45 @@ export default function MakersPage() {
     }
   }
 
-  function exportAllCsv() {
-    const toExport = sortColumn ? sortedForDisplay : contacts;
-    if (toExport.length === 0) {
-      toast.error("No hay datos para exportar");
-      return;
+  async function exportAllCsv() {
+    try {
+      const toExport: Contact[] = [];
+      let page = 1;
+      const limit = 500;
+      let hasMore = true;
+      while (hasMore) {
+        const res = await fetch(
+          `/api/contactos?relation=MAKER&page=${page}&limit=${limit}`
+        );
+        if (!res.ok) throw new Error("Error al cargar");
+        const data = await res.json();
+        const chunk = (data.data || []) as Contact[];
+        toExport.push(...chunk);
+        hasMore = chunk.length === limit;
+        page += 1;
+      }
+      if (toExport.length === 0) {
+        toast.error("No hay datos para exportar");
+        return;
+      }
+      const headerLine = CSV_HEADERS.join(",");
+      const dataLines = toExport.map((c) =>
+        contactToCsvRow(c).map((v) => csvEsc(v)).join(",")
+      );
+      const csvContent = [headerLine, ...dataLines].join("\r\n");
+      const blob = new Blob(["\uFEFF" + csvContent], {
+        type: "text/csv;charset=utf-8",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `makers-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success(`CSV descargado (${toExport.length} registros)`);
+    } catch {
+      toast.error("Error al exportar CSV");
     }
-    const headers = ["Nombre", "Web", "Email", "Teléfono", "Ciudad", "Relación"];
-    const csvRows = [
-      headers.join(";"),
-      ...toExport.map((c) =>
-        [
-          `"${(c.displayName || "").replace(/"/g, '""')}"`,
-          `"${(c.website || "").replace(/"/g, '""')}"`,
-          `"${(c.email || "").replace(/"/g, '""')}"`,
-          `"${(c.phone || "").replace(/"/g, '""')}"`,
-          `"${(c.city || "").replace(/"/g, '""')}"`,
-          `"${((RELATION_LABELS[c.relation] ?? c.relation) || "").replace(/"/g, '""')}"`,
-        ].join(";")
-      ),
-    ];
-    const blob = new Blob(["\uFEFF" + csvRows.join("\r\n")], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `makers-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success("CSV descargado");
   }
 
   return (
@@ -549,12 +650,15 @@ export default function MakersPage() {
           <CardContent className="p-0">
             <BulkActionsMakers
               selectedCount={selectedIds.length}
+              relationsInSelection={[...new Set(displayContacts.filter((c) => selected[c.id]).flatMap((c) => (c.roles ?? []).map((r) => r.toUpperCase())).filter(Boolean))]}
               onBulkRelationChange={bulkRelationChange}
-              onBulkOrigenChange={bulkOrigenChange}
               onBulkExportSelection={bulkExportSelection}
               onBulkPapelera={bulkPapelera}
               onBulkDelete={bulkDelete}
-              uniqueOrigenes={uniqueOrigenes}
+              editedCount={Object.keys(editedContacts).length}
+              onSaveChanges={handleSaveChanges}
+              onDiscardChanges={handleDiscardChanges}
+              savingChanges={savingChanges}
             />
             {loading ? (
               <div className="text-center py-8 text-muted-foreground">Cargando...</div>
@@ -580,7 +684,7 @@ export default function MakersPage() {
                         className="flex items-center gap-1 font-medium hover:text-foreground"
                       >
                         Nombre
-                        <ArrowUpDown className="w-3 h-3 opacity-70" />
+                        <ArrowUpDown className={`w-3 h-3 ${sortColumn === "nombre" ? "text-[#e94446]" : "opacity-70"}`} />
                       </button>
                     </TableHead>
                     <TableHead>Web</TableHead>
@@ -592,11 +696,14 @@ export default function MakersPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {displayContacts.map((c) => (
+                  {displayContacts.map((c) => {
+                    const isSelected = !!selected[c.id];
+                    const edited = editedContacts[c.id];
+                    return (
                     <TableRow key={c.id}>
                       <TableCell className="w-10">
                         <Checkbox
-                          checked={!!selected[c.id]}
+                          checked={isSelected}
                           onCheckedChange={(v) =>
                             setSelected((prev) => ({ ...prev, [c.id]: Boolean(v) }))
                           }
@@ -611,62 +718,134 @@ export default function MakersPage() {
                           ) : (
                             <User className="w-4 h-4 shrink-0 text-muted-foreground" />
                           )}
-                          <EditableMakerCell
-                            id={c.id}
-                            field="displayName"
-                            value={c.displayName}
-                            type="text"
-                            onSave={handleFieldSave}
-                            className="flex-1 min-w-0"
-                          />
+                          {isSelected ? (
+                            <Input
+                              value={edited?.displayName ?? c.displayName}
+                              onChange={(e) => handleFieldChange(c.id, "displayName", e.target.value)}
+                              className="h-8 text-sm flex-1 min-w-0"
+                            />
+                          ) : (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="truncate">{c.displayName || "—"}</span>
+                              </TooltipTrigger>
+                              <TooltipContent className={TOOLTIP_CONTENT_CLASS} hideArrow>
+                                {c.displayName || "—"}
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell className="max-w-[20ch]">
-                        <EditableMakerCell
-                          id={c.id}
-                          field="website"
-                          value={c.website}
-                          type="text"
-                          onSave={handleFieldSave}
-                        />
+                        {isSelected ? (
+                          <Input
+                            value={edited?.website ?? c.website ?? ""}
+                            onChange={(e) => handleFieldChange(c.id, "website", e.target.value)}
+                            className="h-8 text-sm"
+                          />
+                        ) : (() => {
+                          const web = c.website?.trim();
+                          const href = web && !/^https?:\/\//i.test(web) ? `https://${web}` : web;
+                          const isUrl = href && /^https?:\/\//i.test(href);
+                          return isUrl ? (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <a
+                                  href={href}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-[#e94446] hover:underline truncate block"
+                                >
+                                  {web}
+                                </a>
+                              </TooltipTrigger>
+                              <TooltipContent className={TOOLTIP_CONTENT_CLASS} hideArrow>
+                                {web || "—"}
+                              </TooltipContent>
+                            </Tooltip>
+                          ) : (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="truncate block">{web || "—"}</span>
+                              </TooltipTrigger>
+                              <TooltipContent className={TOOLTIP_CONTENT_CLASS} hideArrow>
+                                {web || "—"}
+                              </TooltipContent>
+                            </Tooltip>
+                          );
+                        })()}
                       </TableCell>
                       <TableCell className="max-w-[22ch]">
-                        <EditableMakerCell
-                          id={c.id}
-                          field="email"
-                          value={c.email}
-                          type="text"
-                          onSave={handleFieldSave}
-                        />
+                        {isSelected ? (
+                          <Input
+                            value={firstOfList(edited?.email ?? c.email)}
+                            onChange={(e) => handleFieldChange(c.id, "email", e.target.value)}
+                            className="h-8 text-sm"
+                          />
+                        ) : (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="truncate block">{firstOfList(c.email) || "—"}</span>
+                            </TooltipTrigger>
+                            <TooltipContent className={TOOLTIP_CONTENT_CLASS} hideArrow>
+                              {c.email ?? "—"}
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
                       </TableCell>
                       <TableCell className="max-w-[14ch]">
-                        <EditableMakerCell
-                          id={c.id}
-                          field="phone"
-                          value={c.phone}
-                          type="text"
-                          onSave={handleFieldSave}
-                        />
+                        {isSelected ? (
+                          <Input
+                            value={firstOfList(edited?.phone ?? c.phone ?? c.telefono)}
+                            onChange={(e) => handleFieldChange(c.id, "phone", e.target.value)}
+                            className="h-8 text-sm"
+                          />
+                        ) : (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="truncate block">{firstOfList(c.phone ?? c.telefono) || "—"}</span>
+                            </TooltipTrigger>
+                            <TooltipContent className={TOOLTIP_CONTENT_CLASS} hideArrow>
+                              {c.phone ?? c.telefono ?? "—"}
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
                       </TableCell>
                       <TableCell className="max-w-[18ch]">
-                        <EditableMakerCell
-                          id={c.id}
-                          field="city"
-                          value={c.city}
-                          type="text"
-                          onSave={handleFieldSave}
-                        />
+                        {isSelected ? (
+                          <Input
+                            value={edited?.city ?? c.city ?? ""}
+                            onChange={(e) => handleFieldChange(c.id, "city", e.target.value)}
+                            className="h-8 text-sm"
+                          />
+                        ) : (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="truncate block">{c.city || "—"}</span>
+                            </TooltipTrigger>
+                            <TooltipContent className={TOOLTIP_CONTENT_CLASS} hideArrow>
+                              {c.city || "—"}
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
                       </TableCell>
                       <TableCell className="max-w-[12ch]">
-                        <EditableMakerCell
-                          id={c.id}
-                          field="sector"
-                          value={c.sector ?? ""}
-                          type="select"
-                          options={["", ...uniqueSectores]}
-                          optionLabels={{ "": "—" }}
-                          onSave={handleFieldSave}
-                        />
+                        {isSelected ? (
+                          <Input
+                            value={edited?.sector ?? c.sector ?? ""}
+                            onChange={(e) => handleFieldChange(c.id, "sector", e.target.value)}
+                            className="h-8 text-sm"
+                          />
+                        ) : (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="truncate block">{c.sector || "—"}</span>
+                            </TooltipTrigger>
+                            <TooltipContent className={TOOLTIP_CONTENT_CLASS} hideArrow>
+                              {c.sector || "—"}
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2">
@@ -710,7 +889,8 @@ export default function MakersPage() {
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))}
+                    );
+                  })}
                 </TableBody>
               </Table>
             )}
@@ -718,30 +898,102 @@ export default function MakersPage() {
         </Card>
 
         {computedPagination.totalPages > 1 && (
-          <div className="mt-4 flex justify-center gap-2">
-            <Button
-              variant="outline"
-              disabled={!computedPagination.hasPrev}
-              onClick={() => {
-                if (sortColumn) setCurrentPage((p) => p - 1);
-                else fetchContacts(computedPagination.page - 1);
-              }}
+          <div className="mt-4 flex justify-center">
+            <nav
+              className="flex items-center justify-center gap-1 sm:gap-2 px-4 py-3"
+              aria-label="Paginación"
             >
-              Anterior
-            </Button>
-            <span className="flex items-center px-4 text-sm text-muted-foreground">
-              Página {computedPagination.page} de {computedPagination.totalPages}
-            </span>
-            <Button
-              variant="outline"
-              disabled={!computedPagination.hasNext}
-              onClick={() => {
-                if (sortColumn) setCurrentPage((p) => p + 1);
-                else fetchContacts(computedPagination.page + 1);
-              }}
-            >
-              Siguiente
-            </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-9 w-9 rounded-md bg-background border-border shadow-sm text-[#e94446] hover:text-[#e94446] hover:bg-muted/80 dark:bg-[#141414] dark:border-[#2a2a2a] dark:hover:bg-[#2a2a2a]"
+                disabled={!computedPagination.hasPrev}
+                onClick={() => {
+                  if (sortColumn) setCurrentPage(1);
+                  else fetchContacts(1);
+                }}
+                aria-label="Primera página"
+              >
+                <ChevronsLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-9 w-9 rounded-md bg-background border-border shadow-sm text-[#e94446] hover:text-[#e94446] hover:bg-muted/80 dark:bg-[#141414] dark:border-[#2a2a2a] dark:hover:bg-[#2a2a2a]"
+                disabled={!computedPagination.hasPrev}
+                onClick={() => {
+                  if (sortColumn) setCurrentPage((p) => p - 1);
+                  else fetchContacts(computedPagination.page - 1);
+                }}
+                aria-label="Página anterior"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <div className="flex items-center gap-1 mx-1 min-w-[120px] justify-center flex-wrap">
+                {(() => {
+                  const total = computedPagination.totalPages;
+                  const current = computedPagination.page;
+                  const items: (number | "ellipsis")[] = [];
+                  const add = (p: number) => {
+                    if (p >= 1 && p <= total) items.push(p);
+                  };
+                  add(1);
+                  if (current > 3) items.push("ellipsis");
+                  for (let p = Math.max(2, current - 2); p <= Math.min(total - 1, current + 2); p++) add(p);
+                  if (current < total - 2) items.push("ellipsis");
+                  if (total > 1) add(total);
+                  return items.map((x, i) =>
+                    x === "ellipsis" ? (
+                      <span key={`e-${i}`} className="px-1.5 text-foreground">
+                        ...
+                      </span>
+                    ) : (
+                      <button
+                        key={x}
+                        type="button"
+                        onClick={() => {
+                          if (sortColumn) setCurrentPage(x);
+                          else fetchContacts(x);
+                        }}
+                        className={`min-w-[32px] h-9 px-2 rounded-md text-sm font-medium transition-colors ${
+                          x === current
+                            ? "bg-[#e94446] text-white hover:bg-[#D7514C]"
+                            : "text-foreground hover:bg-muted/80 dark:hover:bg-[#2a2a2a]"
+                        }`}
+                      >
+                        {x}
+                      </button>
+                    )
+                  );
+                })()}
+              </div>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-9 w-9 rounded-md bg-background border-border shadow-sm text-[#e94446] hover:text-[#e94446] hover:bg-muted/80 dark:bg-[#141414] dark:border-[#2a2a2a] dark:hover:bg-[#2a2a2a]"
+                disabled={!computedPagination.hasNext}
+                onClick={() => {
+                  if (sortColumn) setCurrentPage((p) => p + 1);
+                  else fetchContacts(computedPagination.page + 1);
+                }}
+                aria-label="Página siguiente"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-9 w-9 rounded-md bg-background border-border shadow-sm text-[#e94446] hover:text-[#e94446] hover:bg-muted/80 dark:bg-[#141414] dark:border-[#2a2a2a] dark:hover:bg-[#2a2a2a]"
+                disabled={!computedPagination.hasNext}
+                onClick={() => {
+                  if (sortColumn) setCurrentPage(computedPagination.totalPages);
+                  else fetchContacts(computedPagination.totalPages);
+                }}
+                aria-label="Última página"
+              >
+                <ChevronsRight className="h-4 w-4" />
+              </Button>
+            </nav>
           </div>
         )}
       </main>

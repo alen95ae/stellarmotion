@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Save, MapPin, Building2, User, X, Check } from "lucide-react";
+import { Save, MapPin, Building2, User, X, Check, Rat, Rabbit, Squirrel } from "lucide-react";
 import { toast } from "sonner";
 import dynamic from "next/dynamic";
 import { buildGoogleMapsLinkFromCoords } from "@/lib/extract-google-maps-coords";
@@ -24,6 +24,7 @@ const MAP_HEIGHT = 320;
 
 type FormState = {
   kind: "INDIVIDUAL" | "COMPANY";
+  roles: string[];
   nombre: string;
   empresa: string;
   nif: string;
@@ -48,6 +49,7 @@ type FormState = {
 
 const emptyForm: FormState = {
   kind: "INDIVIDUAL",
+  roles: ["owner"],
   nombre: "",
   empresa: "",
   nif: "",
@@ -124,6 +126,7 @@ export default function EditOwnerPage() {
         const notesWithoutEmpresa = empresaMatch ? notesStr.replace(/^Empresa:\s*.+?(?:\n|$)/, "").trim() : notesStr;
         setForm({
           kind,
+          roles: Array.isArray(data.roles) && data.roles.length > 0 ? data.roles.map((r: string) => r.toLowerCase()) : ["owner"],
           nombre: data.nombre ?? data.displayName ?? "",
           empresa: kind === "INDIVIDUAL" ? empresa : "",
           nif: data.nif ?? "",
@@ -315,6 +318,7 @@ export default function EditOwnerPage() {
         city: form.city.trim() || undefined,
         postalCode: form.postalCode.trim() || undefined,
         country: form.country.trim() || undefined,
+        roles: form.roles,
         sector: form.sector.trim() || undefined,
         categories: form.categorias.length ? form.categorias : undefined,
         interes: form.interes.trim() || undefined,
@@ -367,7 +371,7 @@ export default function EditOwnerPage() {
               type="button"
               onClick={() => handleSubmit({ preventDefault: () => {} } as React.FormEvent)}
               disabled={saving}
-              className={`bg-[#e94446] hover:bg-[#D7514C] text-white shadow-[0_0_12px_rgba(233,68,70,0.45)] hover:shadow-[0_0_20px_rgba(233,68,70,0.6)] dark:text-white transition-all duration-300 ${saved ? "bg-green-600 hover:bg-green-600 scale-105" : ""}`}
+              className={`bg-[#e94446] hover:bg-[#D7514C] text-white shadow-[0_0_12px_rgba(233,68,70,0.45)] hover:shadow-[0_0_20px_rgba(233,68,70,0.6)] dark:text-white transition-all duration-300 ${saved ? "scale-105" : ""}`}
             >
               {saved ? (
                 <>
@@ -402,40 +406,65 @@ export default function EditOwnerPage() {
                       className="focus-visible:border-[#e94446] focus-visible:ring-[#e94446]/50"
                     />
                   </div>
-                  <div>
-                    <Label>Tipo</Label>
-                    <Select
-                      value={form.kind}
-                      onValueChange={(v: "INDIVIDUAL" | "COMPANY") =>
-                        setForm((p) => ({
-                          ...p,
-                          kind: v,
-                          persona_contacto: v === "COMPANY" && p.persona_contacto.length === 0 ? [{ nombre: "", email: "" }] : p.persona_contacto,
-                        }))
-                      }
-                    >
-                      <SelectTrigger className="overflow-hidden dark:bg-[#1E1E1E] dark:hover:bg-[#2a2a2a] dark:border-[#1E1E1E] dark:text-foreground">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="dark:bg-[#141414] dark:border-[#1E1E1E]">
-                        <SelectItem value="INDIVIDUAL" className="dark:focus:bg-[#1e1e1e] dark:hover:bg-[#1e1e1e] dark:focus:text-foreground dark:hover:text-foreground">
-                          <span className="flex items-center gap-2">
-                            <User className="w-4 h-4" /> Individual
-                          </span>
-                        </SelectItem>
-                        <SelectItem value="COMPANY" className="dark:focus:bg-[#1e1e1e] dark:hover:bg-[#1e1e1e] dark:focus:text-foreground dark:hover:text-foreground">
-                          <span className="flex items-center gap-2">
-                            <Building2 className="w-4 h-4" /> Empresa
-                          </span>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                <div>
+                  <Label>Tipo</Label>
+                  <Select
+                    value={form.kind}
+                    onValueChange={(v: "INDIVIDUAL" | "COMPANY") =>
+                      setForm((p) => ({
+                        ...p,
+                        kind: v,
+                        persona_contacto: v === "COMPANY" && p.persona_contacto.length === 0 ? [{ nombre: "", email: "" }] : p.persona_contacto,
+                      }))
+                    }
+                  >
+                    <SelectTrigger className="overflow-hidden dark:bg-[#1E1E1E] dark:hover:bg-[#2a2a2a] dark:border-[#1E1E1E] dark:text-foreground">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="dark:bg-[#141414] dark:border-[#1E1E1E]">
+                      <SelectItem value="INDIVIDUAL" className="dark:focus:bg-[#1e1e1e] dark:hover:bg-[#1e1e1e] dark:focus:text-foreground dark:hover:text-foreground">
+                        <span className="flex items-center gap-2">
+                          <User className="w-4 h-4" /> Individual
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="COMPANY" className="dark:focus:bg-[#1e1e1e] dark:hover:bg-[#1e1e1e] dark:focus:text-foreground dark:hover:text-foreground">
+                        <span className="flex items-center gap-2">
+                          <Building2 className="w-4 h-4" /> Empresa
+                        </span>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
+              </div>
 
-                {form.kind === "COMPANY" ? (
-                  <div className="w-full">
-                    <Label>Persona de contacto</Label>
+              <div className="flex items-center gap-2 flex-wrap">
+                <Label className="shrink-0">Relación</Label>
+                <div className="flex items-center gap-1">
+                  {([["brand", "Brands", Rat], ["owner", "Owners", Rabbit], ["maker", "Makers", Squirrel]] as const).map(([role, label, Icon]) => {
+                    const active = form.roles.includes(role);
+                    return (
+                      <Button
+                        key={role}
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setForm((p) => {
+                          const next = active ? p.roles.filter((r) => r !== role) : [...p.roles, role];
+                          return { ...p, roles: next.length > 0 ? next : p.roles };
+                        })}
+                        className={active ? "bg-[#e94446] text-white border-[#e94446] hover:bg-[#D7514C] dark:bg-[#e94446] dark:border-[#e94446] dark:hover:bg-[#D7514C] dark:text-white" : "dark:border-[#2a2a2a] dark:text-[#D1D1D1] dark:hover:bg-[#1E1E1E] dark:hover:text-[#FFFFFF]"}
+                      >
+                        <Icon className="w-4 h-4 mr-2" />
+                        {label}
+                      </Button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {form.kind === "COMPANY" ? (
+                <div className="w-full">
+                  <Label>Persona de contacto</Label>
                     <p className="text-xs text-muted-foreground mb-2">Busca en contactos o escribe un nombre y pulsa Intro.</p>
                     <div ref={personaWrapperRef} className="relative w-full">
                       <div

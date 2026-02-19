@@ -1,18 +1,21 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FileSpreadsheet, Trash2, Send, Trash } from "lucide-react";
+import { FileSpreadsheet, Trash2, Send, Trash, Rat, Rabbit, Squirrel } from "lucide-react";
+
+const relationBtnClass = (active: boolean) =>
+  active
+    ? "bg-[#e94446] text-white border-[#e94446] hover:bg-[#D7514C] dark:bg-[#e94446] dark:border-[#e94446] dark:hover:bg-[#D7514C] dark:text-white"
+    : "dark:border-[#2a2a2a] dark:text-[#D1D1D1] dark:hover:bg-[#1E1E1E] dark:hover:text-[#FFFFFF]";
 
 interface BulkActionsBrandsProps {
   selectedCount: number;
-  onBulkOrigenChange: (origen: string) => void;
+  relationsInSelection: string[];
+  onBulkRelationChange: (relation: string) => void;
   onBulkExportSelection: () => void;
   onBulkPapelera: () => void;
   onBulkDelete: () => void;
-  uniqueOrigenes: string[];
   editedCount: number;
   onSaveChanges: () => void;
   onDiscardChanges: () => void;
@@ -21,17 +24,16 @@ interface BulkActionsBrandsProps {
 
 export default function BulkActionsBrands({
   selectedCount,
-  onBulkOrigenChange,
+  relationsInSelection,
+  onBulkRelationChange,
   onBulkExportSelection,
   onBulkPapelera,
   onBulkDelete,
-  uniqueOrigenes,
   editedCount,
   onSaveChanges,
   onDiscardChanges,
   savingChanges,
 }: BulkActionsBrandsProps) {
-  const [origenSelect, setOrigenSelect] = useState("");
   const router = useRouter();
 
   if (selectedCount === 0 && editedCount === 0) return null;
@@ -46,30 +48,21 @@ export default function BulkActionsBrands({
               {" "}elemento{selectedCount !== 1 ? "s" : ""} seleccionado{selectedCount !== 1 ? "s" : ""}
             </span>
 
-            {selectedCount > 1 && (
-              <Select
-                value={origenSelect}
-                onValueChange={(v) => {
-                  if (v) {
-                    onBulkOrigenChange(v);
-                    setOrigenSelect("");
-                  }
-                }}
-              >
-                <SelectTrigger className="w-36 overflow-hidden [&>svg]:shrink-0 dark:bg-[#1E1E1E] dark:hover:bg-[#1a1a1a] dark:border-[#2a2a2a] dark:text-[#FFFFFF] dark:[&>span]:text-[#9CA3AF]">
-                  <SelectValue placeholder="Origen" />
-                </SelectTrigger>
-                <SelectContent className="dark:bg-[#141414] dark:border-[#1E1E1E]">
-                  {uniqueOrigenes.map((o) => (
-                    <SelectItem key={o} value={o} className="dark:text-[#FFFFFF] dark:focus:bg-[#1E1E1E] dark:hover:bg-[#1E1E1E]">
-                      {o}
-                    </SelectItem>
-                  ))}
-                  {uniqueOrigenes.length === 0 && (
-                    <SelectItem value="_empty" disabled>Sin valores</SelectItem>
-                  )}
-                </SelectContent>
-              </Select>
+            {selectedCount >= 1 && (
+              <>
+                <Button variant="outline" size="sm" onClick={() => onBulkRelationChange("BRAND")} title="Brands" className={relationBtnClass(relationsInSelection.includes("BRAND"))}>
+                  <Rat className="w-4 h-4 mr-2" />
+                  Brands
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => onBulkRelationChange("OWNER")} title="Owners" className={relationBtnClass(relationsInSelection.includes("OWNER"))}>
+                  <Rabbit className="w-4 h-4 mr-2" />
+                  Owners
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => onBulkRelationChange("MAKER")} title="Makers" className={relationBtnClass(relationsInSelection.includes("MAKER"))}>
+                  <Squirrel className="w-4 h-4 mr-2" />
+                  Makers
+                </Button>
+              </>
             )}
 
             <Button variant="outline" size="sm" onClick={() => router.push("/panel/crm")} className="dark:border-[#2a2a2a] dark:text-[#D1D1D1] dark:hover:bg-[#1E1E1E] dark:hover:text-[#FFFFFF]">

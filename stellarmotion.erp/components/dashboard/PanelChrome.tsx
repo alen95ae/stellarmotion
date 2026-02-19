@@ -14,6 +14,8 @@ const AJUSTES_SECTIONS = [
 const CRM_SECTIONS = [{ label: "Pipeline", href: "/panel/crm" }]
 
 const BRANDS_SECTIONS = [{ label: "Brands", href: "/panel/brands" }]
+const OWNERS_SECTIONS = [{ label: "Owners", href: "/panel/owners" }]
+const MAKERS_SECTIONS = [{ label: "Makers", href: "/panel/makers" }]
 
 const headerLinkClass = (isActive: boolean, isAjustes?: boolean, isBrands?: boolean) =>
   cn(
@@ -31,6 +33,8 @@ export default function PanelChrome({ children }: { children: React.ReactNode })
   const isAjustes = pathname?.startsWith("/panel/ajustes")
   const isCrm = pathname?.startsWith("/panel/crm")
   const isBrands = pathname?.startsWith("/panel/brands")
+  const isOwners = pathname?.startsWith("/panel/owners")
+  const isMakers = pathname?.startsWith("/panel/makers")
 
   return (
     <Sidebar>
@@ -71,6 +75,38 @@ export default function PanelChrome({ children }: { children: React.ReactNode })
           ) : isBrands ? (
             <nav className="flex items-center gap-6">
               {BRANDS_SECTIONS.map((section) => {
+                const isActive =
+                  pathname === section.href || pathname?.startsWith(section.href + "/")
+                return (
+                  <Link
+                    key={section.href}
+                    href={section.href}
+                    className={headerLinkClass(isActive, false, true)}
+                  >
+                    {section.label}
+                  </Link>
+                )
+              })}
+            </nav>
+          ) : isOwners ? (
+            <nav className="flex items-center gap-6">
+              {OWNERS_SECTIONS.map((section) => {
+                const isActive =
+                  pathname === section.href || pathname?.startsWith(section.href + "/")
+                return (
+                  <Link
+                    key={section.href}
+                    href={section.href}
+                    className={headerLinkClass(isActive, false, true)}
+                  >
+                    {section.label}
+                  </Link>
+                )
+              })}
+            </nav>
+          ) : isMakers ? (
+            <nav className="flex items-center gap-6">
+              {MAKERS_SECTIONS.map((section) => {
                 const isActive =
                   pathname === section.href || pathname?.startsWith(section.href + "/")
                 return (

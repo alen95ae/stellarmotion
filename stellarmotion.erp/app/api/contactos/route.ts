@@ -109,6 +109,7 @@ export async function POST(request: Request) {
       persona_contacto: Array.isArray(body.persona_contacto) ? body.persona_contacto : undefined,
       latitud: body.latitud ?? undefined,
       longitud: body.longitud ?? undefined,
+      roles: Array.isArray(body.roles) ? body.roles : undefined,
     };
 
     console.log("Payload recibido (para createContacto):", JSON.stringify(payload));
