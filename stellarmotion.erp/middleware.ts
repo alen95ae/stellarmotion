@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-// Rutas que NUNCA deben pasar por la protección DEV_PASS (NextAuth, estáticos, etc.)
+// Rutas que NUNCA deben pasar por la protección DEV_PASS (NextAuth, login, estáticos, etc.)
 function isExcludedFromDevProtection(pathname: string): boolean {
   if (pathname.startsWith('/api/auth')) return true   // CRÍTICO: NextAuth debe funcionar sin Basic Auth
+  if (pathname === '/login') return true              // Login público para evitar bucles con redirecciones NextAuth
   if (pathname.startsWith('/_next')) return true     // Internos Next.js
   if (pathname.startsWith('/static') || pathname.startsWith('/public')) return true
   if (pathname === '/favicon.ico' || pathname.startsWith('/favicon')) return true

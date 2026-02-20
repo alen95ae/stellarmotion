@@ -19,11 +19,9 @@ if (supabaseAnonKey && supabaseServiceRoleKey === supabaseAnonKey) {
 }
 
 // Decodificación simple para verificar que es la key correcta en logs (sin revelar el secreto)
-let keyInfo: any = {};
 try {
   const [, payload] = supabaseServiceRoleKey.split('.');
-  const decoded = JSON.parse(Buffer.from(payload, 'base64').toString());
-  keyInfo = decoded;
+  const decoded = JSON.parse(Buffer.from(payload, 'base64').toString()) as { role?: string };
   console.log(`🔐 [Supabase Admin] Inicializando con rol: ${decoded.role}`);
   console.log(`🔐 [Supabase Admin] Key preview: ${supabaseServiceRoleKey.substring(0, 20)}...${supabaseServiceRoleKey.substring(supabaseServiceRoleKey.length - 10)}`);
   console.log(`🔐 [Supabase Admin] URL: ${supabaseUrl}`);
@@ -33,11 +31,11 @@ try {
     console.error('⚠️ ALERTA CRÍTICA: La key configurada NO es service_role. Es: ' + decoded.role);
     throw new Error(`Key incorrecta: se esperaba service_role pero se encontró ${decoded.role}`);
   }
-} catch (e: any) {
-  if (e.message?.includes('Key incorrecta')) {
+} catch (e: unknown) {
+  if (e instanceof Error && e.message?.includes('Key incorrecta')) {
     throw e;
   }
-  console.error('⚠️ No se pudo decodificar la key para verificación:', e.message);
+  console.error('⚠️ No se pudo decodificar la key para verificación:', e instanceof Error ? e.message : String(e));
 }
 
 export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {

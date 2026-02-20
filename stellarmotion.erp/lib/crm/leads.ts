@@ -125,7 +125,7 @@ export async function updateLead(
   const supabase = getAdminSupabase();
   
   // Recalcular score si cambian campos relevantes
-  const updateData: any = {
+  const updateData: Record<string, unknown> = {
     ...updates,
     updated_by: ownerId,
   };

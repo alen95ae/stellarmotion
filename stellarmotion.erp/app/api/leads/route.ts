@@ -38,8 +38,10 @@ export async function GET(request: Request) {
     });
   } catch (e) {
     console.error("GET /api/leads:", e);
+    const err = e instanceof Error ? e : new Error(String(e));
+    const details = e && typeof e === "object" && "message" in e ? { message: (e as Error).message } : undefined;
     return NextResponse.json(
-      { error: "No se pudieron obtener los leads" },
+      { error: err.message || "No se pudieron obtener los leads", details },
       { status: 500 }
     );
   }
@@ -71,11 +73,16 @@ export async function POST(request: Request) {
 
     const created = await createLead(payload);
     if (!created) {
-      return NextResponse.json({ error: "Error al crear el lead" }, { status: 500 });
+      return NextResponse.json({ error: "Error al crear el lead (createLead devolvió null)" }, { status: 500 });
     }
     return NextResponse.json(created, { status: 201 });
   } catch (e) {
     console.error("POST /api/leads:", e);
-    return NextResponse.json({ error: "Error al crear el lead" }, { status: 500 });
+    const err = e instanceof Error ? e : new Error(String(e));
+    const details = e && typeof e === "object" && "message" in e ? { message: (e as Error).message } : undefined;
+    return NextResponse.json(
+      { error: err.message || "Error al crear el lead", details },
+      { status: 500 }
+    );
   }
 }

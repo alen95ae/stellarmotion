@@ -21,6 +21,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, count });
   } catch (e) {
     console.error("POST /api/leads/kill:", e);
-    return NextResponse.json({ error: "Error al eliminar" }, { status: 500 });
+    const err = e instanceof Error ? e : new Error(String(e));
+    const details = e && typeof e === "object" && "message" in e ? { message: (e as Error).message } : undefined;
+    return NextResponse.json(
+      { error: err.message || "Error al eliminar", details },
+      { status: 500 }
+    );
   }
 }

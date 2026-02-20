@@ -165,41 +165,78 @@ async function generateInternalCode(): Promise<string> {
   }
 }
 
+/** Forma mínima de una fila soporte devuelta por Supabase (para mapeo seguro). */
+interface SoporteRowSupabase {
+  id?: string;
+  imagenes?: unknown;
+  ancho?: number;
+  alto?: number;
+  superficie?: number;
+  estado?: string;
+  ciudad?: string;
+  pais?: string;
+  titulo?: string;
+  descripcion?: string;
+  latitud?: number;
+  longitud?: number;
+  tipo_soporte?: string;
+  precio_mes?: number;
+  categoria_ubicacion?: string;
+  codigo_interno?: string;
+  codigo_cliente?: string;
+  google_maps_url?: string;
+  resumen?: string;
+  ubicacion_aproximada?: boolean;
+  radio_aproximado?: number;
+  rango_precios?: boolean;
+  precio_min?: number | null;
+  precio_max?: number | null;
+  periodo_alquiler?: string;
+  owner_id?: string | null;
+  owner?: {
+    id?: string;
+    email?: string;
+    contacto?: { nombre?: string; apellidos?: string; razon_social?: string; email?: string };
+  };
+  iluminacion?: boolean;
+  destacado?: boolean;
+  street_view_heading?: number | null;
+  street_view_pitch?: number | null;
+  street_view_zoom?: number | null;
+  created_at?: string;
+  updated_at?: string;
+  [key: string]: unknown;
+}
+
 // Función para mapear registros de Supabase a nuestro formato
-function mapSoporteFromSupabase(record: any): Soporte {
-  // Obtener imágenes del campo JSONB imagenes
+function mapSoporteFromSupabase(record: SoporteRowSupabase): Soporte {
   let imagenes: string[] = [];
-  
-  // Log temporal para depurar
-  console.log('🔍 [mapSoporteFromSupabase] record.imagenes:', JSON.stringify(record.imagenes), 'type:', typeof record.imagenes);
-  
+
   if (record.imagenes) {
-    // Si es un array JSONB, procesarlo directamente
     if (Array.isArray(record.imagenes)) {
       imagenes = record.imagenes
-        .filter((img: any) => {
-          // Validar que sea un string válido
-          const isValid = img !== null && img !== undefined && typeof img === 'string' && img.trim().length > 0;
+        .filter((img: unknown) => {
+          const isValid = img !== null && img !== undefined && typeof img === 'string' && (img as string).trim().length > 0;
           if (!isValid && img !== null && img !== undefined) {
             console.warn('⚠️ [mapSoporteFromSupabase] Imagen inválida en array:', img, 'type:', typeof img);
           }
           return isValid;
         })
-        .map((path: string) => {
-          const url = getPublicImageUrl(path);
+        .map((path: unknown) => {
+          const url = getPublicImageUrl(path as string);
           if (!url) {
             console.warn('⚠️ [mapSoporteFromSupabase] No se pudo generar URL para path:', path);
           }
           return url;
         })
-        .filter((url: string) => url.length > 0); // Filtrar URLs vacías
+        .filter((url: string) => url.length > 0);
     } else if (typeof record.imagenes === 'string') {
       // Si es un string JSON, parsearlo
       try {
         const parsed = JSON.parse(record.imagenes);
         if (Array.isArray(parsed)) {
           imagenes = parsed
-            .filter((img: any) => img !== null && img !== undefined && typeof img === 'string' && img.trim().length > 0)
+            .filter((img: unknown): img is string => img !== null && img !== undefined && typeof img === 'string' && img.trim().length > 0)
             .map((path: string) => getPublicImageUrl(path))
             .filter((url: string) => url.length > 0);
         } else if (typeof parsed === 'string' && parsed.trim().length > 0) {
@@ -208,7 +245,7 @@ function mapSoporteFromSupabase(record: any): Soporte {
         }
       } catch (e) {
         // Si falla el parse, tratar como string único solo si tiene contenido
-        if (record.imagenes.trim().length > 0) {
+        if (typeof record.imagenes === 'string' && record.imagenes.trim().length > 0) {
           const url = getPublicImageUrl(record.imagenes);
           if (url) {
             imagenes = [url];
@@ -217,9 +254,6 @@ function mapSoporteFromSupabase(record: any): Soporte {
       }
     }
   }
-  
-  // Log temporal para validar resultado
-  console.log('✅ [mapSoporteFromSupabase] imagenes procesadas:', imagenes.length, 'URLs:', imagenes);
 
   // Calcular área si no existe
   const ancho = record.ancho || 0;
@@ -273,16 +307,7 @@ function mapSoporteFromSupabase(record: any): Soporte {
     priceMin: record.precio_min != null ? Number(record.precio_min) : null,
     priceMax: record.precio_max != null ? Number(record.precio_max) : null,
     rentalPeriod: record.periodo_alquiler ?? 'meses',
-    usuarioId: record.owner_id ?? record.owner?.id ?? null,
-    owner: record.owner
-      ? {
-          id: record.owner.id,
-          empresa: record.owner.contacto?.razon_social ?? null,
-          nombre: record.owner.contacto?.nombre ?? null,
-          apellidos: record.owner.contacto?.apellidos ?? null,
-          email: record.owner.email ?? null
-        }
-      : undefined,
+    usuarioId: record.owner_id ?? record.owner?.id ?? undefined,
     usuario: record.owner
       ? {
           id: record.owner.id,
@@ -302,28 +327,30 @@ function mapSoporteFromSupabase(record: any): Soporte {
 }
 
 // Función para mapear clientes de Supabase
-function mapClienteFromSupabase(record: any): Cliente {
+function mapClienteFromSupabase(record: Record<string, unknown>): Cliente {
+  const id = record.id as string | undefined;
+  const estado = String(record.estado || 'activo').toLowerCase() as Cliente['estado'];
   return {
-    id: record.id,
-    nombre: record.nombre || '',
-    email: record.email || '',
-    telefono: record.telefono || '',
-    direccion: record.direccion || '',
-    nit: record.nit || '',
-    estado: (record.estado || 'activo').toLowerCase() as Cliente['estado'],
-    createdAt: new Date(record.created_at || Date.now()),
-    updatedAt: new Date(record.updated_at || Date.now())
+    id: id ?? '',
+    nombre: String(record.nombre ?? ''),
+    email: String(record.email ?? ''),
+    telefono: String(record.telefono ?? ''),
+    direccion: String(record.direccion ?? ''),
+    nit: String(record.nit ?? ''),
+    estado,
+    createdAt: new Date((record.created_at as string) || Date.now()),
+    updatedAt: new Date((record.updated_at as string) || Date.now())
   };
 }
 
 // Función para mapear categorías de Supabase
-function mapCategoriaFromSupabase(record: any): Categoria {
+function mapCategoriaFromSupabase(record: Record<string, unknown>): Categoria {
   return {
-    id: record.id,
-    nombre: record.nombre || '',
-    descripcion: record.descripcion || '',
-    icono: record.icono || '',
-    color: record.color || '#3B82F6'
+    id: (record.id as string) ?? '',
+    nombre: String(record.nombre ?? ''),
+    descripcion: String(record.descripcion ?? ''),
+    icono: String(record.icono ?? ''),
+    color: String(record.color ?? '#3B82F6')
   };
 }
 
@@ -457,7 +484,7 @@ export class SupabaseService {
       const total = count || 0;
       console.log(`✅ Found ${data?.length || 0} records (total: ${total}) in Supabase`);
 
-      const soportes = (data || []).map((record: any) => {
+      const soportes = (data || []).map((record: SoporteRowSupabase) => {
         try {
           if (record.owner) {
             console.log('[getSoportes] owner:', record.owner.id, 'contacto:', record.owner.contacto?.nombre);
@@ -527,7 +554,7 @@ export class SupabaseService {
     }
   }
 
-  static async createSoporte(data: any): Promise<Soporte | null> {
+  static async createSoporte(data: Record<string, unknown>): Promise<Soporte | null> {
     try {
       console.log('➕ Creating new soporte in Supabase...');
       console.log('📤 Datos recibidos para crear:', data);
@@ -547,7 +574,7 @@ export class SupabaseService {
       if (data.imagenes && Array.isArray(data.imagenes)) {
         // Filtrar solo paths válidos (no URLs completas, solo paths relativos)
         imagenesPaths = data.imagenes
-          .filter((img: any) => img && typeof img === 'string')
+          .filter((img: unknown): img is string => img != null && typeof img === 'string')
           .map((img: string) => {
             // Si es una URL completa, extraer el path
             if (img.startsWith('http://') || img.startsWith('https://')) {
@@ -577,7 +604,7 @@ export class SupabaseService {
         return estadoMap[estado] || estadoMap[estadoUpper] || 'Disponible';
       };
 
-      const insertData: any = {
+      const insertData: Record<string, unknown> = {
         titulo: data['Título del soporte'] || data.titulo || data.nombre || '',
         descripcion: data['Descripción'] || data.descripcion || '',
         tipo_soporte: data['Tipo de soporte'] || data.tipo || '',
@@ -660,7 +687,7 @@ export class SupabaseService {
       };
 
       // Preparar datos de actualización
-      const updateData: any = {};
+      const updateData: Record<string, unknown> = {};
 
       if (data['Título del soporte'] !== undefined || data.nombre !== undefined) {
         updateData.titulo = data['Título del soporte'] || data.nombre || existing.nombre;
@@ -692,7 +719,7 @@ export class SupabaseService {
         // Procesar imágenes: filtrar paths válidos y convertir URLs a paths relativos
         const imagenesInput = Array.isArray(data.imagenes) ? data.imagenes : [data.imagenes];
         const imagenesPaths = imagenesInput
-          .filter((img: any) => img !== null && img !== undefined && typeof img === 'string' && img.trim().length > 0)
+          .filter((img: unknown): img is string => img != null && typeof img === 'string' && img.trim().length > 0)
           .map((img: string) => {
             // Si es una URL completa, extraer el path
             if (img.startsWith('http://') || img.startsWith('https://')) {
@@ -909,8 +936,8 @@ export class SupabaseService {
   static async createAuthUser(
     email: string,
     password: string,
-    metadata?: Record<string, any>
-  ): Promise<{ user: any; error: any }> {
+    metadata?: Record<string, unknown>
+  ): Promise<{ user: unknown; error: unknown }> {
     try {
       const { data, error } = await supabaseAdmin.auth.admin.createUser({
         email,
@@ -950,7 +977,7 @@ export class SupabaseService {
     tipo_tenencia?: string | null;
     tiene_permisos?: boolean;
     permite_instalacion?: boolean;
-  }): Promise<any> {
+  }): Promise<Record<string, unknown>> {
     try {
       if (!ownerData.user_id) {
         throw new Error('user_id es requerido para crear un owner');
@@ -970,7 +997,7 @@ export class SupabaseService {
       const tipo_contacto = tipo_contacto_map[ownerData.tipo_owner] || 'persona';
 
       // Preparar datos de inserción con todos los campos posibles
-      const insertData: any = {
+      const insertData: Record<string, unknown> = {
         user_id: ownerData.user_id,
         nombre_contacto: ownerData.nombre_contacto,
         email: ownerData.email,
@@ -1050,7 +1077,7 @@ export class SupabaseService {
   /**
    * Obtiene un owner por email
    */
-  static async getOwnerByEmail(email: string): Promise<any | null> {
+  static async getOwnerByEmail(email: string): Promise<Record<string, unknown> | null> {
     try {
       const { data, error } = await supabaseAdmin
         .from('owners')

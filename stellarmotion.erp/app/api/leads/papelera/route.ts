@@ -33,6 +33,11 @@ export async function GET(request: Request) {
     });
   } catch (e) {
     console.error("GET /api/leads/papelera:", e);
-    return NextResponse.json({ error: "Error al obtener papelera" }, { status: 500 });
+    const err = e instanceof Error ? e : new Error(String(e));
+    const details = e && typeof e === "object" && "message" in e ? { message: (e as Error).message } : undefined;
+    return NextResponse.json(
+      { error: err.message || "Error al obtener papelera", details },
+      { status: 500 }
+    );
   }
 }

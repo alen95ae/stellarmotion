@@ -69,7 +69,12 @@ export async function GET(request: NextRequest) {
     });
   } catch (err) {
     console.error("Error GET /api/ajustes/usuarios:", err);
-    return NextResponse.json({ error: "Error al obtener usuarios" }, { status: 500 });
+    const e = err instanceof Error ? err : new Error(String(err));
+    const details = err && typeof err === "object" && "message" in err ? { message: (err as Error).message } : undefined;
+    return NextResponse.json(
+      { error: e.message || "Error al obtener usuarios", details },
+      { status: 500 }
+    );
   }
 }
 
@@ -117,6 +122,11 @@ export async function POST(request: NextRequest) {
     });
   } catch (err) {
     console.error("Error POST /api/ajustes/usuarios:", err);
-    return NextResponse.json({ error: "Error al crear usuario" }, { status: 500 });
+    const e = err instanceof Error ? err : new Error(String(err));
+    const details = err && typeof err === "object" && "message" in err ? { message: (err as Error).message } : undefined;
+    return NextResponse.json(
+      { error: e.message || "Error al crear usuario", details },
+      { status: 500 }
+    );
   }
 }

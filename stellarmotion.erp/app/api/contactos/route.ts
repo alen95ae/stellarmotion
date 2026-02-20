@@ -1,9 +1,5 @@
 export const dynamic = "force-dynamic";
 
-// #region agent log
-console.log("API route contactos loaded");
-// #endregion
-
 import { NextResponse } from "next/server";
 import {
   getContactos,
@@ -51,27 +47,16 @@ export async function GET(request: Request) {
     });
   } catch (e) {
     console.error("GET /api/contactos:", e);
+    const err = e instanceof Error ? e : new Error(String(e));
+    const details = e && typeof e === "object" && "message" in e ? { message: (e as Error).message } : undefined;
     return NextResponse.json(
-      { error: "No se pudieron obtener los contactos" },
+      { error: err.message || "No se pudieron obtener los contactos", details },
       { status: 500 }
     );
   }
 }
 
 export async function POST(request: Request) {
-  // #region agent log
-  fetch("http://127.0.0.1:7243/ingest/35ed66c4-103a-4e9a-bb0c-ff60128329e9", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      location: "app/api/contactos/route.ts:POST",
-      message: "POST handler entered",
-      data: { method: request.method, url: request.url },
-      timestamp: Date.now(),
-      hypothesisId: "E",
-    }),
-  }).catch(() => {});
-  // #endregion
   console.log("POST /api/contactos called", request.method, request.url);
   try {
     const body = await request.json();
@@ -117,11 +102,16 @@ export async function POST(request: Request) {
     const created = await createContacto(payload);
     console.log("createContacto returned:", created ? "ok (contacto creado)" : "null (fallo)");
     if (!created) {
-      return NextResponse.json({ error: "Error al crear el contacto" }, { status: 500 });
+      return NextResponse.json({ error: "Error al crear el contacto (createContacto devolvió null)" }, { status: 500 });
     }
     return NextResponse.json(created, { status: 201 });
   } catch (e) {
     console.error("POST /api/contactos exception:", e);
-    return NextResponse.json({ error: "Error al crear el contacto" }, { status: 500 });
+    const err = e instanceof Error ? e : new Error(String(e));
+    const details = e && typeof e === "object" && "message" in e ? { message: (e as Error).message } : undefined;
+    return NextResponse.json(
+      { error: err.message || "Error al crear el contacto", details },
+      { status: 500 }
+    );
   }
 }

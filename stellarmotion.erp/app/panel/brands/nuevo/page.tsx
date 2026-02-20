@@ -219,19 +219,6 @@ export default function NuevoOwnerPage() {
     setForm((p) => ({ ...p, persona_contacto: p.persona_contacto.filter((_, i) => i !== index) }));
 
   const handleSubmit = async (e: React.FormEvent) => {
-    // #region agent log
-    fetch("http://127.0.0.1:7243/ingest/35ed66c4-103a-4e9a-bb0c-ff60128329e9", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        location: "brands/nuevo/page.tsx:handleSubmit",
-        message: "handleSubmit entered",
-        data: {},
-        timestamp: Date.now(),
-        hypothesisId: "B",
-      }),
-    }).catch(() => {});
-    // #endregion
     e.preventDefault();
     const displayName = (form.nombre.trim() || form.razonSocial.trim() || "").trim();
     if (!displayName) {
@@ -268,38 +255,11 @@ export default function NuevoOwnerPage() {
         latitud: form.latitud,
         longitud: form.longitud,
       };
-      // #region agent log
-      const fetchUrl = "/api/contactos";
-      fetch("http://127.0.0.1:7243/ingest/35ed66c4-103a-4e9a-bb0c-ff60128329e9", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          location: "brands/nuevo/page.tsx:before fetch",
-          message: "About to call fetch",
-          data: { url: fetchUrl, method: "POST", bodyKeys: Object.keys(payload) },
-          timestamp: Date.now(),
-          hypothesisId: "C",
-        }),
-      }).catch(() => {});
-      // #endregion
-      const res = await fetch(fetchUrl, {
+      const res = await fetch("/api/contactos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      // #region agent log
-      fetch("http://127.0.0.1:7243/ingest/35ed66c4-103a-4e9a-bb0c-ff60128329e9", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          location: "brands/nuevo/page.tsx:after fetch",
-          message: "fetch completed",
-          data: { status: res.status, ok: res.ok },
-          timestamp: Date.now(),
-          hypothesisId: "D",
-        }),
-      }).catch(() => {});
-      // #endregion
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error || "Error al crear");
@@ -334,22 +294,7 @@ export default function NuevoOwnerPage() {
           </Link>
           <Button
             type="button"
-            onClick={() => {
-              // #region agent log
-              fetch("http://127.0.0.1:7243/ingest/35ed66c4-103a-4e9a-bb0c-ff60128329e9", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  location: "brands/nuevo/page.tsx:button onClick",
-                  message: "Submit clicked",
-                  data: { formRefExists: !!formRef.current },
-                  timestamp: Date.now(),
-                  hypothesisId: "A",
-                }),
-              }).catch(() => {});
-              // #endregion
-              handleSubmit({ preventDefault: () => {} } as React.FormEvent);
-            }}
+            onClick={() => handleSubmit({ preventDefault: () => {} } as React.FormEvent)}
             disabled={saving}
             className={`bg-[#e94446] hover:bg-[#D7514C] text-white shadow-[0_0_12px_rgba(233,68,70,0.45)] hover:shadow-[0_0_20px_rgba(233,68,70,0.6)] dark:text-white transition-all duration-300 ${saved ? "scale-105" : ""}`}
           >

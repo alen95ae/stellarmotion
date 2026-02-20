@@ -17,6 +17,11 @@ export async function POST(request: Request) {
     return NextResponse.json(contact);
   } catch (e) {
     console.error("POST /api/leads/convert-to-contact:", e);
-    return NextResponse.json({ error: "Error al convertir" }, { status: 500 });
+    const err = e instanceof Error ? e : new Error(String(e));
+    const details = e && typeof e === "object" && "message" in e ? { message: (e as Error).message } : undefined;
+    return NextResponse.json(
+      { error: err.message || "Error al convertir", details },
+      { status: 500 }
+    );
   }
 }

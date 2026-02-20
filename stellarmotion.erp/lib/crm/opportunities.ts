@@ -116,7 +116,7 @@ export async function updateOpportunityStage(
   }
   
   // Actualizar oportunidad
-  const updateData: any = {
+  const updateData: Record<string, unknown> = {
     stage_id: data.stage_id,
     probabilidad_cierre: newStage.probabilidad_cierre,
     updated_by: ownerId,

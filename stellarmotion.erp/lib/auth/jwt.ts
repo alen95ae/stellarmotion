@@ -11,13 +11,13 @@ export function sign(payload: object, expiresIn: string | number) {
     .sign(JWT_SECRET);
 }
 
-export async function verify<T = any>(token: string): Promise<T | null> {
-  try { 
+export async function verify<T = Record<string, unknown>>(token: string): Promise<T | null> {
+  try {
     const { payload } = await jwtVerify(token, JWT_SECRET);
-    return payload as T; 
-  } catch (error: any) {
-    console.error("JWT verification failed:", error.message);
-    return null; 
+    return payload as T;
+  } catch (error: unknown) {
+    console.error("JWT verification failed:", error instanceof Error ? error.message : String(error));
+    return null;
   }
 }
 

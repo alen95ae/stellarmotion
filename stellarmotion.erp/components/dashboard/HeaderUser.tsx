@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { signOut } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { User } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -87,7 +88,7 @@ export default function HeaderUser() {
 
   const handleLogout = async () => {
     try {
-      await fetch("/api/auth/logout", { method: "POST", credentials: "include" })
+      await signOut({ redirect: false })
       router.replace("/login")
     } catch (error) {
       console.error("Error during logout:", error)
