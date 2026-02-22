@@ -1,8 +1,43 @@
 "use client"
+
+import { useRef, useEffect, useState } from "react"
 import Link from "next/link"
-import { Globe, CircleDollarSign, Facebook, Instagram, Linkedin } from "lucide-react"
+import { Globe, BadgeDollarSign, BadgeEuro } from "lucide-react"
+import { HugeiconsIcon } from "@hugeicons/react"
+import {
+  NewTwitterRectangleIcon,
+  InstagramIcon,
+  Facebook01Icon,
+  Linkedin01Icon,
+} from "@hugeicons/core-free-icons"
+
+type Currency = "usd" | "eur"
 
 export default function Footer() {
+  const [currency, setCurrency] = useState<Currency>("usd")
+  const [currencyOpen, setCurrencyOpen] = useState(false)
+  const currencyRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const stored = typeof window !== "undefined" ? (localStorage.getItem("stellarmotion_currency") as Currency | null) : null
+    if (stored === "usd" || stored === "eur") setCurrency(stored)
+  }, [])
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (currencyRef.current && !currencyRef.current.contains(event.target as Node)) {
+        setCurrencyOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
+
+  function selectCurrency(c: Currency) {
+    setCurrency(c)
+    setCurrencyOpen(false)
+    if (typeof window !== "undefined") localStorage.setItem("stellarmotion_currency", c)
+  }
   return (
     <footer className="bg-white border-t border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-12">
@@ -159,28 +194,66 @@ export default function Footer() {
 
             {/* Right Side - Currency, Language and Social Media */}
             <div className="flex items-center space-x-4">
-              {/* Moneda - a la izquierda del idioma, icono mismo tamaño que Globe */}
-              <div className="flex items-center space-x-1">
-                <CircleDollarSign className="w-4 h-4 text-gray-600 shrink-0" aria-hidden />
-                <span className="text-gray-600 text-xs">USD</span>
+              {/* Moneda - desplegable, icono mismo tamaño que Globe */}
+              <div className="relative" ref={currencyRef}>
+                <button
+                  type="button"
+                  onClick={() => setCurrencyOpen(!currencyOpen)}
+                  className="flex items-center justify-center w-9 h-9 rounded-md transition-colors text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800"
+                  aria-label="Seleccionar moneda"
+                  aria-expanded={currencyOpen}
+                >
+                  {currency === "eur" ? (
+                    <BadgeEuro className="w-[17.75px] h-[17.75px] shrink-0" />
+                  ) : (
+                    <BadgeDollarSign className="w-[17.75px] h-[17.75px] shrink-0" />
+                  )}
+                </button>
+                {currencyOpen && (
+                  <div className="absolute bottom-full left-0 mb-1 w-40 bg-white dark:bg-gray-950 rounded-md shadow-lg py-1 z-50 border border-gray-200 dark:border-gray-800">
+                    <button
+                      type="button"
+                      onClick={() => selectCurrency("usd")}
+                      className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-gray-100 dark:hover:bg-gray-800 ${
+                        currency === "usd" ? "text-[#e94446] font-medium" : "text-gray-700 dark:text-gray-300"
+                      }`}
+                    >
+                      <BadgeDollarSign className="w-5 h-5 shrink-0" />
+                      Dollar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => selectCurrency("eur")}
+                      className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-gray-100 dark:hover:bg-gray-800 ${
+                        currency === "eur" ? "text-[#e94446] font-medium" : "text-gray-700 dark:text-gray-300"
+                      }`}
+                    >
+                      <BadgeEuro className="w-5 h-5 shrink-0" />
+                      Euro
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Idioma */}
               <div className="flex items-center space-x-1">
-                <Globe className="w-4 h-4 text-gray-600 shrink-0" />
+                <Globe className="w-[16px] h-[16px] text-gray-600 shrink-0" />
                 <span className="text-gray-600 text-xs">Español (ES)</span>
               </div>
 
-              {/* Social Media Icons - Instagram, Facebook, LinkedIn */}
+              {/* Social Media Icons - X (Twitter), Instagram, Facebook, LinkedIn */}
               <div className="flex items-center space-x-3">
-                <Link prefetch={false} href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-gray-900 transition-colors" aria-label="Instagram">
-                  <Instagram className="w-5 h-5" />
+                <Link prefetch={false} href="https://x.com" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-gray-900 transition-colors [&_svg]:w-5 [&_svg]:h-5" aria-label="X (Twitter)">
+                  <HugeiconsIcon icon={NewTwitterRectangleIcon} size={20} />
                 </Link>
-                <Link prefetch={false} href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-gray-900 transition-colors" aria-label="Facebook">
-                  <Facebook className="w-5 h-5" />
+                <Link prefetch={false} href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-gray-900 transition-colors [&_svg]:w-5 [&_svg]:h-5" aria-label="Instagram">
+                  <HugeiconsIcon icon={InstagramIcon} size={20} />
                 </Link>
-                <Link prefetch={false} href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-gray-900 transition-colors" aria-label="LinkedIn">
-                  <Linkedin className="w-5 h-5" />
+                <Link prefetch={false} href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-gray-900 transition-colors [&_svg]:w-5 [&_svg]:h-5" aria-label="Facebook">
+                  <HugeiconsIcon icon={Facebook01Icon} size={20} />
+                </Link>
+                <Link prefetch={false} href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-gray-900 transition-colors [&_svg]:w-5 [&_svg]:h-5" aria-label="LinkedIn">
+                  <HugeiconsIcon icon={Linkedin01Icon} size={20} />
                 </Link>
               </div>
             </div>

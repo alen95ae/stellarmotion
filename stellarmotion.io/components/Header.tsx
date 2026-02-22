@@ -357,7 +357,7 @@ export default function Header() {
               href="/precios"
               className={`${navItemBase} ${pathname === "/precios" ? navItemActive : navItemHover}`}
             >
-              Precios
+              Planes
             </Link>
           </nav>
           </div>
@@ -390,7 +390,7 @@ export default function Header() {
                       <span className="block text-xs text-gray-500 mt-0.5">{item.description}</span>
                     </Link>
                   ))}
-                  <Link prefetch={false} href="/precios" className="px-3 py-2.5 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800" onClick={() => setMobileNavOpen(false)}>Precios</Link>
+                  <Link prefetch={false} href="/precios" className="px-3 py-2.5 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800" onClick={() => setMobileNavOpen(false)}>Planes</Link>
                 </nav>
               </SheetContent>
             </Sheet>

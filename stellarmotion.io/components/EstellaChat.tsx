@@ -26,14 +26,29 @@ const WELCOME_MESSAGE: Message = {
   timestamp: new Date(),
 }
 
+function formatRecommendation(data: {
+  success: true
+  recommendation: { city: string; suggested_mix: Array<{ type: string; estimated_impressions: number }> }
+}): string {
+  const { city, suggested_mix } = data.recommendation
+  const lines = [
+    `Recomendación para ${city}:`,
+    "",
+    ...suggested_mix.map(
+      (s) => `• ${s.type}: ~${s.estimated_impressions.toLocaleString()} impresiones estimadas`
+    ),
+  ]
+  return lines.join("\n")
+}
+
 export function EstellaChat() {
   const [open, setOpen] = useState(false)
   const [messages, setMessages] = useState<Message[]>([WELCOME_MESSAGE])
   const [inputValue, setInputValue] = useState("")
   const [showLabel, setShowLabel] = useState(true)
+  const [loading, setLoading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  // Animación de invitación: mostrar/ocultar el label cada cierto tiempo
   useEffect(() => {
     if (open) {
       setShowLabel(false)
@@ -49,9 +64,9 @@ export function EstellaChat() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
 
-  const handleSend = () => {
+  const handleSend = async () => {
     const text = inputValue.trim()
-    if (!text) return
+    if (!text || loading) return
     const userMsg: Message = {
       id: crypto.randomUUID(),
       role: "user",
@@ -60,23 +75,47 @@ export function EstellaChat() {
     }
     setMessages((prev) => [...prev, userMsg])
     setInputValue("")
-    // Respuesta simulada por ahora (placeholder para conectar IA después)
-    setTimeout(() => {
+    setLoading(true)
+    try {
+      const res = await fetch("/api/estella", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text }),
+      })
+      const data = await res.json()
+      let content: string
+      if (data.reply !== undefined) {
+        content = data.reply
+      } else if (data.success === true && data.recommendation) {
+        content = formatRecommendation(data)
+      } else if (data.error) {
+        content = `Error: ${data.error}`
+      } else {
+        content = "No pude procesar la respuesta. Intenta de nuevo."
+      }
       const botMsg: Message = {
         id: crypto.randomUUID(),
         role: "assistant",
-        content: "Gracias por tu mensaje. Estamos preparando las respuestas automáticas de Estella. Mientras tanto, puedes contactarnos en la web o por email.",
+        content,
         timestamp: new Date(),
       }
       setMessages((prev) => [...prev, botMsg])
-    }, 600)
+    } catch {
+      const botMsg: Message = {
+        id: crypto.randomUUID(),
+        role: "assistant",
+        content: "No pude conectar con Estella. Comprueba tu conexión e inténtalo de nuevo.",
+        timestamp: new Date(),
+      }
+      setMessages((prev) => [...prev, botMsg])
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
     <>
-      {/* Botón flotante */}
       <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-2">
-        {/* Label de invitación */}
         <div
           className={cn(
             "rounded-lg bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 px-3 py-2 text-sm font-medium shadow-lg transition-all duration-500 whitespace-nowrap",
@@ -107,7 +146,6 @@ export function EstellaChat() {
         </button>
       </div>
 
-      {/* Panel de chat */}
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent
           side="right"
@@ -140,7 +178,7 @@ export function EstellaChat() {
                 >
                   <div
                     className={cn(
-                      "max-w-[85%] rounded-2xl px-4 py-2.5 text-sm",
+                      "max-w-[85%] rounded-2xl px-4 py-2.5 text-sm whitespace-pre-wrap",
                       msg.role === "user"
                         ? "bg-stellarmotion-red text-white"
                         : "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100"
@@ -150,6 +188,13 @@ export function EstellaChat() {
                   </div>
                 </div>
               ))}
+              {loading && (
+                <div className="flex justify-start">
+                  <div className="max-w-[85%] rounded-2xl px-4 py-2.5 text-sm bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+                    Estella está pensando...
+                  </div>
+                </div>
+              )}
               <div ref={messagesEndRef} />
             </div>
           </ScrollArea>
@@ -167,9 +212,10 @@ export function EstellaChat() {
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 placeholder="Escribe tu mensaje..."
-                className="flex-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100"
+                disabled={loading}
+                className="flex-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 disabled:opacity-60"
               />
-              <Button type="submit" size="sm" variant="brand">
+              <Button type="submit" size="sm" variant="brand" disabled={loading}>
                 Enviar
               </Button>
             </form>

@@ -15,9 +15,9 @@ import {
   CheckCircle2,
   Sparkles,
   Building2,
-  BarChart3,
-  Zap,
-  Wrench,
+  ChartColumnBig,
+  Rocket,
+  User,
 } from "lucide-react";
 
 const OWNER_FREE_FEATURES = [
@@ -90,20 +90,6 @@ const BRAND_ADVANCED_FEATURES = [
   "Herramientas avanzadas de gestión",
 ];
 
-const LOGIC_BULLETS = [
-  "El Free no es para generar ingresos, es para alimentar el sistema.",
-  "El Pro es el corazón del negocio.",
-  "La comisión actúa como palanca natural de upgrade.",
-  "Escalas cuando tu operación lo necesita.",
-];
-
-const SERVICES_ITEMS = [
-  "Setup inicial",
-  "Migración de inventarios",
-  "Auditorías",
-  "Onboarding personalizado",
-];
-
 const FAQ_ITEMS = [
   {
     q: "¿Puedo empezar gratis?",
@@ -115,7 +101,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "¿Cómo funcionan las comisiones?",
-    a: "En Free la comisión por operación es más alta. En Pro se reduce, y en Advanced/Enterprise es mínima. Así la comisión actúa como palanca natural: si operas mucho, te compensa estar en Pro o superior.",
+    a: "En Free la comisión por operación es más alta. En Pro se reduce, y en Enterprise es mínima. Así la comisión actúa como palanca natural: si operas mucho, te compensa estar en Pro o superior.",
   },
   {
     q: "¿Puedo cambiar de plan?",
@@ -160,42 +146,29 @@ export default function PreciosClient() {
             {/* Owner Free */}
             <Card className="border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 flex flex-col">
               <CardHeader>
-                <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white">
+                <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                  <Rocket className="w-5 h-5 text-[#e94446]" />
                   Owner Free
                 </CardTitle>
-                <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">
-                  Entrada
+                <p className="text-sm text-gray-600 dark:text-gray-300 font-medium">
+                  Tu punto de partida en el marketplace publicitario.
                 </p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
                   Gratis
                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Un plan de entrada. Diseñado para empezar, no para operar a largo plazo.
+                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 font-medium">
+                  Comisión del 3% por operación
                 </p>
               </CardHeader>
               <CardContent className="flex-1 space-y-4">
-                <div>
-                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Incluye</p>
-                  <ul className="space-y-1.5">
-                    {OWNER_FREE_FEATURES.map((f) => (
-                      <li key={f} className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
-                        <CheckCircle2 className="w-4 h-4 shrink-0 text-[#e94446] mt-0.5" />
-                        {f}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Limitaciones</p>
-                  <ul className="space-y-1.5">
-                    {OWNER_FREE_LIMITS.map((f) => (
-                      <li key={f} className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400">
-                        <span className="text-gray-400 dark:text-gray-500">•</span>
-                        {f}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                <ul className="space-y-1.5">
+                  {OWNER_FREE_FEATURES.map((f) => (
+                    <li key={f} className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
+                      <CheckCircle2 className="w-4 h-4 shrink-0 text-[#e94446] mt-0.5" />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
               </CardContent>
               <CardFooter>
                 <Link prefetch={false} href="/publicar-espacio" className="w-full">
@@ -206,11 +179,11 @@ export default function PreciosClient() {
               </CardFooter>
             </Card>
 
-            {/* Owner Pro — PLAN CLAVE */}
+            {/* Owner Pro — Recomendado */}
             <Card className="border-2 border-[#e94446] dark:border-[#e94446] bg-white dark:bg-gray-950 flex flex-col relative shadow-lg">
               <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                 <Badge className="bg-[#e94446] text-white border-0 px-3 py-1 text-xs font-semibold">
-                  Plan clave
+                  Recomendado
                 </Badge>
               </div>
               <CardHeader className="pt-6">
@@ -222,10 +195,10 @@ export default function PreciosClient() {
                   El sistema de trabajo para propietarios profesionales.
                 </p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
-                  99 $/mes
+                  99 €/mes
                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 italic">
-                  Aquí el owner siente: esto ya es mi sistema de trabajo.
+                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 font-medium">
+                  Comisión del 2% por operación
                 </p>
               </CardHeader>
               <CardContent className="flex-1 space-y-4">
@@ -247,21 +220,21 @@ export default function PreciosClient() {
               </CardFooter>
             </Card>
 
-            {/* Owner Advanced / Enterprise */}
+            {/* Enterprise */}
             <Card className="border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 flex flex-col">
               <CardHeader>
                 <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                   <Building2 className="w-5 h-5 text-[#e94446]" />
-                  Owner Advanced / Enterprise
+                  Enterprise
                 </CardTitle>
                 <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">
                   Para operaciones más grandes o equipos ambiciosos.
                 </p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
-                  249–399 $/mes
+                  Contactar con ventas
                 </p>
-                <p className="text-xs text-amber-600 dark:text-amber-400 mt-1 font-medium">
-                  Diseñado para el futuro. Disponible bajo demanda.
+                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 font-medium">
+                  Comisión del 1% por operación
                 </p>
               </CardHeader>
               <CardContent className="flex-1 space-y-4">
@@ -286,12 +259,12 @@ export default function PreciosClient() {
         </div>
       </section>
 
-      {/* Bloque 2 — Para los que compran (Brands / Agencies) */}
+      {/* Bloque 2 — Para los que compran (Brands) */}
       <section className="py-16 lg:py-20 bg-white dark:bg-gray-900/30 border-b border-gray-200 dark:border-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-12">
             <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">
-              Para marcas y agencias (Brands / Agencies)
+              Para marcas y agencias (Brands)
             </h2>
             <p className="text-gray-600 dark:text-gray-400 max-w-2xl">
               Externamente todos son marcas. Internamente, Stellarmotion diferencia entre compra directa y uso profesional del sistema.
@@ -299,45 +272,29 @@ export default function PreciosClient() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-6 lg:gap-8">
-            {/* Brand Free */}
+            {/* Customer */}
             <Card className="border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-950 flex flex-col">
               <CardHeader>
-                <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Brand Free
+                <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                  <User className="w-5 h-5 text-[#e94446]" />
+                  Customer
                 </CardTitle>
-                <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">
-                  Explorar
+                <p className="text-sm text-gray-600 dark:text-gray-300 font-medium">
+                  Regístrate y explora publicidad exterior para tu marca.
                 </p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
                   Gratis
                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Reduce la fricción de entrada. Explora y solicita información.
-                </p>
               </CardHeader>
               <CardContent className="flex-1 space-y-4">
-                <div>
-                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Incluye</p>
-                  <ul className="space-y-1.5">
-                    {BRAND_FREE_FEATURES.map((f) => (
-                      <li key={f} className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
-                        <CheckCircle2 className="w-4 h-4 shrink-0 text-[#e94446] mt-0.5" />
-                        {f}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Limitaciones</p>
-                  <ul className="space-y-1.5">
-                    {BRAND_FREE_LIMITS.map((f) => (
-                      <li key={f} className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400">
-                        <span className="text-gray-400 dark:text-gray-500">•</span>
-                        {f}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                <ul className="space-y-1.5">
+                  {BRAND_FREE_FEATURES.map((f) => (
+                    <li key={f} className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
+                      <CheckCircle2 className="w-4 h-4 shrink-0 text-[#e94446] mt-0.5" />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
               </CardContent>
               <CardFooter>
                 <Link prefetch={false} href="/marketplace" className="w-full">
@@ -348,26 +305,23 @@ export default function PreciosClient() {
               </CardFooter>
             </Card>
 
-            {/* Brand / Agency Pro — PLAN CLAVE */}
+            {/* Broker — Recomendado */}
             <Card className="border-2 border-[#e94446] dark:border-[#e94446] bg-gray-50/50 dark:bg-gray-950 flex flex-col relative shadow-lg">
               <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                 <Badge className="bg-[#e94446] text-white border-0 px-3 py-1 text-xs font-semibold">
-                  Plan clave
+                  Recomendado
                 </Badge>
               </div>
               <CardHeader className="pt-6">
                 <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                  <Megaphone className="w-5 h-5 text-[#e94446]" />
-                  Brand / Agency Pro
+                  <ChartColumnBig className="w-5 h-5 text-[#e94446]" />
+                  Broker
                 </CardTitle>
                 <p className="text-sm text-gray-600 dark:text-gray-300 font-medium">
                   La herramienta comercial para brands activas y agencias pequeñas.
                 </p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
-                  149–199 $/mes
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 italic">
-                  Aquí Stellarmotion deja de ser un marketplace y se convierte en tu herramienta de ventas.
+                  Gratis
                 </p>
               </CardHeader>
               <CardContent className="flex-1 space-y-4">
@@ -389,21 +343,18 @@ export default function PreciosClient() {
               </CardFooter>
             </Card>
 
-            {/* Agency Advanced / Broker Pro */}
+            {/* Agency */}
             <Card className="border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-950 flex flex-col">
               <CardHeader>
                 <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                  <BarChart3 className="w-5 h-5 text-[#e94446]" />
-                  Agency Advanced / Broker Pro
+                  <Megaphone className="w-5 h-5 text-[#e94446]" />
+                  Agency
                 </CardTitle>
                 <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">
                   Para equipos y operaciones de mayor volumen.
                 </p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
-                  299–499 $/mes
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Plan existente pero no prioritario para el lanzamiento.
+                  149 €/mes
                 </p>
               </CardHeader>
               <CardContent className="flex-1 space-y-4">
@@ -428,51 +379,6 @@ export default function PreciosClient() {
         </div>
       </section>
 
-      {/* Bloque — Lógica de los planes */}
-      <section className="py-16 lg:py-20 border-b border-gray-200 dark:border-gray-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-6 text-center">
-            Lógica de los planes
-          </h2>
-          <div className="max-w-2xl mx-auto">
-            <ul className="space-y-4">
-              {LOGIC_BULLETS.map((bullet, i) => (
-                <li key={i} className="flex items-start gap-3">
-                  <Zap className="w-5 h-5 shrink-0 text-[#e94446] mt-0.5" />
-                  <span className="text-gray-700 dark:text-gray-300">{bullet}</span>
-                </li>
-              ))}
-            </ul>
-            <p className="mt-8 text-center text-lg font-semibold text-gray-900 dark:text-white">
-              El crecimiento se justifica solo.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Bloque — Servicios (fuera de planes) */}
-      <section className="py-16 lg:py-20 bg-white dark:bg-gray-900/30 border-b border-gray-200 dark:border-gray-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-4 text-center">
-            Servicios (fuera de planes)
-          </h2>
-          <p className="text-center text-gray-600 dark:text-gray-400 max-w-xl mx-auto mb-10">
-            Los servicios van por encima de los planes.
-          </p>
-          <div className="flex flex-wrap justify-center gap-4">
-            {SERVICES_ITEMS.map((s) => (
-              <div
-                key={s}
-                className="flex items-center gap-2 px-4 py-2 rounded-full border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50"
-              >
-                <Wrench className="w-4 h-4 text-[#e94446]" />
-                <span className="text-sm font-medium text-gray-800 dark:text-gray-200">{s}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* FAQ */}
       <section className="py-16 lg:py-20 border-b border-gray-200 dark:border-gray-800">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -491,35 +397,6 @@ export default function PreciosClient() {
               </AccordionItem>
             ))}
           </Accordion>
-        </div>
-      </section>
-
-      {/* CTA final */}
-      <section className="py-16 lg:py-24">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-4">
-            Empieza gratis. Escala cuando estés listo.
-          </h2>
-          <p className="text-gray-600 dark:text-gray-400 mb-10">
-            Elige tu punto de entrada y crece con el marketplace.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Link prefetch={false} href="/publicar-espacio">
-              <Button variant="brand" size="lg" className="rounded-full w-full sm:w-auto">
-                Publicar soportes
-              </Button>
-            </Link>
-            <Link prefetch={false} href="/marketplace">
-              <Button variant="outline" size="lg" className="rounded-full border-gray-300 dark:border-gray-700 w-full sm:w-auto">
-                Explorar marketplace
-              </Button>
-            </Link>
-            <Link prefetch={false} href="/contact">
-              <Button variant="ghost" size="lg" className="rounded-full text-gray-700 dark:text-gray-300 w-full sm:w-auto">
-                Contactar con ventas
-              </Button>
-            </Link>
-          </div>
         </div>
       </section>
     </div>
