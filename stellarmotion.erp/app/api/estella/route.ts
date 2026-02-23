@@ -1,31 +1,25 @@
-import OpenAI from "openai";
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
 const ESTELLA_SYSTEM_PROMPT = `Eres Estella AI, experta en publicidad exterior (OOH - Out of Home y DOOH - Digital Out of Home).
 Ayudas a anunciantes y agencias a diseñar campañas estratégicas en soportes como Mupis, marquesinas, pantallas DOOH, vallas y otros formatos.
 Puedes recomendar mezclas de soportes según ciudad, presupuesto y duración.
 Responde siempre de forma clara, profesional y orientada a negocio.`;
 
-const RECOMMEND_SUPPORTS_TOOL: OpenAI.Chat.Completions.ChatCompletionTool = {
-  type: "function",
+const RECOMMEND_SUPPORTS_TOOL = {
+  type: "function" as const,
   function: {
     name: "recommend_supports",
     description:
       "Recomienda una mezcla de soportes OOH/DOOH según ciudad, presupuesto y opcionalmente duración en semanas.",
     parameters: {
-      type: "object",
+      type: "object" as const,
       properties: {
-        city: { type: "string", description: "Ciudad donde se realizará la campaña" },
-        budget: { type: "number", description: "Presupuesto total en euros" },
+        city: { type: "string" as const, description: "Ciudad donde se realizará la campaña" },
+        budget: { type: "number" as const, description: "Presupuesto total en euros" },
         duration_weeks: {
-          type: "number",
+          type: "number" as const,
           description: "Duración de la campaña en semanas (opcional)",
         },
       },
-      required: ["city", "budget"],
+      required: ["city", "budget"] as const,
     },
   },
 };
@@ -53,7 +47,6 @@ function buildRecommendation(args: RecommendSupportsArgs): RecommendationPayload
   const { city, budget } = args;
   const durationWeeks = args.duration_weeks ?? 4;
 
-  // Simulación: reparto aproximado según presupuesto y duración
   const baseImpressions = Math.round((budget / 1000) * (durationWeeks * 1.2) * 10000);
   const suggested_mix: SuggestedSupport[] = [
     { type: "Mupi", estimated_impressions: Math.round(baseImpressions * 0.4) },
@@ -97,6 +90,15 @@ function parseToolCallArgs(
 }
 
 export async function POST(req: Request) {
+  if (!process.env.OPENAI_API_KEY) {
+    return Response.json({ error: "OpenAI key missing" }, { status: 500 });
+  }
+
+  const OpenAI = (await import("openai")).default;
+  const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
+
   try {
     const body = await req.json();
     const message =

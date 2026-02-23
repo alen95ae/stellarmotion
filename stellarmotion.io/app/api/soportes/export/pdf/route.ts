@@ -106,82 +106,17 @@ async function loadImage(imageUrl: string): Promise<{ base64: string | null; for
     const buffer = Buffer.from(imageBuffer);
     const contentType = response.headers.get('content-type') || '';
     let format = 'JPEG';
-    let isPNG = false;
-    let isWEBP = false;
-    
     if (contentType.includes('png')) {
       format = 'PNG';
-      isPNG = true;
     } else if (contentType.includes('webp')) {
       format = 'WEBP';
-      isWEBP = true;
     }
 
-    // Optimización conservadora: comprimir imágenes grandes manteniendo calidad visual
-    try {
-      let canvasModule;
-      try {
-        canvasModule = await import('canvas');
-      } catch (importError) {
-        console.warn('⚠️ Canvas no disponible, usando imagen sin comprimir:', importError);
-        // Si canvas no está disponible, retornar imagen sin comprimir
-        return {
-          base64: `data:image/${format.toLowerCase()};base64,${buffer.toString('base64')}`,
-          format
-        };
-      }
-      const { createCanvas, loadImage: canvasLoadImage } = canvasModule;
-      
-      const img = await canvasLoadImage(buffer);
-      const imgCanvas = createCanvas(img.width, img.height);
-      const imgCtx = imgCanvas.getContext('2d');
-      imgCtx.drawImage(img, 0, 0);
-      
-      let hasAlpha = false;
-      if (isPNG) {
-        const imageData = imgCtx.getImageData(0, 0, img.width, img.height);
-        const data = imageData.data;
-        for (let i = 3; i < data.length; i += 4) {
-          if (data[i] < 255) {
-            hasAlpha = true;
-            break;
-          }
-        }
-      }
-      
-      if (isPNG && !hasAlpha) {
-        const compressedBuffer = imgCanvas.toBuffer('image/jpeg', { 
-          quality: 0.89, 
-          progressive: true,
-          chromaSubsampling: false 
-        });
-        return {
-          base64: `data:image/jpeg;base64,${compressedBuffer.toString('base64')}`,
-          format: 'JPEG'
-        };
-      } else if (format === 'JPEG' || isWEBP) {
-        const compressedBuffer = imgCanvas.toBuffer('image/jpeg', { 
-          quality: 0.89, 
-          progressive: true,
-          chromaSubsampling: false 
-        });
-        return {
-          base64: `data:image/jpeg;base64,${compressedBuffer.toString('base64')}`,
-          format: 'JPEG'
-        };
-      } else {
-        return {
-          base64: `data:image/${format.toLowerCase()};base64,${buffer.toString('base64')}`,
-          format
-        };
-      }
-    } catch (compressionError) {
-      console.error('No se pudo comprimir imagen, usando original:', compressionError);
-      return {
-        base64: `data:image/${format.toLowerCase()};base64,${buffer.toString('base64')}`,
-        format
-      };
-    }
+    // Sin canvas (compatible con Vercel serverless): usar imagen tal cual en base64
+    return {
+      base64: `data:image/${format.toLowerCase()};base64,${buffer.toString('base64')}`,
+      format
+    };
   } catch (error) {
     console.error('❌ Error cargando imagen del soporte:', error instanceof Error ? error.message : error);
     return { base64: null, format: 'JPEG' };
@@ -278,66 +213,9 @@ async function generateOSMMap(lat: number, lng: number, mapWidthPx: number, mapH
       throw new Error('No se pudo descargar ningún tile de OSM');
     }
 
-    const gridSize = 3 * tileSize;
-    
-    try {
-      let canvasModule;
-      try {
-        canvasModule = await import('canvas');
-      } catch (importError) {
-        console.warn('⚠️ Canvas no disponible para mapas, usando tile central:', importError);
-        const centralTile = composites.find(c => c.left === tileSize && c.top === tileSize) || composites[0];
-        return `data:image/png;base64,${centralTile.input.toString('base64')}`;
-      }
-      const { createCanvas, loadImage } = canvasModule;
-      const canvas = createCanvas(gridSize, gridSize);
-      const ctx = canvas.getContext('2d');
-      
-      ctx.fillStyle = '#c8c8c8';
-      ctx.fillRect(0, 0, gridSize, gridSize);
-      
-      for (const composite of composites) {
-        const img = await loadImage(composite.input);
-        ctx.drawImage(img, composite.left, composite.top);
-      }
-      
-      const cropLeft = Math.max(0, Math.min(gridSize - mapWidthPx, Math.floor(pixelX - mapWidthPx / 2)));
-      const cropTop = Math.max(0, Math.min(gridSize - mapHeightPx, Math.floor(pixelY - mapHeightPx / 2)));
-      
-      // Agregar icono del billboard si existe
-      try {
-        const iconPath = path.join(process.cwd(), 'public', 'billboard.png');
-        if (fs.existsSync(iconPath)) {
-          const iconImg = await loadImage(iconPath);
-          const iconSizeMm = 20;
-          const iconSizePx = Math.round(iconSizeMm * mapWidthPx / 130);
-          const offsetDownMm = 10;
-          const offsetDownPx = Math.round(offsetDownMm * mapHeightPx / 90);
-          ctx.drawImage(iconImg, pixelX - iconSizePx / 2, pixelY - iconSizePx + offsetDownPx, iconSizePx, iconSizePx);
-        }
-      } catch (iconError) {
-        console.error('Error agregando icono en composición:', iconError);
-      }
-      
-      const croppedCanvas = createCanvas(mapWidthPx, mapHeightPx);
-      const croppedCtx = croppedCanvas.getContext('2d');
-      croppedCtx.drawImage(
-        canvas,
-        cropLeft, cropTop, mapWidthPx, mapHeightPx,
-        0, 0, mapWidthPx, mapHeightPx
-      );
-      
-      const finalMapBuffer = croppedCanvas.toBuffer('image/jpeg', { 
-        quality: 0.91, 
-        progressive: true,
-        chromaSubsampling: false
-      });
-      return `data:image/jpeg;base64,${finalMapBuffer.toString('base64')}`;
-    } catch (canvasError) {
-      console.error('Canvas no disponible, usando tile central:', canvasError);
-      const centralTile = composites.find(c => c.left === tileSize && c.top === tileSize) || composites[0];
-      return `data:image/png;base64,${centralTile.input.toString('base64')}`;
-    }
+    // Sin canvas (compatible con Vercel serverless): usar tile central como imagen del mapa
+    const centralTile = composites.find(c => c.left === tileSize && c.top === tileSize) || composites[0];
+    return `data:image/png;base64,${centralTile.input.toString('base64')}`;
   } catch (error) {
     console.error('❌ Error generando mapa OSM:', error);
     return null;
@@ -518,7 +396,7 @@ export async function GET(request: NextRequest) {
     const encodedFileName = encodeURIComponent(fileName);
     headers.set('Content-Disposition', `attachment; filename="${fileName}"; filename*=UTF-8''${encodedFileName}`);
     
-    return new NextResponse(pdf, { headers });
+    return new NextResponse(new Uint8Array(pdf), { headers });
   } catch (error) {
     console.error("❌ Error en GET /api/soportes/export/pdf:", error);
     const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
@@ -727,7 +605,7 @@ async function generatePDF(supports: any[], userEmail?: string, userNumero?: str
           // Marca de agua (horizontal, más a la izquierda y centrada más arriba)
           if (logoBase64Watermark) {
             pdf.saveGraphicsState();
-            pdf.setGState(new pdf.GState({ opacity: 0.2 })); // Menos transparente (de 0.08 a 0.2)
+            pdf.setGState(new (pdf as { GState: new (opts: { opacity: number }) => unknown }).GState({ opacity: 0.2 })); // Menos transparente (de 0.08 a 0.2)
             
             const aspectRatio = 24 / 5.5;
             const watermarkWidth = 120;
@@ -775,7 +653,7 @@ async function generatePDF(supports: any[], userEmail?: string, userNumero?: str
           
           if (logoBase64Watermark) {
             pdf.saveGraphicsState();
-            pdf.setGState(new pdf.GState({ opacity: 0.2 })); // Menos transparente (de 0.08 a 0.2)
+            pdf.setGState(new (pdf as { GState: new (opts: { opacity: number }) => unknown }).GState({ opacity: 0.2 })); // Menos transparente (de 0.08 a 0.2)
             
             const aspectRatio = 24 / 5.5;
             const watermarkWidth = 120;

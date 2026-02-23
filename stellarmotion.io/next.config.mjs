@@ -42,17 +42,7 @@ const nextConfig = {
       allowedOrigins: ['*'],
     },
   },
-  // Configuración de runtime por defecto
-  // IMPORTANTE: Esto asegura que todas las rutas usen Node.js runtime
-  // a menos que se especifique explícitamente lo contrario
-  serverRuntimeConfig: {
-    // Variables privadas (solo disponibles en servidor)
-    supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
-  },
-  publicRuntimeConfig: {
-    // Variables públicas (disponibles en cliente y servidor)
-    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
-  },
+  // Usar process.env directamente en lugar de runtime config (deprecado en Next.js)
   async rewrites() {
     return [
       { source: "/search", destination: "/buscar-un-espacio" }
