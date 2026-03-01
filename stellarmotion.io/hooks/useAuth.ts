@@ -21,6 +21,7 @@ export interface AuthUser {
     id: string
     email: string
     name: string
+    contacto_id?: string
   } | null
   profile: UserProfile | null
   role: UserRole | null
@@ -63,7 +64,8 @@ export function useAuth() {
           user: {
             id: data.user.id,
             email: data.user.email,
-            name: data.user.name || data.user.nombre || ''
+            name: data.user.name || data.user.nombre || '',
+            contacto_id: data.user.contacto_id
           },
           profile: null, // No necesitamos profile separado
           role: data.user.role as UserRole,

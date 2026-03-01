@@ -22,7 +22,6 @@ export async function GET() {
     }
 
     // Obtener información actualizada del usuario desde la base de datos
-    // Esto asegura que el nombre siempre esté actualizado
     const user = await findUserByEmail(payload.email);
     
     // Obtener nombre del rol actualizado
@@ -40,8 +39,20 @@ export async function GET() {
       }
     }
 
-    // Usar el nombre de la base de datos (actualizado) en lugar del JWT (puede estar desactualizado)
-    const userName = user?.nombre || payload.name || '';
+    // Nombre para mostrar: preferir campo nombre del contacto → nombre usuario → JWT
+    let userName = user?.nombre || payload.name || '';
+    const supabase = getAdminSupabase();
+    const contactoId = (user as any)?.contacto_id;
+    if (contactoId) {
+      const { data: contacto } = await supabase
+        .from('contactos')
+        .select('nombre')
+        .eq('id', contactoId)
+        .maybeSingle();
+      if (contacto?.nombre?.trim()) {
+        userName = contacto.nombre.trim();
+      }
+    }
 
     return NextResponse.json({
       success: true,
@@ -55,6 +66,7 @@ export async function GET() {
         rol: roleName,
         telefono: user?.telefono ?? undefined,
         numero: user?.numero ?? undefined,
+        contacto_id: contactoId ?? undefined,
       }
     });
   } catch (error: any) {

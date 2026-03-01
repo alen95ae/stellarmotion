@@ -7,7 +7,6 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
-  Calendar, 
   Plus, 
   Search, 
   Filter,
@@ -17,15 +16,8 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  Loader2,
-  MoreHorizontal
+  Loader2
 } from 'lucide-react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { AlquilerWithRelations } from '@/types/alquileres';
 
 // Funciones para manejar estados (similar a gestión de soportes)
@@ -111,12 +103,6 @@ export default function AlquileresPage() {
     fetchAlquileres();
   }, []);
 
-  const totalAlquileres = alquileres.length;
-  const alquileresActivos = alquileres.filter(r => r.estado === 'activa').length;
-  const ingresosTotales = alquileres
-    .filter(r => r.estado !== 'cancelada')
-    .reduce((sum, r) => sum + r.precio_total, 0);
-  
   // Filtrar alquileres
   const filteredAlquileres = alquileres.filter(alquiler => {
     const usuarioNombre = alquiler.usuario?.nombre || '';
@@ -130,77 +116,34 @@ export default function AlquileresPage() {
   });
 
   return (
-    <div className="space-y-3">
-      {/* Header */}
-      <div className="flex justify-between items-center">
+    <div className="space-y-4 -mt-10">
+      {/* Título */}
+      <div className="flex flex-wrap items-center gap-3 justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Alquileres</h1>
-          <p className="mt-1 text-gray-600">
+          <h1 className="text-xl font-bold text-gray-900">Alquileres</h1>
+          <p className="mt-0.5 text-xs text-gray-600 leading-tight">
             Gestiona los alquileres de tus espacios publicitarios
           </p>
         </div>
-        <Button className="bg-[#e94446] hover:bg-[#d63a3a]">
-          <Plus className="w-4 h-4 mr-2" />
+        <Button size="sm" className="flex items-center gap-2 bg-[#e94446] hover:bg-[#d63a3a] h-9 px-3">
+          <Plus className="h-4 w-4" />
           Nuevo Alquiler
         </Button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Alquileres</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalAlquileres}</div>
-            <p className="text-xs text-muted-foreground">
-              Este mes
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Alquileres Activos</CardTitle>
-            <CheckCircle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{alquileresActivos}</div>
-            <p className="text-xs text-muted-foreground">
-              En curso actualmente
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Ingresos Totales</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">Bs. {ingresosTotales.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">
-              Alquileres confirmados
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative w-full sm:w-[300px]">
+      <div className="flex flex-col sm:flex-row gap-3 flex-wrap items-stretch sm:items-center">
+        <div className="relative w-full sm:w-[280px] min-w-0">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
           <Input
             placeholder="Buscar por usuario o número..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+            className="pl-9 h-9 text-sm"
           />
         </div>
-        <div className="flex gap-2">
-          <Select value={filterStatus} onValueChange={setFilterStatus}>
-            <SelectTrigger className="w-[200px]">
+        <Select value={filterStatus} onValueChange={setFilterStatus}>
+          <SelectTrigger className="h-9 min-w-[10rem] w-auto [&_[data-slot=select-value]]:line-clamp-none">
               <SelectValue placeholder="Todos los estados" className="truncate">
                 {filterStatus === 'all' ? (
                   <div className="flex items-center gap-2 min-w-0">
@@ -253,120 +196,106 @@ export default function AlquileresPage() {
                 </span>
               </SelectItem>
             </SelectContent>
-          </Select>
-        </div>
+        </Select>
       </div>
 
       {/* Alquileres Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Lista de Alquileres</CardTitle>
+      <Card className="p-4">
+        <CardHeader className="px-0 pb-3">
+          <CardTitle className="text-sm font-semibold">Lista de Alquileres</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-0">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-800 text-sm">
+              <thead className="[&_tr]:border-b [&_tr]:border-gray-200 dark:[&_tr]:border-gray-800">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="h-12 px-4 text-left align-middle font-medium whitespace-nowrap text-foreground">
                     Número
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="h-12 px-4 text-left align-middle font-medium whitespace-nowrap text-foreground">
                     Usuario
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="h-12 px-4 text-left align-middle font-medium whitespace-nowrap text-foreground">
                     Soporte
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="h-12 px-4 text-left align-middle font-medium whitespace-nowrap text-foreground">
                     Período
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="h-12 px-4 text-left align-middle font-medium whitespace-nowrap text-foreground">
                     Meses
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="h-12 px-4 text-left align-middle font-medium whitespace-nowrap text-foreground">
                     Precio
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="h-12 px-4 text-left align-middle font-medium whitespace-nowrap text-foreground">
                     Estado
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="h-12 px-4 text-left align-middle font-medium whitespace-nowrap text-foreground">
                     Acciones
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white dark:bg-gray-950 divide-y divide-gray-200 dark:divide-gray-800">
                 {loading ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-8 text-center">
-                      <div className="flex items-center justify-center">
-                        <Loader2 className="w-6 h-6 animate-spin text-gray-400 mr-2" />
-                        <span className="text-gray-500">Cargando alquileres...</span>
+                    <td colSpan={8} className="px-4 py-6 text-center">
+                      <div className="flex items-center justify-center text-sm text-muted-foreground">
+                        <Loader2 className="w-5 h-5 animate-spin text-gray-400 mr-2" />
+                        Cargando alquileres...
                       </div>
                     </td>
                   </tr>
                 ) : error ? (
                   <tr>
-                    <td colSpan={8} className="px-6 py-8 text-center text-red-600">
+                    <td colSpan={8} className="px-4 py-6 text-center text-sm text-red-600">
                       {error}
                     </td>
                   </tr>
                 ) : filteredAlquileres.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-6 py-8 text-center">
-                      <span className="text-gray-500">No se encontraron alquileres</span>
+                    <td colSpan={8} className="px-4 py-6 text-center text-sm text-muted-foreground">
+                      No se encontraron alquileres
                     </td>
                   </tr>
                 ) : (
                   filteredAlquileres.map((alquiler) => {
                     const IconComponent = estadoIcons[alquiler.estado as keyof typeof estadoIcons];
                     return (
-                      <tr key={alquiler.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      <tr key={alquiler.id} className="hover:bg-gray-50 dark:hover:bg-gray-900">
+                        <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
                           {alquiler.numero}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                           {alquiler.usuario?.nombre || 'N/A'}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                           {alquiler.soporte?.codigo_cliente ?? alquiler.soporte?.codigo_interno ?? 'N/A'}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                           {new Date(alquiler.fecha_inicio).toLocaleDateString('es-ES')} - {new Date(alquiler.fecha_fin).toLocaleDateString('es-ES')}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                           {alquiler.meses || Math.ceil((new Date(alquiler.fecha_fin).getTime() - new Date(alquiler.fecha_inicio).getTime()) / (1000 * 60 * 60 * 24 * 30))} mes{(alquiler.meses || Math.ceil((new Date(alquiler.fecha_fin).getTime() - new Date(alquiler.fecha_inicio).getTime()) / (1000 * 60 * 60 * 24 * 30))) !== 1 ? 'es' : ''}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
+                        <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
                           Bs. {alquiler.precio_total.toLocaleString()}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <Badge className={`inline-flex items-center ${estadoColors[alquiler.estado as keyof typeof estadoColors]}`}>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <Badge className={`inline-flex items-center px-2 py-0.5 text-xs font-medium ${estadoColors[alquiler.estado as keyof typeof estadoColors]}`}>
                             <IconComponent className="w-3 h-3 mr-1" />
                             {getStatusLabel(alquiler.estado)}
                           </Badge>
                         </td>
-                        <td className="pl-2 pr-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <div className="flex gap-2 justify-end">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              title="Ver"
-                            >
-                              <Eye className="w-4 h-4" />
+                        <td className="px-4 py-3 whitespace-nowrap text-sm font-medium">
+                          <div className="flex gap-1 justify-center">
+                            <Button variant="outline" size="sm" title="Ver" className="h-7 w-7 p-0">
+                              <Eye className="w-3.5 h-3.5" />
                             </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              title="Editar"
-                            >
-                              <Edit className="w-4 h-4" />
+                            <Button variant="outline" size="sm" title="Editar" className="h-7 w-7 p-0">
+                              <Edit className="w-3.5 h-3.5" />
                             </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-red-600 hover:text-red-700"
-                              title="Eliminar"
-                            >
-                              <Trash2 className="w-4 h-4" />
+                            <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 h-7 w-7 p-0" title="Eliminar">
+                              <Trash2 className="w-3.5 h-3.5" />
                             </Button>
                           </div>
                         </td>
@@ -380,23 +309,6 @@ export default function AlquileresPage() {
         </CardContent>
       </Card>
 
-      {/* Calendar View Placeholder */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Vista de Calendario</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-64 bg-gray-100 rounded-lg flex items-center justify-center">
-            <div className="text-center text-gray-500">
-              <Calendar className="w-12 h-12 mx-auto mb-4" />
-              <h3 className="text-lg font-medium mb-2">Vista de Calendario</h3>
-              <p className="text-sm">
-                Aquí se mostrará un calendario interactivo con los alquileres
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

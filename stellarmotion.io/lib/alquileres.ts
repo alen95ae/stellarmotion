@@ -3,31 +3,35 @@
  * 
  * IMPORTANTE: Todas las funciones usan supabaseAdmin que está configurado con
  * SUPABASE_SERVICE_ROLE_KEY, lo que significa que BYPASEA RLS automáticamente.
+ * Los IDs de soportes del owner se obtienen desde el ERP (soportes.owner_id allí).
  */
 
 import { supabaseAdmin } from './supabase-sql';
 import { Alquiler, AlquilerWithRelations, CreateAlquilerDTO, CreateAlquilerResponse } from '@/types/alquileres';
+import { ERP_BASE_URL } from '@/lib/api-config';
 
 /**
- * Obtener alquileres del dashboard (solo del owner autenticado)
+ * Obtener alquileres del dashboard (solo del owner autenticado).
+ * Los soportes del owner se consultan al ERP (owner_id); en .io la tabla soportes no tiene usuario_id.
  */
 export async function getAlquileresByOwner(usuarioId: string): Promise<AlquilerWithRelations[]> {
   try {
-    // Obtener los IDs de soportes del usuario
-    const { data: soportesOwner, error: soportesError } = await supabaseAdmin
-      .from('soportes')
-      .select('id')
-      .eq('usuario_id', usuarioId);
-
-    if (soportesError) {
-      throw soportesError;
+    // Obtener IDs de soportes del owner desde el ERP (soportes tienen owner_id allí)
+    let soporteIds: string[] = [];
+    try {
+      const url = `${ERP_BASE_URL}/api/soportes?ownerId=${encodeURIComponent(usuarioId)}&limit=5000`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        soporteIds = (data.soportes || []).map((s: { id?: string }) => s.id).filter(Boolean);
+      }
+    } catch (err) {
+      console.error('❌ [getAlquileresByOwner] Error fetching soportes from ERP:', err);
     }
 
-    if (!soportesOwner || soportesOwner.length === 0) {
+    if (soporteIds.length === 0) {
       return [];
     }
-
-    const soporteIds = soportesOwner.map((s: any) => s.id);
 
     // Obtener alquileres sin joins
     const { data: dataSimple, error: errorSimple } = await supabaseAdmin

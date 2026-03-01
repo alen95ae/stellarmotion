@@ -57,7 +57,7 @@ const navigation = [
   { name: 'Solicitudes', href: '/panel/owner/solicitudes', icon: SolicitudesMenuIcon },
   { name: 'Alquileres', href: '/panel/owner/alquileres', icon: AlquileresIcon },
   { name: 'Planificación', href: '/panel/owner/planificacion', icon: PlanificacionIcon, crown: true },
-  { name: 'Facturación', href: '/panel/owner/pagos', icon: FacturacionIcon },
+  { name: 'Facturación', href: '/panel/owner/facturacion', icon: FacturacionIcon },
   { name: 'Marketing', href: '/panel/owner/marketing', icon: MarketingNavIcon },
   { name: 'Métricas', href: '/panel/owner/metricas', icon: MetricasIcon, crown: true },
   { name: 'Mensajería', href: '/panel/owner/mensajeria', icon: MensajeriaIcon },

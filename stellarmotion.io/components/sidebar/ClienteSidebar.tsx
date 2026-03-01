@@ -43,7 +43,7 @@ const navigation = [
   { name: 'Solicitudes', href: '/panel/cliente/solicitudes', icon: SolicitudesMenuIcon },
   { name: 'Mis Anuncios', href: '/panel/cliente/anuncios', icon: MisAnunciosIcon },
   { name: 'Métricas Anuncios', href: '/panel/cliente/anuncios/metricas', icon: MetricasAnunciosIcon },
-  { name: 'Pagos', href: '/panel/cliente/facturacion', icon: PagosIcon },
+  { name: 'Pagos', href: '/panel/cliente/pagos', icon: PagosIcon },
   { name: 'Mensajería', href: '/panel/mensajeria', icon: MensajeriaIcon },
   { name: 'Ajustes', href: '/panel/ajustes', icon: AjustesIcon },
 ];

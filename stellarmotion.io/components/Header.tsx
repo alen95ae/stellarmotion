@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect, useMemo } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { ChevronDown, User, LogOut, LayoutDashboard, Menu, Store, Megaphone, Monitor } from "lucide-react"
+import { ChevronDown, User, LogOut, LayoutDashboard, Menu, Store, Megaphone, Monitor, UserPlus, Headphones } from "lucide-react"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 // Removed Supabase Auth - using JWT-based auth
@@ -456,6 +456,24 @@ export default function Header() {
                     >
                       <LayoutDashboard className="w-4 h-4 mr-3" />
                       Dashboard
+                    </Link>
+                    <Link
+                      href="/invita"
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                      role="menuitem"
+                      onClick={() => setIsUserMenuOpen(false)}
+                    >
+                      <UserPlus className="w-4 h-4 mr-3" />
+                      Invita a un amigo
+                    </Link>
+                    <Link
+                      href="/soporte"
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                      role="menuitem"
+                      onClick={() => setIsUserMenuOpen(false)}
+                    >
+                      <Headphones className="w-4 h-4 mr-3" />
+                      Soporte
                     </Link>
                     <button
                       onClick={handleLogout}
