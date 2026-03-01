@@ -66,10 +66,9 @@ const CLIENT_ROUTES = [
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Basic Auth (Vercel): solo se exige si ENABLE_BASIC_AUTH=true y existen DEV_USER y DEV_PASS.
-  // Para desactivar en producción: quitar ENABLE_BASIC_AUTH o ponerla en false. Para reactivar: ENABLE_BASIC_AUTH=true.
-  const basicAuthEnabled = process.env.ENABLE_BASIC_AUTH === 'true' && process.env.DEV_USER && process.env.DEV_PASS;
-  if (basicAuthEnabled) {
+  // Basic Auth: si existen DEV_USER y DEV_PASS, se exige HTTP Basic en todo el sitio (menos /api/ y estáticos).
+  // Para desactivar en producción: quitar o no definir DEV_USER y/o DEV_PASS en Vercel.
+  if (process.env.DEV_USER && process.env.DEV_PASS) {
     const basicResponse = checkBasicAuth(req);
     if (basicResponse) return basicResponse;
   }
