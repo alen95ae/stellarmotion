@@ -43,7 +43,7 @@ export default function OwnerPaso2Page() {
         
         if (!response.ok) {
           if (isMounted) {
-            window.location.href = `/login?next=${encodeURIComponent('/owner/paso-2')}`;
+            window.location.href = `/auth/login?next=${encodeURIComponent('/owner/paso-2')}`;
           }
           return;
         }
@@ -54,7 +54,7 @@ export default function OwnerPaso2Page() {
 
         if (!data.success || !data.user) {
           if (isMounted) {
-            window.location.href = `/login?next=${encodeURIComponent('/owner/paso-2')}`;
+            window.location.href = `/auth/login?next=${encodeURIComponent('/owner/paso-2')}`;
           }
           return;
         }

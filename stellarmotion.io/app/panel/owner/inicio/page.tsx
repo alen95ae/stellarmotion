@@ -11,12 +11,9 @@ import {
   FileText,
   CalendarDays,
   CalendarRange,
-  Wrench,
-  User,
   MessageCircle,
   Megaphone,
   Banknote,
-  Printer,
   ChartArea,
   Settings,
   Plus,
@@ -142,19 +139,16 @@ const MODULES_OPERATIVO = [
   { name: 'Solicitudes', href: '/panel/owner/solicitudes', description: 'Cotizaciones y solicitudes entrantes', icon: FileText },
   { name: 'Alquileres', href: '/panel/owner/alquileres', description: 'Contratos y alquileres activos', icon: CalendarDays },
   { name: 'Planificación', href: '/panel/owner/planificacion', description: 'Calendario y ocupación', icon: CalendarRange, crown: true },
-  { name: 'Mantenimiento', href: '/panel/owner/mantenimiento', description: 'Estado y mantenimiento', icon: Wrench, crown: true },
   { name: 'Mapa', href: '/panel/owner/mapa', description: 'Ubicación de tus soportes', icon: MapPin, iconSize: 22 },
 ];
 
 const MODULES_COMERCIAL = [
-  { name: 'Clientes', href: '/panel/owner/clientes', description: 'Brands y contactos', icon: User, crown: true },
   { name: 'Mensajería', href: '/panel/owner/mensajeria', description: 'Conversaciones con brands', icon: MessageCircle },
   { name: 'Marketing', href: '/panel/owner/marketing', description: 'Campañas y promoción', icon: Megaphone },
 ];
 
 const MODULES_FINANZAS = [
   { name: 'Facturación', href: '/panel/owner/pagos', description: 'Ingresos y cobros', icon: Banknote },
-  { name: 'Impresiones', href: '/panel/owner/impresiones', description: 'Producción e impresión', icon: Printer, crown: true },
   { name: 'Métricas', href: '/panel/owner/metricas', description: 'Rendimiento y análisis', icon: ChartArea, crown: true },
 ];
 

@@ -50,6 +50,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
+import { useAuth } from '@/hooks/useAuth';
 
 interface Support {
   id: string;
@@ -97,6 +98,9 @@ const makeAbsoluteUrl = (value?: string | null) => {
 };
 
 export default function SoportesPage() {
+  const { user, loading: authLoading } = useAuth();
+  const userId = user?.id;
+
   const [supports, setSupports] = useState<Support[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -111,8 +115,6 @@ export default function SoportesPage() {
     open: false,
     support: null
   });
-
-  const usuarioId = 'cmfskhuda0004sj2w46q3g7rc';
 
   const uniqueCities = useMemo(() => {
     const cities = [...new Set(supports.map(s => s.city).filter(Boolean))] as string[];
@@ -155,41 +157,28 @@ export default function SoportesPage() {
   }, [searchTerm, filtersLoaded]);
 
   useEffect(() => {
-    fetchSupports();
-  }, []);
+    if (userId) {
+      fetchSupports();
+    } else if (!authLoading) {
+      setLoading(false);
+    }
+  }, [userId, authLoading]);
 
   const fetchSupports = async () => {
+    if (!userId) return;
     try {
-      console.log('🔄 Iniciando fetchSupports...');
       setLoading(true);
-      
-      console.log('📡 Haciendo petición a usuario API...');
-      const usuarioResponse = await fetch(`/api/soportes?usuarioId=${usuarioId}`);
-      console.log('📡 Respuesta usuario:', usuarioResponse.status, usuarioResponse.ok);
-      
-      if (!usuarioResponse.ok) {
-        throw new Error(`Failed usuario fetch: ${usuarioResponse.status}`);
-      }
-      
-      const usuarioData = await usuarioResponse.json();
-      console.log('📊 Datos del usuario:', usuarioData);
-      let data: Support[] = usuarioData.soportes || usuarioData || [];
-      console.log('📋 Datos extraídos:', data.length, 'soportes');
+      const response = await fetch(`/api/soportes?usuarioId=${userId}`, { credentials: 'include' });
 
-      // Si no hay soportes asociados al owner, traer todos para mostrarlos
-      if (!Array.isArray(data) || data.length === 0) {
-        console.log('🔄 No hay soportes del owner, buscando todos...');
-        const generalResponse = await fetch('/api/soportes');
-        if (generalResponse.ok) {
-          const generalData = await generalResponse.json();
-          console.log('📊 Datos generales:', generalData);
-          data = generalData.soportes || generalData || [];
-          console.log('📋 Datos generales extraídos:', data.length, 'soportes');
-        }
+      if (!response.ok) {
+        throw new Error(`Error al cargar soportes: ${response.status}`);
       }
+
+      const data = await response.json();
+      let dataList: Support[] = data.soportes ?? data ?? [];
 
       // Sanitizar estructura para evitar valores inesperados en la UI
-      const normalizedSupports = (Array.isArray(data) ? data : []).map((support: any) => {
+      const normalizedSupports = (Array.isArray(dataList) ? dataList : []).map((support: any) => {
         const rawImages = Array.isArray(support.images)
           ? support.images
           : typeof support.images === 'string' && support.images.trim()
@@ -222,14 +211,12 @@ export default function SoportesPage() {
         } as Support;
       });
 
-      console.log('✅ Soportes normalizados:', normalizedSupports.length);
       setSupports(normalizedSupports);
-      console.log('✅ Estado actualizado, loading = false');
     } catch (error) {
-      console.error('❌ Error fetching supports:', error);
+      console.error('Error al cargar soportes:', error);
+      setSupports([]);
     } finally {
       setLoading(false);
-      console.log('🏁 fetchSupports completado, loading = false');
     }
   };
 
@@ -499,10 +486,9 @@ export default function SoportesPage() {
     }).format(price).replace('USD', '$').replace(/\s/g, '');
   };
 
-  console.log('🔍 Estado actual - loading:', loading, 'supports:', supports.length);
-  
-  if (loading) {
-    console.log('⏳ Mostrando estado de carga...');
+  const showLoading = authLoading || (!!userId && loading);
+
+  if (showLoading) {
     return (
       <div className="space-y-1.5 -mt-10">
         <div className="flex items-center justify-between mb-1">
@@ -529,6 +515,19 @@ export default function SoportesPage() {
             </Card>
           ))}
         </div>
+      </div>
+    );
+  }
+
+  if (!authLoading && !userId) {
+    return (
+      <div className="space-y-4 -mt-10">
+        <h1 className="text-xl font-bold text-gray-900">Gestión de Soportes</h1>
+        <Card className="p-6">
+          <CardContent className="py-8 text-center text-gray-600">
+            No se pudo identificar tu cuenta. Cierra sesión y vuelve a entrar, o recarga la página.
+          </CardContent>
+        </Card>
       </div>
     );
   }

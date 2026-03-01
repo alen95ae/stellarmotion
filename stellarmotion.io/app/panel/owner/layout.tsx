@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import OwnerSidebar from '@/components/sidebar/OwnerSidebar';
+import { canAccessOwnerPanel } from '@/lib/auth/can-access-owner-panel';
 
 export default function OwnerLayout({
   children,
@@ -19,14 +20,21 @@ export default function OwnerLayout({
       try {
         const response = await fetch('/api/auth/me', { credentials: 'include' });
         if (!response.ok) {
-          router.push('/');
+          router.replace('/auth/login?next=/panel/owner/inicio');
           return;
         }
-        // ✅ DEV: cualquier usuario autenticado puede ver Owner y Brand
-        // (selección de vista desde el header).
+
+        const data = await response.json();
+        const role = data?.user?.role || data?.user?.rol;
+        if (!canAccessOwnerPanel(role)) {
+          setIsAuthorized(false);
+          router.replace('/owner/paso-2');
+          return;
+        }
+
         setIsAuthorized(true);
       } catch (error) {
-        router.push('/');
+        router.replace('/auth/login?next=/panel/owner/inicio');
       }
     };
     checkAuth();

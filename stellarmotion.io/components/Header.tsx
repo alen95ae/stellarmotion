@@ -97,18 +97,10 @@ export default function Header() {
 
     loadUser();
 
-    // Recargar usuario cuando cambia la ruta (para detectar login/logout)
-    const intervalId = setInterval(() => {
-      if (isMounted) {
-        loadUser();
-      }
-    }, 5000); // Verificar cada 5 segundos
-
     return () => {
       isMounted = false;
       abortController.abort();
       clearTimeout(timeoutId);
-      clearInterval(intervalId);
     };
   }, [pathname]) // Recargar cuando cambia la ruta
 

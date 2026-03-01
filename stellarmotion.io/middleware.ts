@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { verifySession } from '@/lib/auth/session';
 import { getRoleFromPayload } from '@/lib/auth/role';
+import { canAccessOwnerPanel } from '@/lib/auth/can-access-owner-panel';
 
 // Basic Auth para entorno dev (DEV_USER / DEV_PASS)
 function checkBasicAuth(req: NextRequest): NextResponse | null {
@@ -65,9 +66,10 @@ const CLIENT_ROUTES = [
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Basic Auth (Vercel): cuando DEV_USER y DEV_PASS existen, SIEMPRE se exige.
-  // En Vercel, asegura que las variables estén en Environment Variables y disponibles en Runtime (no solo Build).
-  if (process.env.DEV_USER && process.env.DEV_PASS) {
+  // Basic Auth (Vercel): solo se exige si ENABLE_BASIC_AUTH=true y existen DEV_USER y DEV_PASS.
+  // Para desactivar en producción: quitar ENABLE_BASIC_AUTH o ponerla en false. Para reactivar: ENABLE_BASIC_AUTH=true.
+  const basicAuthEnabled = process.env.ENABLE_BASIC_AUTH === 'true' && process.env.DEV_USER && process.env.DEV_PASS;
+  if (basicAuthEnabled) {
     const basicResponse = checkBasicAuth(req);
     if (basicResponse) return basicResponse;
   }
@@ -171,8 +173,11 @@ export async function middleware(req: NextRequest) {
         }
       }
 
-      // ✅ DEV: todos los usuarios autenticados pueden ver Owner y Cliente.
-      // El middleware solo exige sesión para estas rutas.
+      if (isOwnerRoute && !canAccessOwnerPanel(userRole)) {
+        const ownerOnboardingUrl = new URL('/owner/paso-2', req.url);
+        ownerOnboardingUrl.searchParams.set('next', pathname);
+        return NextResponse.redirect(ownerOnboardingUrl);
+      }
 
       if (process.env.NODE_ENV !== 'development' && isClientRoute) {
         console.log('✅ Middleware - Acceso permitido para:', userRole, 'a', pathname);

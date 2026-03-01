@@ -11,12 +11,9 @@ import {
   FileText,
   CalendarDays,
   CalendarRange,
-  User,
   Banknote,
   Megaphone,
-  Printer,
   ChartArea,
-  Wrench,
   MessageCircle,
   Settings,
 } from 'lucide-react';
@@ -38,23 +35,14 @@ function AlquileresIcon({ className }: { className?: string }) {
 function PlanificacionIcon({ className }: { className?: string }) {
   return <CalendarRange className={className ?? iconClass} />;
 }
-function ClientesIcon({ className }: { className?: string }) {
-  return <User className={className ?? iconClass} />;
-}
 function FacturacionIcon({ className }: { className?: string }) {
   return <Banknote className={className ?? iconClass} />;
 }
 function MarketingNavIcon({ className }: { className?: string }) {
   return <Megaphone className={className ?? iconClass} />;
 }
-function ImpresionesIcon({ className }: { className?: string }) {
-  return <Printer className={className ?? iconClass} />;
-}
 function MetricasIcon({ className }: { className?: string }) {
   return <ChartArea className={className ?? iconClass} />;
-}
-function MantenimientoIcon({ className }: { className?: string }) {
-  return <Wrench className={className ?? iconClass} />;
 }
 function MensajeriaIcon({ className }: { className?: string }) {
   return <MessageCircle className={className ?? iconClass} />;
@@ -69,12 +57,9 @@ const navigation = [
   { name: 'Solicitudes', href: '/panel/owner/solicitudes', icon: SolicitudesMenuIcon },
   { name: 'Alquileres', href: '/panel/owner/alquileres', icon: AlquileresIcon },
   { name: 'Planificación', href: '/panel/owner/planificacion', icon: PlanificacionIcon, crown: true },
-  { name: 'Clientes', href: '/panel/owner/clientes', icon: ClientesIcon, crown: true },
   { name: 'Facturación', href: '/panel/owner/pagos', icon: FacturacionIcon },
   { name: 'Marketing', href: '/panel/owner/marketing', icon: MarketingNavIcon },
-  { name: 'Impresiones', href: '/panel/owner/impresiones', icon: ImpresionesIcon, crown: true },
   { name: 'Métricas', href: '/panel/owner/metricas', icon: MetricasIcon, crown: true },
-  { name: 'Mantenimiento', href: '/panel/owner/mantenimiento', icon: MantenimientoIcon, crown: true },
   { name: 'Mensajería', href: '/panel/owner/mensajeria', icon: MensajeriaIcon },
   { name: 'Ajustes', href: '/panel/owner/ajustes', icon: AjustesIcon },
 ];
